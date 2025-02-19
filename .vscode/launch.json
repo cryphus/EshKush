@@ -8,20 +8,20 @@
             "name": "Run All",
             "request": "launch",
             "type": "dart",
-            "program": "run_all.dart"
+            "program": "scripts/run_all.dart"
         },
         {
-            "name": "Flutter Web",
+            "name": "Frontend",
             "request": "launch",
             "type": "dart",
-            "program": "lib/main.dart",
+            "program": "frontend/lib/main.dart",
             "args": ["-d", "chrome"]
         },
         {
-            "name": "Backend Service",
+            "name": "Backend",
             "request": "launch",
             "type": "dart",
-            "program": "service.dart"
+            "program": "backend/bin/server.dart"
         }
     ]
 }

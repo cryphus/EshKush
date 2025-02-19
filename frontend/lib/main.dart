@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:dio/dio.dart';
 
 void main() {
-  runApp(EshKush());
+  runApp(const EshKush());
 }
 
 class EshKush extends StatelessWidget {
@@ -16,8 +14,9 @@ class EshKush extends StatelessWidget {
       title: 'EshKush',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        useMaterial3: true,
       ),
-      home: AuthScreen(),
+      home: const AuthScreen(),
     );
   }
 }
@@ -32,6 +31,8 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
   final Dio _dio = Dio(BaseOptions(
     baseUrl: 'http://localhost:3000',
     headers: {
@@ -40,9 +41,22 @@ class _AuthScreenState extends State<AuthScreen> {
     },
     validateStatus: (status) => true,
   ));
-  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _register() async {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Заполните все поля')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final response = await _dio.post(
@@ -55,21 +69,33 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Регистрация успешна')),
-      );
-    } on DioException catch (e) {
-      if (mounted) {
+      if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: ${e.message}')),
+          const SnackBar(content: Text('Регистрация успешна')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: ${response.data}')),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка: $e')),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _login() async {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Заполните все поля')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final response = await _dio.post(
@@ -84,11 +110,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Вход успешен')),
+          const SnackBar(content: Text('Вход успешен')),
         );
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => CounterScreen()),
+          MaterialPageRoute(builder: (context) => const CounterScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -96,11 +122,10 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка сети: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка: $e')),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -110,29 +135,56 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Flutter Auth'),
+        title: const Text('EshKush - Авторизация'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
               controller: _usernameController,
-              decoration: InputDecoration(labelText: 'Username'),
+              decoration: const InputDecoration(
+                labelText: 'Имя пользователя',
+                border: OutlineInputBorder(),
+              ),
+              enabled: !_isLoading,
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
+              decoration: const InputDecoration(
+                labelText: 'Пароль',
+                border: OutlineInputBorder(),
+              ),
               obscureText: true,
+              enabled: !_isLoading,
             ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _register,
-              child: Text('Register'),
-            ),
-            ElevatedButton(
-              onPressed: _login,
-              child: Text('Login'),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _register,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Регистрация'),
+                ),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Войти'),
+                ),
+              ],
             ),
           ],
         ),

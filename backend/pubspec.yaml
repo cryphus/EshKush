@@ -1,0 +1,12 @@
+name: backend
+description: Backend for EshKush
+
+environment:
+  sdk: ^3.6.1
+
+dependencies:
+  shelf: ^1.4.2
+  shelf_router: ^1.1.4
+  shelf_cors_headers: ^0.1.5
+  postgres: ^2.6.3
+  dotenv: ^4.2.0 
