@@ -1,16 +1,57 @@
-# eshkush
 
-A new Flutter project.
+# EshKush - Инструкция по установке
 
-## Getting Started
+## Пошаговая инструкция
 
-This project is a starting point for a Flutter application.
+### 1. Запуск проекта
 
-A few resources to get you started if this is your first Flutter project:
+docker-compose up --build(Дальше просто docker-compose up)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+После успешного запуска вы увидите логи от:
+- PostgreSQL (база данных)
+- Backend (Dart сервер)
+- Frontend (Flutter web)
+- pgAdmin (интерфейс для БД)
+
+### 2. Проверка работоспособности(в целом в докере все увидите)
+Откройте в браузере:
+- Frontend: http://localhost:8080
+- pgAdmin (для просмотра БД): http://localhost:5050
+
+### 3. Доступ к базе данных через pgAdmin
+1. Откройте http://localhost:5050
+2. Войдите в pgAdmin:
+   - Email: admin@admin.com
+   - Password: admin
+3. Добавьте новый сервер:
+   - Правый клик на "Servers" -> Register -> Server
+   - Вкладка "General":
+     - Name: EshKush (или любое другое)
+   - Вкладка "Connection":
+     - Host: postgres
+     - Port: 5432
+     - Database: flutter_auth
+     - Username: postgres
+     - Password: TQr132123
+
+### 4. Остановка проекта или полная очистка (если что-то пошло не так)
+# Выполнить в терминале:
+docker-compose down
+
+# Удаляем все тома (включая БД (без меня бд не трогать))
+docker-compose down -v
+
+
+### Просмотр логов
+
+# Все логи
+
+docker-compose logs
+
+# Логи конкретного сервиса
+
+docker-compose logs frontend
+docker-compose logs backend
+docker-compose logs postgres
+

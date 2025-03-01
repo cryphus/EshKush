@@ -1,6 +1,5 @@
-
-import 'package:backend/model/enums/point_category.dart';
-import 'package:backend/model/enums/city.dart';
+import 'package:backend/model/enums/PointCategory.dart';
+import 'package:backend/model/enums/City.dart';
 
 class Point {
   final int id;

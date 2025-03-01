@@ -13,5 +13,6 @@ class Order {
     required this.pointId,
     required this.date,
   });
+  
 
 }

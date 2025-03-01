@@ -1,0 +1,16 @@
+name: eshkush
+description: EshKush project
+
+environment:
+  sdk: '>=2.19.0 <3.0.0'
+  flutter: ">=2.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  dio: ^5.0.0
+  mask_text_input_formatter: ^2.9.0
+
+flutter:
+  uses-material-design: true 
+  

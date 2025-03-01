@@ -1,3 +1,3 @@
 enum City{
-  Tyumen;
+  tyumen;
 }
