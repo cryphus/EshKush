@@ -4,6 +4,19 @@ import 'BaseRepository.dart';
 class UserRepository extends BaseRepository {
   UserRepository(super.connection);
 
+  Future<User?> findById(int id) async {
+    try {
+      final result = await queryOne(
+        'SELECT * FROM users WHERE id = @id',
+        params: {'id': id},
+      );
+      return result == null ? null : User.fromMap(result);
+    } catch (e) {
+      print('Ошибка поиска пользователя по ID: $e');
+      rethrow;
+    }
+  }
+
   Future<User?> findByUsername(String username) async {
     try {
       final result = await queryOne(
@@ -19,6 +32,7 @@ class UserRepository extends BaseRepository {
 
   Future<User> create(User user) async {
     try {
+      print('Сохраняем номер телефона: ${user.number}');
       final result = await queryOne(
         '''
         INSERT INTO users (
@@ -60,6 +74,19 @@ class UserRepository extends BaseRepository {
       return result == null ? null : User.fromMap(result);
     } catch (e) {
       print('Ошибка аутентификации: $e');
+      rethrow;
+    }
+  }
+
+  Future<User?> findByEmail(String email) async {
+    try {
+      final result = await queryOne(
+        'SELECT * FROM users WHERE email = @email',
+        params: {'email': email},
+      );
+      return result == null ? null : User.fromMap(result);
+    } catch (e) {
+      print('Ошибка поиска пользователя по email: $e');
       rethrow;
     }
   }

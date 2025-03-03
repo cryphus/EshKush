@@ -6,7 +6,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:backend/database/database.dart';
 import 'package:backend/services/AuthService.dart';
 import 'package:backend/repositories/UserRepository.dart';
-
+import 'package:backend/utils/auth_utils.dart';
 
 void main() async {
   try {
@@ -24,6 +24,30 @@ void main() async {
       'Content-Type': 'application/json',
     };
 
+    Middleware authMiddleware(Handler innerHandler) {
+      return (innerHandler) {
+        return (Request request) async {
+          if (request.method == 'OPTIONS') {
+            return Response.ok('', headers: corsHeaders);
+          }
+
+          final authHeader = request.headers['authorization'];
+          if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+            return Response(401, body: jsonEncode({'error': 'Требуется авторизация'}));
+          }
+
+          final token = authHeader.substring(7);
+          try {
+            final payload = AuthUtils.verifyToken(token);
+            final modifiedRequest = request.change(context: {'user': payload});
+            return await innerHandler(modifiedRequest);
+          } catch (e) {
+            return Response(401, body: jsonEncode({'error': e.toString()}));
+          }
+        };
+      };
+    }
+
     final handler = const Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware((innerHandler) {
@@ -35,9 +59,43 @@ void main() async {
             return response.change(headers: {...response.headers, ...corsHeaders});
           };
         })
-        .addHandler(app);
+        .addHandler(app.call);
 
-    app.post('/register', (Request request) async {
+    app.post('/auth/google', (Request request) async {
+      try {
+        print('Получен запрос на аутентификацию через Google');
+        final body = await request.readAsString();
+        print('Тело запроса: $body');
+        final data = jsonDecode(body);
+        print('Данные запроса: $data');
+        
+        final user = await userRepository.findByEmail(data['email']);
+        print('Найденный пользователь: $user');
+        
+        if (user != null) {
+          final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
+          return Response.ok(jsonEncode({
+            ...tokens,
+            'user': {
+              'email': user.email,
+              'username': user.username,
+              'role': user.role.name.toLowerCase(),
+            }
+          }));
+        } else {
+          return Response(404, body: jsonEncode({
+            'needsRegistration': true,
+            'email': data['email'],
+            'displayName': data['displayName'],
+          }));
+        }
+      } catch (e) {
+        print('Ошибка аутентификации через Google: $e');
+        return Response(400, body: jsonEncode({'error': e.toString()}));
+      }
+    });
+
+    app.post('/auth/register', (Request request) async {
       try {
         print('Получен запрос на регистрацию');
         final body = await request.readAsString();
@@ -48,6 +106,22 @@ void main() async {
       } catch (e) {
         print('Ошибка регистрации: $e');
         return Response(400, body: jsonEncode({'error': e.toString()}));
+      }
+    });
+
+    app.post('/auth/refresh', (Request request) async {
+      try {
+        final body = await request.readAsString();
+        final data = jsonDecode(body);
+        
+        if (data['refresh_token'] == null) {
+          return Response(400, body: jsonEncode({'error': 'Требуется refresh_token'}));
+        }
+
+        final result = await authService.refreshToken(data['refresh_token']);
+        return Response.ok(jsonEncode(result));
+      } catch (e) {
+        return Response(401, body: jsonEncode({'error': e.toString()}));
       }
     });
 
@@ -64,8 +138,8 @@ void main() async {
       }
     });
 
-    final server = await io.serve(handler, '0.0.0.0', 3000);
-    print('Сервер запущен на http://0.0.0.0:3000');
+    final server = await io.serve(handler, '0.0.0.0', 8080);
+    print('Сервер запущен на http://0.0.0.0:8080');
   } catch (e, stackTrace) {
     print('Ошибка запуска сервера: $e');
     print('Stack trace: $stackTrace');

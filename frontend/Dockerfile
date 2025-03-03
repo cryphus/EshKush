@@ -1,12 +1,28 @@
-FROM cirrusci/flutter:stable AS build-env
+# Этап 1: Сборка
+FROM ghcr.io/cirruslabs/flutter:stable AS build-env
 
+# Установка рабочей директории
 WORKDIR /app
-COPY pubspec.* ./
+
+# Копирование файлов проекта
+COPY frontend/ .
+COPY backend ../backend
+
+# Получение зависимостей и сборка
+RUN flutter config --enable-web
+RUN flutter clean
 RUN flutter pub get
+RUN flutter build web --release
 
-COPY . .
-RUN flutter build web
-
+# Этап 2: Настройка Nginx
 FROM nginx:stable-alpine
+
+# Копирование собранных файлов и конфигурации
 COPY --from=build-env /app/build/web /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf 
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
+
+# Экспорт порта
+EXPOSE 80
+
+# Запуск Nginx
+CMD ["nginx", "-g", "daemon off;"] 

@@ -13,9 +13,14 @@
 
   <link rel="icon" type="image/png" href="favicon.png"/>
 
+  <!-- Google Sign-in -->
+  <meta name="google-signin-client_id" content="672295969525-4rih26k55qehk1h9jj35rki5l4o8t8an.apps.googleusercontent.com">
+
   <title>EshKush</title>
   <link rel="manifest" href="manifest.json">
 
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
+  
   <script>
     const serviceWorkerVersion = null;
   </script>
@@ -24,6 +29,13 @@
 <body>
   <script>
     window.addEventListener('load', function(ev) {
+      // Initialize google auth2
+      gapi.load('auth2', function() {
+        gapi.auth2.init({
+          client_id: '672295969525-4rih26k55qehk1h9jj35rki5l4o8t8an.apps.googleusercontent.com',
+        });
+      });
+      
       _flutter.loader.loadEntrypoint({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,

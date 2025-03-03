@@ -19,25 +19,36 @@ class AuthService {
         throw Exception('Пользователь уже существует');
       }
 
+      // Получаем роль из запроса и приводим к нижнему регистру
+      final String roleStr = (data['role'] as String).toLowerCase();
+      
+      // Находим соответствующую роль в enum
+      UserRole role = UserRole.values.firstWhere(
+        (r) => r.name.toLowerCase() == roleStr,
+        orElse: () => UserRole.user,
+      );
+
       final user = await _userRepository.create(User(
         id: 0,
         username: data['username'],
         password: AuthUtils.hashPassword(data['password']),
-        number: data['number'] ?? '+7',
+        number: data['phone'] ?? '+7',
         email: data['email'] ?? '${data['username']}@example.com',
-        role: UserRole.values[data['role'] as int? ?? UserRole.user.index],
+        role: role,
         sumCO2: 0,
         money: 0,
         favoriteIds: [],
         purchases: [],
       ));
 
+      final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
+
       return {
-        'token': AuthUtils.generateToken(user.id, user.role.toString()),
+        ...tokens,
         'user': {
           'id': user.id,
           'username': user.username,
-          'role': user.role.toString(),
+          'role': user.role.name.toLowerCase(),
           'email': user.email,
         }
       };
@@ -61,14 +72,42 @@ class AuthService {
       throw Exception('Неверный логин или пароль');
     }
 
+    final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
+
     return {
-      'token': AuthUtils.generateToken(user.id, user.role.toString()),
+      ...tokens,
       'user': {
         'id': user.id,
         'username': user.username,
-        'role': user.role.toString(),
+        'role': user.role.name.toLowerCase(),
         'email': user.email,
       }
     };
+  }
+
+  Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
+    try {
+      final payload = AuthUtils.verifyToken(refreshToken, isRefreshToken: true);
+      final userId = payload['id'] as int;
+      
+      final user = await _userRepository.findById(userId);
+      if (user == null) {
+        throw Exception('Пользователь не найден');
+      }
+
+      final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
+
+      return {
+        ...tokens,
+        'user': {
+          'id': user.id,
+          'username': user.username,
+          'role': user.role.name.toLowerCase(),
+          'email': user.email,
+        }
+      };
+    } catch (e) {
+      throw Exception('Недействительный refresh token');
+    }
   }
 } 

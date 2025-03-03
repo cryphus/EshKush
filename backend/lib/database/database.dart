@@ -20,7 +20,7 @@ class Database {
 
     db._connection = PostgreSQLConnection(
       env['DB_HOST'] ?? 'localhost',
-      int.parse(env['DB_PORT'] ?? '5432'),
+      int.parse(env['DB_PORT'] ?? '5433'),
       env['DB_NAME'] ?? 'flutter_auth',
       username: env['DB_USER'] ?? 'postgres',
       password: env['DB_PASSWORD'] ?? 'TQr132123',
