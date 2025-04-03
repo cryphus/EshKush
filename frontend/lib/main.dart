@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'screens/HomeScreen.dart';
 import 'screens/RegistrationScreen.dart';
 import 'services/FrontendAuthService.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 void main() {
   runApp(const EshKush());
@@ -34,40 +34,50 @@ class AuthScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authService = FrontendAuthService();
+
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.green.shade200,
-              Colors.green.shade50,
-            ],
-          ),
-        ),
-        child: Center(
+      backgroundColor: const Color(0xFFFAF3E0),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'EshKush',
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
+              // Верхняя часть экрана
+              const SizedBox(height: 90),
+              const Center(
+                child: Text(
+                  'Еда с разумным выбором',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
               const SizedBox(height: 50),
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.8,
+                height: 350,
+                child: Image.network(
+                  'http://91.186.217.192/images/img_start.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.error),
+                ),
+              ),
+              // Spacer расталкивает нижнюю часть вниз
+              const Spacer(),
+              // Нижняя часть экрана: кнопки входа
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _buildAuthButton(
                     context,
-                    '',
                     'assets/icons/google.svg',
                     () async {
-                      final authService = FrontendAuthService();
+                      // Ваш код для входа через Google
                       try {
                         final result = await authService.signInWithGoogle();
                         if (result != null && context.mounted) {
@@ -93,44 +103,54 @@ class AuthScreen extends StatelessWidget {
                       }
                     },
                   ),
-                  const SizedBox(width: 20),
                   _buildAuthButton(
                     context,
-                    '',
                     'assets/icons/vk.svg',
                     () {
+                      // Код для входа через VK
                     },
                   ),
-                  const SizedBox(width: 20),
                   _buildAuthButton(
                     context,
-                    '',
                     'assets/icons/phone.svg',
                     () {
+                      // Код для входа через телефон
                     },
                   ),
                 ],
               ),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pushReplacementNamed('/home');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
+              const SizedBox(height: 30),
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.of(context).size.width * 0.1,
                 ),
-                child: const Text(
-                  'Войти как гость',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontSize: 16,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pushReplacementNamed('/home');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6D9C65),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      minimumSize: const Size(0, 30),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: const Text(
+                      'Войти как гость',
+                      style: TextStyle(
+                        fontFamily: 'stolzl',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 24,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -138,25 +158,28 @@ class AuthScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAuthButton(BuildContext context, String text, String iconPath, VoidCallback onPressed) {
-    return SizedBox(
-      width: 80,
-      height: 80,
-      child: ElevatedButton(
+  /// Кнопка-иконка для авторизации (Google, VK, Телефон)
+  Widget _buildAuthButton(
+    BuildContext context,
+    String iconPath,
+    VoidCallback onPressed,
+  ) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green, width: 2),
+      ),
+      child: IconButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          padding: const EdgeInsets.all(15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: Center(
-          child: SvgPicture.asset(
-            iconPath,
-            width: 32,
-            height: 32,
-          ),
+        icon: SvgPicture.asset(
+          iconPath,
+          width: 60,
+          height: 60,
+          color: const Color(0xFF91CA6D),
         ),
       ),
     );
