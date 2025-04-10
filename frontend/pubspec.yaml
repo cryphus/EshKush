@@ -2,7 +2,7 @@ name: eshkush
 description: EshKush project
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
   flutter: ">=3.0.0"
 
 dependencies:
@@ -19,7 +19,7 @@ dependencies:
   google_sign_in: ^6.1.6
   backend:
     path: ../backend
-  
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -28,21 +28,19 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/icons/ 
+    - assets/icons/
   fonts:
     - family: stolzl
       fonts:
         - asset: assets/fonts/stolzl_regular.otf
-          weight: 400
+          weight: 600
         - asset: assets/fonts/stolzl_bold.otf
           weight: 700
         - asset: assets/fonts/stolzl_book.otf
-          weight: 350
+          weight: 200
         - asset: assets/fonts/stolzl_light.otf
           weight: 300
         - asset: assets/fonts/stolzl_medium.otf
           weight: 500
         - asset: assets/fonts/stolzl_thin.otf
           weight: 100
-        
-  

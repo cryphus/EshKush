@@ -20,7 +20,7 @@ class EshKush extends StatelessWidget {
         primarySwatch: Colors.green,
         textTheme: GoogleFonts.robotoTextTheme(),
       ),
-      initialRoute: '/auth',
+      initialRoute: '/home',
       routes: {
         '/auth': (context) => const AuthScreen(),
         '/home': (context) => const HomeScreen(),
@@ -59,7 +59,6 @@ class AuthScreen extends StatelessWidget {
               const SizedBox(height: 50),
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.8,
-                height: 350,
                 child: Image.network(
                   'http://91.186.217.192/images/img_start.png',
                   fit: BoxFit.contain,
