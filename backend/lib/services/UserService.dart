@@ -1,6 +1,6 @@
 import '../repositories/UserRepository.dart';
 import '../model/entities/User.dart';
-import '../utils/auth_utils.dart';
+import '../utils/AuthUtils.dart';
 
 class UserService {
   final UserRepository _userRepository;
@@ -15,12 +15,12 @@ class UserService {
     if (result == null) {
       throw Exception('Пользователь не найден');
     }
-    return User.fromMap(result);
+    return User.fromJson(result);
   }
 
   Future<List<User>> getAllUsers() async {
     final results = await _userRepository.query('SELECT * FROM users');
-    return results.map((map) => User.fromMap(map)).toList();
+    return results.map((map) => User.fromJson(map)).toList();
   }
 
   Future<User> updateUser(int id, Map<String, dynamic> data) async {
@@ -35,9 +35,7 @@ class UserService {
         username = COALESCE(@username, username),
         password = COALESCE(@password, password),
         email = COALESCE(@email, email),
-        number = COALESCE(@number, number),
-        sum_co2 = COALESCE(@sumCO2, sum_co2),
-        money = COALESCE(@money, money)
+        number = COALESCE(@number, number)
       WHERE id = @id
       RETURNING *
       ''',
@@ -50,7 +48,7 @@ class UserService {
     if (result == null) {
       throw Exception('Пользователь не найден');
     }
-    return User.fromMap(result);
+    return User.fromJson(result);
   }
 
   Future<void> deleteUser(int id) async {

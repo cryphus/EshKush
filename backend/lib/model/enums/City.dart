@@ -1,3 +1,0 @@
-enum City{
-  tyumen;
-}

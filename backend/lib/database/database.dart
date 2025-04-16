@@ -18,15 +18,27 @@ class Database {
     
     final env = Platform.environment;
 
+    print('Подключение к базе данных...');
+    print('Host: ${env['DB_HOST'] ?? 'localhost'}');
+    print('Port: ${env['DB_PORT'] ?? '5432'}');
+    print('Database: ${env['DB_NAME'] ?? 'flutter_auth'}');
+    print('User: ${env['DB_USER'] ?? 'postgres'}');
+
     db._connection = PostgreSQLConnection(
       env['DB_HOST'] ?? 'localhost',
-      int.parse(env['DB_PORT'] ?? '5433'),
+      int.parse(env['DB_PORT'] ?? '5432'),
       env['DB_NAME'] ?? 'flutter_auth',
       username: env['DB_USER'] ?? 'postgres',
       password: env['DB_PASSWORD'] ?? 'TQr132123',
     );
 
-    await db._connection.open();
+    try {
+      await db._connection.open();
+      print('Подключение к базе данных успешно установлено');
+    } catch (e) {
+      print('Ошибка подключения к базе данных: $e');
+      rethrow;
+    }
     return db;
   }
 

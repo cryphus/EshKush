@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadNavIcons() async {
     try {
       // Замените на реальный API-вызов
-      await Future.delayed(Duration(seconds: 1));
+      await Future.delayed(const Duration(seconds: 1));
 
       setState(() {
         navIconsUrls = [

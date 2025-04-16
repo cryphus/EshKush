@@ -4,8 +4,11 @@ import 'screens/HomeScreen.dart';
 import 'screens/RegistrationScreen.dart';
 import 'services/FrontendAuthService.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'services/TelegramAuthService.dart';
+import 'dart:async';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const EshKush());
 }
 
@@ -20,22 +23,74 @@ class EshKush extends StatelessWidget {
         primarySwatch: Colors.green,
         textTheme: GoogleFonts.robotoTextTheme(),
       ),
-      initialRoute: '/home',
+      initialRoute: '/auth',
       routes: {
         '/auth': (context) => const AuthScreen(),
         '/home': (context) => const HomeScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name?.startsWith('tg://eshkush/auth/telegram') ?? false) {
+          return MaterialPageRoute(
+            builder: (context) => const AuthScreen(),
+            settings: settings,
+          );
+        }
+        return null;
       },
     );
   }
 }
 
-class AuthScreen extends StatelessWidget {
+class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final authService = FrontendAuthService();
+  State<AuthScreen> createState() => _AuthScreenState();
+}
 
+class _AuthScreenState extends State<AuthScreen> {
+  final authService = FrontendAuthService();
+  final TelegramAuthService _telegramAuthService = TelegramAuthService();
+  Timer? _checkTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkDeepLink();
+    _checkTimer = Timer.periodic(const Duration(seconds: 2), (_) => _checkDeepLink());
+  }
+
+  @override
+  void dispose() {
+    _checkTimer?.cancel();
+    super.dispose();
+  }
+
+  void _checkDeepLink() async {
+    try {
+      final uri = Uri.base;
+      if (uri.scheme == 'eshkush' && uri.host == 'auth' && uri.pathSegments[0] == 'telegram') {
+        await _telegramAuthService.handleDeepLink(context, uri.toString());
+      }
+    } catch (e) {
+      print('Ошибка при проверке deep link: $e');
+    }
+  }
+
+  void _handleTelegramAuth() async {
+    try {
+      await _telegramAuthService.openTelegramBot();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF3E0),
       body: SafeArea(
@@ -43,7 +98,6 @@ class AuthScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             children: [
-              // Верхняя часть экрана
               const SizedBox(height: 90),
               const Center(
                 child: Text(
@@ -60,15 +114,13 @@ class AuthScreen extends StatelessWidget {
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.8,
                 child: Image.network(
-                  'http://91.186.217.192/images/img_start.png',
+                  'http://localhost:5000/images/img_start.png',
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) =>
                       const Icon(Icons.error),
                 ),
               ),
-              // Spacer расталкивает нижнюю часть вниз
               const Spacer(),
-              // Нижняя часть экрана: кнопки входа
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -76,7 +128,6 @@ class AuthScreen extends StatelessWidget {
                     context,
                     'assets/icons/google.svg',
                     () async {
-                      // Ваш код для входа через Google
                       try {
                         final result = await authService.signInWithGoogle();
                         if (result != null && context.mounted) {
@@ -106,15 +157,18 @@ class AuthScreen extends StatelessWidget {
                     context,
                     'assets/icons/vk.svg',
                     () {
-                      // Код для входа через VK
                     },
                   ),
                   _buildAuthButton(
                     context,
                     'assets/icons/phone.svg',
                     () {
-                      // Код для входа через телефон
                     },
+                  ),
+                  _buildAuthButton(
+                    context,
+                    'assets/icons/telegram.svg',
+                    _handleTelegramAuth,
                   ),
                 ],
               ),
@@ -157,7 +211,6 @@ class AuthScreen extends StatelessWidget {
     );
   }
 
-  /// Кнопка-иконка для авторизации (Google, VK, Телефон)
   Widget _buildAuthButton(
     BuildContext context,
     String iconPath,

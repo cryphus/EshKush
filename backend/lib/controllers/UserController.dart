@@ -1,8 +1,7 @@
 import 'package:shelf/shelf.dart';
 import 'dart:convert';
 import '../services/UserService.dart';
-import '../utils/auth_utils.dart';
-
+import '../utils/AuthUtils.dart';
 
 class UserController {
   final UserService _userService;
@@ -25,11 +24,13 @@ class UserController {
           'username': user.username,
           'email': user.email,
           'number': user.number,
-          'sum_co2': user.sumCO2,
-          'money': user.money,
-          'role': user.role.toString(),
-          'favorite_ids': user.favoriteIds,
+          'role': user.role.name.toLowerCase(),
+          'created_at': user.created_at.toIso8601String(),
         }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
       );
     } catch (e) {
       return Response(400, body: 'Ошибка: $e');
@@ -54,10 +55,13 @@ class UserController {
           'username': user.username,
           'email': user.email,
           'number': user.number,
-          'sum_co2': user.sumCO2,
-          'money': user.money,
-          'role': user.role.toString(),
+          'role': user.role.name.toLowerCase(),
+          'created_at': user.created_at.toIso8601String(),
         }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
       );
     } catch (e) {
       return Response(400, body: 'Ошибка обновления профиля: $e');

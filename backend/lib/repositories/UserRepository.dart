@@ -10,7 +10,7 @@ class UserRepository extends BaseRepository {
         'SELECT * FROM users WHERE id = @id',
         params: {'id': id},
       );
-      return result == null ? null : User.fromMap(result);
+      return result == null ? null : User.fromJson(result);
     } catch (e) {
       print('Ошибка поиска пользователя по ID: $e');
       rethrow;
@@ -23,7 +23,7 @@ class UserRepository extends BaseRepository {
         'SELECT * FROM users WHERE username = @username',
         params: {'username': username},
       );
-      return result == null ? null : User.fromMap(result);
+      return result == null ? null : User.fromJson(result);
     } catch (e) {
       print('Ошибка поиска пользователя: $e');
       rethrow;
@@ -32,30 +32,24 @@ class UserRepository extends BaseRepository {
 
   Future<User> create(User user) async {
     try {
-      print('Сохраняем номер телефона: ${user.number}');
       final result = await queryOne(
         '''
         INSERT INTO users (
-          username, password, number, email, role,
-          sum_co2, money, favorite_ids, purchases
+          username, password, number, email, role, created_at
         ) VALUES (
-          @username, @password, @number, @email, @role::user_role,
-          @sumCO2, @money, @favoriteIds, @purchases
+          @username, @password, @number, @email, @role::user_role, @created_at
         ) RETURNING *
         ''',
         params: {
           'username': user.username,
-          'password': user.password,
+          'password': user.passwordHash,
           'number': user.number,
           'email': user.email,
           'role': user.role.name.toLowerCase(),
-          'sumCO2': user.sumCO2,
-          'money': user.money,
-          'favoriteIds': user.favoriteIds,
-          'purchases': user.purchases,
+          'created_at': user.created_at,
         },
       );
-      return User.fromMap(result!);
+      return User.fromJson(result!);
     } catch (e) {
       print('Ошибка создания пользователя: $e');
       rethrow;
@@ -71,7 +65,7 @@ class UserRepository extends BaseRepository {
           'password': password,
         },
       );
-      return result == null ? null : User.fromMap(result);
+      return result == null ? null : User.fromJson(result);
     } catch (e) {
       print('Ошибка аутентификации: $e');
       rethrow;
@@ -84,7 +78,7 @@ class UserRepository extends BaseRepository {
         'SELECT * FROM users WHERE email = @email',
         params: {'email': email},
       );
-      return result == null ? null : User.fromMap(result);
+      return result == null ? null : User.fromJson(result);
     } catch (e) {
       print('Ошибка поиска пользователя по email: $e');
       rethrow;

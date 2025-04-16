@@ -1,5 +1,5 @@
 import '../repositories/UserRepository.dart';
-import '../utils/auth_utils.dart';
+import '../utils/AuthUtils.dart';
 import '../model/entities/User.dart';
 import '../model/enums/UserRole.dart';
 
@@ -19,10 +19,7 @@ class AuthService {
         throw Exception('Пользователь уже существует');
       }
 
-      // Получаем роль из запроса и приводим к нижнему регистру
       final String roleStr = (data['role'] as String).toLowerCase();
-      
-      // Находим соответствующую роль в enum
       UserRole role = UserRole.values.firstWhere(
         (r) => r.name.toLowerCase() == roleStr,
         orElse: () => UserRole.user,
@@ -31,14 +28,11 @@ class AuthService {
       final user = await _userRepository.create(User(
         id: 0,
         username: data['username'],
-        password: AuthUtils.hashPassword(data['password']),
+        password: data['password'],
         number: data['phone'] ?? '+7',
         email: data['email'] ?? '${data['username']}@example.com',
+        created_at: DateTime.now(),
         role: role,
-        sumCO2: 0,
-        money: 0,
-        favoriteIds: [],
-        purchases: [],
       ));
 
       final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
@@ -50,6 +44,8 @@ class AuthService {
           'username': user.username,
           'role': user.role.name.toLowerCase(),
           'email': user.email,
+          'number': user.number,
+          'created_at': user.created_at.toIso8601String(),
         }
       };
     } catch (e) {

@@ -1,7 +1,7 @@
 enum UserRole {
   guest,
   user,
-  business,
+  partner,
   support,
   admin;
 } 

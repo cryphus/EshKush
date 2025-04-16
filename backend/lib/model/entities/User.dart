@@ -1,65 +1,78 @@
 import '../enums/UserRole.dart';
+import 'package:email_validator/email_validator.dart';
 
 class User {
   final int id;
   String username;
-  String password;
-  int sumCO2;
-  List<String> purchases;
-  int money;
+  String _password;
   String number;
   String email;
-  List<int> favoriteIds;
+  DateTime created_at;
   UserRole role;
   
-
   User({
     required this.id,        
     required this.username,  
-    required this.password,
-    this.sumCO2 = 0,
-    this.purchases = const [],
-    this.money = 0,
+    required String password,
     required this.number,
     required this.email,
-    this.favoriteIds = const [],
+    required this.created_at,
     this.role = UserRole.user,
-  });
+  }) : _password = password {
+    if (!EmailValidator.validate(email)) {
+      throw ArgumentError('Invalid email format');
+    }
+    if (!_isValidPhoneNumber(number)) {
+      throw ArgumentError('Invalid phone number format');
+    }
+  }
 
-  factory User.fromMap(Map<String, dynamic> map) {
+  bool _isValidPhoneNumber(String number) {
+    // Удаляем все нецифровые символы кроме +
+    final cleanNumber = number.replaceAll(RegExp(r'[^\d+]'), '');
+    // Проверяем, что номер начинается с + и содержит от 10 до 13 цифр
+    return cleanNumber.startsWith('+') && cleanNumber.length >= 11 && cleanNumber.length <= 14;
+  }
+
+  // Геттер для получения хэша пароля
+  String get passwordHash => _password;
+  
+  // Метод для проверки пароля
+  bool verifyPassword(String password) {
+    return _password == password;
+  }
+
+  bool get isAdmin => role == UserRole.admin;
+  bool get isBusiness => role == UserRole.partner;
+  bool get isSupport => role == UserRole.support;
+  bool get isGuest => role == UserRole.guest;
+
+  factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: map['id'] as int,
-      username: map['username'] as String,
-      password: map['password'] as String,
-      sumCO2: map['sum_co2'] as int? ?? 0,
-      purchases: List<String>.from(map['purchases'] as List? ?? []),
-      money: map['money'] as int? ?? 0,
-      number: map['number'] as String,
-      email: map['email'] as String,
-      favoriteIds: List<int>.from(map['favorite_ids'] as List? ?? []),
+      id: json['id'] as int,
+      username: json['username'] as String,
+      password: json['password'] as String,
+      number: json['number'] as String,
+      email: json['email'] as String,
+      created_at: json['created_at'] is DateTime 
+          ? json['created_at'] as DateTime 
+          : DateTime.parse(json['created_at'] as String),
       role: UserRole.values.firstWhere(
-        (role) => role.name.toLowerCase() == (map['role'] as String).toLowerCase(),
+        (e) => e.name.toLowerCase() == (json['role'] as String).toLowerCase(),
         orElse: () => UserRole.user,
       ),
     );
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'username': username,
-      'password': password,
-      'sum_co2': sumCO2,
-      'purchases': purchases,
-      'money': money,
+      'password': _password,
       'number': number,
       'email': email,
-      'favorite_ids': favoriteIds,
+      'created_at': created_at.toIso8601String(),
       'role': role.name.toLowerCase(),
     };
   }
-
-  bool get isAdmin => role == UserRole.admin;
-  bool get isBusiness => role == UserRole.business;
-  bool get isSupport => role == UserRole.support;
-  bool get isGuest => role == UserRole.guest;
 }

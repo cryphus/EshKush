@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
-import 'package:backend/database/database.dart';
+import 'package:backend/database/Database.dart';
 import 'package:backend/services/AuthService.dart';
 import 'package:backend/repositories/UserRepository.dart';
-import 'package:backend/utils/auth_utils.dart';
+import 'package:backend/utils/AuthUtils.dart';
 
 void main() async {
   try {
@@ -19,47 +19,21 @@ void main() async {
     final corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
-      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Headers': 'Origin, Content-Type, Authorization, X-Requested-With, Accept, Access-Control-Allow-Origin',
       'Access-Control-Allow-Credentials': 'true',
       'Content-Type': 'application/json',
     };
 
-    Middleware authMiddleware(Handler innerHandler) {
-      return (innerHandler) {
-        return (Request request) async {
-          if (request.method == 'OPTIONS') {
-            return Response.ok('', headers: corsHeaders);
-          }
+    Middleware corsMiddleware = (Handler innerHandler) {
+      return (Request request) async {
+        if (request.method == 'OPTIONS') {
+          return Response.ok('', headers: corsHeaders);
+        }
 
-          final authHeader = request.headers['authorization'];
-          if (authHeader == null || !authHeader.startsWith('Bearer ')) {
-            return Response(401, body: jsonEncode({'error': 'Требуется авторизация'}));
-          }
-
-          final token = authHeader.substring(7);
-          try {
-            final payload = AuthUtils.verifyToken(token);
-            final modifiedRequest = request.change(context: {'user': payload});
-            return await innerHandler(modifiedRequest);
-          } catch (e) {
-            return Response(401, body: jsonEncode({'error': e.toString()}));
-          }
-        };
+        final response = await innerHandler(request);
+        return response.change(headers: {...response.headers, ...corsHeaders});
       };
-    }
-
-    final handler = const Pipeline()
-        .addMiddleware(logRequests())
-        .addMiddleware((innerHandler) {
-          return (request) async {
-            if (request.method == 'OPTIONS') {
-              return Response.ok('', headers: corsHeaders);
-            }
-            final response = await innerHandler(request);
-            return response.change(headers: {...response.headers, ...corsHeaders});
-          };
-        })
-        .addHandler(app.call);
+    };
 
     app.post('/auth/google', (Request request) async {
       try {
@@ -74,24 +48,35 @@ void main() async {
         
         if (user != null) {
           final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
-          return Response.ok(jsonEncode({
-            ...tokens,
-            'user': {
-              'email': user.email,
-              'username': user.username,
-              'role': user.role.name.toLowerCase(),
-            }
-          }));
+          return Response.ok(
+            jsonEncode({
+              ...tokens,
+              'user': {
+                'email': user.email,
+                'username': user.username,
+                'role': user.role.name.toLowerCase(),
+              }
+            }),
+            headers: corsHeaders,
+          );
         } else {
-          return Response(404, body: jsonEncode({
-            'needsRegistration': true,
-            'email': data['email'],
-            'displayName': data['displayName'],
-          }));
+          return Response(
+            404,
+            body: jsonEncode({
+              'needsRegistration': true,
+              'email': data['email'],
+              'displayName': data['displayName'],
+            }),
+            headers: corsHeaders,
+          );
         }
       } catch (e) {
         print('Ошибка аутентификации через Google: $e');
-        return Response(400, body: jsonEncode({'error': e.toString()}));
+        return Response(
+          400,
+          body: jsonEncode({'error': e.toString()}),
+          headers: corsHeaders,
+        );
       }
     });
 
@@ -100,12 +85,21 @@ void main() async {
         print('Получен запрос на регистрацию');
         final body = await request.readAsString();
         final data = jsonDecode(body);
+        print('Данные регистрации: $data');
+        
         final result = await authService.register(data);
         
-        return Response.ok(jsonEncode(result));
+        return Response.ok(
+          jsonEncode(result),
+          headers: corsHeaders,
+        );
       } catch (e) {
         print('Ошибка регистрации: $e');
-        return Response(400, body: jsonEncode({'error': e.toString()}));
+        return Response(
+          400,
+          body: jsonEncode({'error': e.toString()}),
+          headers: corsHeaders,
+        );
       }
     });
 
@@ -137,6 +131,39 @@ void main() async {
         return Response(401, body: jsonEncode({'error': e.toString()}));
       }
     });
+
+    app.post('/auth/check_user', (Request request) async {
+      try {
+        final body = await request.readAsString();
+        final data = jsonDecode(body);
+        final phoneNumber = data['phoneNumber'] as String;
+        
+        final user = await userRepository.queryOne(
+          'SELECT * FROM users WHERE number = @number',
+          params: {'number': phoneNumber},
+        );
+        
+        return Response.ok(
+          jsonEncode({
+            'exists': user != null,
+            'user': user
+          }),
+          headers: corsHeaders,
+        );
+      } catch (e) {
+        print('Ошибка проверки пользователя: $e');
+        return Response(
+          400,
+          body: jsonEncode({'error': e.toString()}),
+          headers: corsHeaders,
+        );
+      }
+    });
+
+    final handler = const Pipeline()
+        .addMiddleware(logRequests())
+        .addMiddleware(corsMiddleware)
+        .addHandler(app.call);
 
     final server = await io.serve(handler, '0.0.0.0', 8080);
     print('Сервер запущен на http://0.0.0.0:8080');

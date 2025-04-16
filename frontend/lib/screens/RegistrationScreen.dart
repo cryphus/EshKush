@@ -7,11 +7,15 @@ import 'package:backend/model/enums/UserRole.dart';
 class RegistrationScreen extends StatefulWidget {
   final String email;
   final String displayName;
+  final String? phoneNumber;
+  final bool isFromTelegram;
 
   const RegistrationScreen({
     super.key,
     required this.email,
     required this.displayName,
+    this.phoneNumber,
+    this.isFromTelegram = false,
   });
 
   @override
@@ -20,7 +24,7 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
+  late final TextEditingController _phoneController;
   final _passwordController = TextEditingController();
   UserRole _selectedRole = UserRole.user;
   final _authService = FrontendAuthService();
@@ -31,10 +35,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    _phoneController = TextEditingController(text: widget.phoneNumber);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Завершение регистрации'),
+        title: Text(widget.isFromTelegram ? 'Завершение регистрации через Telegram' : 'Завершение регистрации'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -43,28 +53,39 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Email: ${widget.email}'),
-              const SizedBox(height: 16),
-              Text('Имя: ${widget.displayName}'),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Номер телефона',
-                  hintText: '+7 (999) 999-99-99',
+              if (widget.isFromTelegram) ...[
+                Text('Данные из Telegram:'),
+                const SizedBox(height: 8),
+                Text('Имя: ${widget.displayName}'),
+                const SizedBox(height: 8),
+                Text('Телефон: ${widget.phoneNumber}'),
+                const SizedBox(height: 16),
+              ] else ...[
+                Text('Email: ${widget.email}'),
+                const SizedBox(height: 16),
+                Text('Имя: ${widget.displayName}'),
+                const SizedBox(height: 16),
+              ],
+              if (!widget.isFromTelegram) ...[
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Номер телефона',
+                    hintText: '+7 (999) 999-99-99',
+                  ),
+                  inputFormatters: [_phoneMaskFormatter],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Введите номер телефона';
+                    }
+                    if (!_phoneMaskFormatter.isFill()) {
+                      return 'Введите корректный номер телефона';
+                    }
+                    return null;
+                  },
                 ),
-                inputFormatters: [_phoneMaskFormatter],
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Введите номер телефона';
-                  }
-                  if (!_phoneMaskFormatter.isFill()) {
-                    return 'Введите корректный номер телефона';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(

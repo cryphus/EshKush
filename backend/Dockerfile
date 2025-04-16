@@ -10,7 +10,7 @@ COPY . .
 
 RUN dart pub get --offline
 
-RUN dart compile exe bin/service.dart -o bin/server
+RUN dart compile exe bin/Service.dart -o bin/server
 
 FROM debian:stable-slim
 
