@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/FrontendAuthService.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+import 'OffersScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,8 +11,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _authService = FrontendAuthService();
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -34,216 +33,219 @@ class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
   static const darkGreen = Color(0xFF2E7D32);
   static const lightGreen = Color(0xFFC8E6C9);
-  List<String> navIconsUrls = [];
-  bool _isLoadingIcons = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadNavIcons();
-  }
-
-  Future<void> _loadNavIcons() async {
-    try {
-      setState(() {
-        navIconsUrls = [
-          'assets/icons/home.svg',
-          'assets/icons/like.svg',
-          'assets/icons/products.svg',
-          'assets/icons/profile.svg',
-        ];
-        _isLoadingIcons = false;
-      });
-    } catch (e) {
-      print('Ошибка загрузки иконок: $e');
-      setState(() => _isLoadingIcons = false);
-    }
-  }
-
-  Widget _buildSvgIcon(String url) {
-    return SvgPicture.asset(
-      url,
-      width: 24,
-      height: 24,
-      color: Colors.white,
-      placeholderBuilder: (context) => CircularProgressIndicator(),
-    );
-  }
-
-  Widget _buildNetworkImage(String url, {double? width, double? height}) {
-    return Image.network(
-      url,
-      width: width,
-      height: height,
-      fit: BoxFit.contain,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center(
-          child: CircularProgressIndicator(
-            value: loadingProgress.expectedTotalBytes != null
-                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                : null,
-          ),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        print('Ошибка загрузки изображения: $error');
-        return Icon(Icons.error, size: width ?? 50, color: Colors.red);
-      },
-    );
-  }
+  final List<Widget> _pages = [
+    HomeContent(),
+    OffersScreen(),
+    Placeholder(), // Для третьей вкладки
+    Placeholder(), // Для четвертой вкладки
+  ];
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingIcons) {
-      return Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.location_on, color: Colors.black, size: 20),
-                const SizedBox(width: 4),
-                Text('Тюмень',
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500)),
-              ],
-            ),
-            Icon(Icons.shopping_basket, color: darkGreen),
-          ],
-        ),
+      appBar: _currentIndex == 0 ? _buildHomeAppBar() : null,
+      body: _pages[_currentIndex],
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  AppBar _buildHomeAppBar() {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.location_on, color: Colors.black, size: 20),
+              const SizedBox(width: 4),
+              Text('Тюмень',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+          Icon(Icons.shopping_basket, color: darkGreen),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Главная',
-                style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black)),
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: lightGreen,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Привет,',
-                            style: TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.w500)),
-                        Text('Гость',
-                            style: TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.w500)),
-                        const SizedBox(height: 8),
-                        Text('Только в этом месяце ты сохранил 2 кг еды!',
-                            style: TextStyle(fontSize: 14)),
-                      ],
-                    ),
-                  ),
-                  _buildNetworkImage(
-                    'http://91.186.217.192/images/packandearth.png',
-                    width: 100,
-                  ),
-                ],
-              ),
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.7),
+        backgroundColor: lightGreen,
+        type: BottomNavigationBarType.fixed,
+        elevation: 10,
+        items: [
+          BottomNavigationBarItem(
+            icon: SvgPicture.asset(
+              'assets/icons/home.svg',
+              width: 24,
+              height: 24,
+              color: _currentIndex == 0
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.7),
             ),
-            _buildSectionHeader('Ваши заказы', 'Все'),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green[800],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: _buildNetworkImage(
-                      'http://91.186.217.192/images/shopicon.png',
-                      width: 100,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
+            label: 'Главная',
+          ),
+          BottomNavigationBarItem(
+            icon: SvgPicture.asset(
+              'assets/icons/products.svg',
+              width: 24,
+              height: 24,
+              color: _currentIndex == 1
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.7),
+            ),
+            label: 'Предложения',
+          ),
+          BottomNavigationBarItem(
+            icon: SvgPicture.asset(
+              'assets/icons/likes.svg',
+              width: 24,
+              height: 24,
+              color: _currentIndex == 2
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.7),
+            ),
+            label: 'Избранное',
+          ),
+          BottomNavigationBarItem(
+            icon: SvgPicture.asset(
+              'assets/icons/profile.svg',
+              width: 24,
+              height: 24,
+              color: _currentIndex == 3
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.7),
+            ),
+            label: 'Профиль',
+          ),
+        ],
+        onTap: (index) => setState(() => _currentIndex = index),
+      ),
+    );
+  }
+}
+
+class HomeContent extends StatelessWidget {
+  final darkGreen = const Color(0xFF2E7D32);
+  final lightGreen = const Color(0xFFC8E6C9);
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Главная',
+              style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black)),
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: lightGreen,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('БулоШная',
-                          style: TextStyle(color: Colors.white, fontSize: 20)),
-                      const SizedBox(height: 4),
-                      Text('сегодня, 19:00 – 21:00',
-                          style:
-                              TextStyle(color: Colors.white70, fontSize: 14)),
+                      Text('Привет,',
+                          style: TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.w500)),
+                      Text('Гость',
+                          style: TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 8),
+                      Text('Только в этом месяце ты сохранил 2 кг еды!',
+                          style: TextStyle(fontSize: 14)),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: lightGreen,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
                 ),
-                onPressed: () {},
-                child: Text('Больше предложений',
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
-              ),
-            ),
-            _buildSectionHeader('Категории', 'Все'),
-            Row(
-              children: [
-                _buildCategoryCard('Магазины', 'http://91.186.217.192/images/shop.png'),
-                const SizedBox(width: 16),
-                _buildCategoryCard('Рестораны', 'http://91.186.217.192/images/restoraunt.png'),
+                Image.network(
+                  'http://91.186.217.192/images/packandearth.png',
+                  width: 100,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.error, size: 50, color: Colors.red),
+                ),
               ],
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: ClipRRect(
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white.withOpacity(0.7),
-          backgroundColor: lightGreen,
-          type: BottomNavigationBarType.fixed,
-          elevation: 10,
-          items: navIconsUrls
-              .map((url) => BottomNavigationBarItem(
-                    icon: _buildSvgIcon(url),
-                    label: '',
-                  ))
-              .toList(),
-          onTap: (index) => setState(() => _currentIndex = index),
-        ),
+          ),
+          _buildSectionHeader('Ваши заказы', 'Все'),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green[800],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    'http://91.186.217.192/images/shopicon.png',
+                    width: 100,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Icon(Icons.error, size: 50, color: Colors.red),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('БулоШная',
+                        style: TextStyle(color: Colors.white, fontSize: 20)),
+                    const SizedBox(height: 4),
+                    Text('сегодня, 19:00 – 21:00',
+                        style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: lightGreen,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () {},
+              child: Text('Больше предложений',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
+            ),
+          ),
+          _buildSectionHeader('Категории', 'Все'),
+          Row(
+            children: [
+              _buildCategoryCard(
+                  'Магазины', 'http://91.186.217.192/images/shop.png'),
+              const SizedBox(width: 16),
+              _buildCategoryCard(
+                  'Рестораны', 'http://91.186.217.192/images/restoraunt.png'),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -279,15 +281,36 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(title,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
             const SizedBox(height: 12),
-            _buildNetworkImage(
+            Image.network(
               imageUrl,
               height: 100,
+              errorBuilder: (context, error, stackTrace) =>
+                  Icon(Icons.error, size: 50, color: Colors.red),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class OffersContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.local_offer, size: 64, color: Colors.green),
+          const SizedBox(height: 16),
+          Text('Специальные предложения',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text('Здесь будут отображаться акции и скидки',
+              style: TextStyle(fontSize: 16, color: Colors.grey)),
+        ],
       ),
     );
   }

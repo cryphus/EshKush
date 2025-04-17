@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/HomeScreen.dart';
+import 'screens/OffersScreen.dart';
 import 'screens/RegistrationScreen.dart';
 import 'services/FrontendAuthService.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -27,6 +28,7 @@ class EshKush extends StatelessWidget {
       routes: {
         '/auth': (context) => const AuthScreen(),
         '/home': (context) => const HomeScreen(),
+        '/offers': (context) => const OffersScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('tg://eshkush/auth/telegram') ?? false) {
@@ -57,7 +59,8 @@ class _AuthScreenState extends State<AuthScreen> {
   void initState() {
     super.initState();
     _checkDeepLink();
-    _checkTimer = Timer.periodic(const Duration(seconds: 2), (_) => _checkDeepLink());
+    _checkTimer =
+        Timer.periodic(const Duration(seconds: 2), (_) => _checkDeepLink());
   }
 
   @override
@@ -69,7 +72,9 @@ class _AuthScreenState extends State<AuthScreen> {
   void _checkDeepLink() async {
     try {
       final uri = Uri.base;
-      if (uri.scheme == 'eshkush' && uri.host == 'auth' && uri.pathSegments[0] == 'telegram') {
+      if (uri.scheme == 'eshkush' &&
+          uri.host == 'auth' &&
+          uri.pathSegments[0] == 'telegram') {
         await _telegramAuthService.handleDeepLink(context, uri.toString());
       }
     } catch (e) {
@@ -116,7 +121,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Image.network(
                   'http://91.186.217.192/images/img_start.png',
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.error),
                 ),
               ),
               const Spacer(),
@@ -125,7 +131,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 children: [
                   _buildAuthButton(
                     context,
-                    'assets/icons/google.svg',
+                    '/icons/google.svg',
                     () async {
                       try {
                         final result = await authService.signInWithGoogle();
@@ -154,19 +160,17 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   _buildAuthButton(
                     context,
-                    'assets/icons/vk.svg',
-                    () {
-                    },
+                    '/icons/vk.svg',
+                    () {},
                   ),
                   _buildAuthButton(
                     context,
-                    'assets/icons/phone.svg',
-                    () {
-                    },
+                    '/icons/phone.svg',
+                    () {},
                   ),
                   _buildAuthButton(
                     context,
-                    'assets/icons/telegram.svg',
+                    '/icons/telegram.svg',
                     _handleTelegramAuth,
                   ),
                 ],
