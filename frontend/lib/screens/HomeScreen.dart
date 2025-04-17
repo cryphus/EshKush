@@ -45,15 +45,12 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadNavIcons() async {
     try {
-      // Замените на реальный API-вызов
-      await Future.delayed(const Duration(seconds: 1));
-
       setState(() {
         navIconsUrls = [
-          'http://91.186.217.192/icons/svg_home.svg',
-          'http://91.186.217.192/icons/svg_like.svg',
-          'http://91.186.217.192/icons/svg_products.svg',
-          'http://91.186.217.192/icons/svg_profile.svg',
+          'assets/icons/home.svg',
+          'assets/icons/like.svg',
+          'assets/icons/products.svg',
+          'assets/icons/profile.svg',
         ];
         _isLoadingIcons = false;
       });
@@ -61,6 +58,39 @@ class _HomePageState extends State<HomePage> {
       print('Ошибка загрузки иконок: $e');
       setState(() => _isLoadingIcons = false);
     }
+  }
+
+  Widget _buildSvgIcon(String url) {
+    return SvgPicture.asset(
+      url,
+      width: 24,
+      height: 24,
+      color: Colors.white,
+      placeholderBuilder: (context) => CircularProgressIndicator(),
+    );
+  }
+
+  Widget _buildNetworkImage(String url, {double? width, double? height}) {
+    return Image.network(
+      url,
+      width: width,
+      height: height,
+      fit: BoxFit.contain,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: CircularProgressIndicator(
+            value: loadingProgress.expectedTotalBytes != null
+                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                : null,
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        print('Ошибка загрузки изображения: $error');
+        return Icon(Icons.error, size: width ?? 50, color: Colors.red);
+      },
+    );
   }
 
   @override
@@ -128,8 +158,8 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   ),
-                  Image.network(
-                    'http://91.186.217.192/images/img_packandearth.png',
+                  _buildNetworkImage(
+                    'http://91.186.217.192/images/packandearth.png',
                     width: 100,
                   ),
                 ],
@@ -146,8 +176,8 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      'http://91.186.217.192/images/img_shopicon.png',
+                    child: _buildNetworkImage(
+                      'http://91.186.217.192/images/shopicon.png',
                       width: 100,
                     ),
                   ),
@@ -187,11 +217,9 @@ class _HomePageState extends State<HomePage> {
             _buildSectionHeader('Категории', 'Все'),
             Row(
               children: [
-                _buildCategoryCard(
-                    'Магазины', 'http://91.186.217.192/images/img_shop.png'),
+                _buildCategoryCard('Магазины', 'http://91.186.217.192/images/shop.png'),
                 const SizedBox(width: 16),
-                _buildCategoryCard('Рестораны',
-                    'http://91.186.217.192/images/img_restoraunt.png'),
+                _buildCategoryCard('Рестораны', 'http://91.186.217.192/images/restoraunt.png'),
               ],
             ),
           ],
@@ -210,13 +238,7 @@ class _HomePageState extends State<HomePage> {
           elevation: 10,
           items: navIconsUrls
               .map((url) => BottomNavigationBarItem(
-                    icon: SvgPicture.network(
-                      url,
-                      width: 24,
-                      height: 24,
-                      color: Colors
-                          .white, // обратите внимание на специфику применения цвета в flutter_svg
-                    ),
+                    icon: _buildSvgIcon(url),
                     label: '',
                   ))
               .toList(),
@@ -245,7 +267,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildCategoryCard(String title, String image) {
+  Widget _buildCategoryCard(String title, String imageUrl) {
     return Expanded(
       child: Container(
         height: 165,
@@ -260,7 +282,10 @@ class _HomePageState extends State<HomePage> {
                 style:
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
             const SizedBox(height: 12),
-            Image.network(image),
+            _buildNetworkImage(
+              imageUrl,
+              height: 100,
+            ),
           ],
         ),
       ),

@@ -114,10 +114,9 @@ class _AuthScreenState extends State<AuthScreen> {
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.8,
                 child: Image.network(
-                  'http://localhost:5000/images/img_start.png',
+                  'http://91.186.217.192/images/img_start.png',
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.error),
+                  errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
                 ),
               ),
               const Spacer(),
