@@ -1,3 +1,5 @@
+import 'package:postgres/postgres.dart';
+import '../../utils/AuthUtils.dart';
 import '../enums/UserRole.dart';
 import 'package:email_validator/email_validator.dart';
 
@@ -28,18 +30,14 @@ class User {
   }
 
   bool _isValidPhoneNumber(String number) {
-    // Удаляем все нецифровые символы кроме +
     final cleanNumber = number.replaceAll(RegExp(r'[^\d+]'), '');
-    // Проверяем, что номер начинается с + и содержит от 10 до 13 цифр
     return cleanNumber.startsWith('+') && cleanNumber.length >= 11 && cleanNumber.length <= 14;
   }
 
-  // Геттер для получения хэша пароля
   String get passwordHash => _password;
   
-  // Метод для проверки пароля
   bool verifyPassword(String password) {
-    return _password == password;
+    return _password == AuthUtils.hashPassword(password);
   }
 
   bool get isAdmin => role == UserRole.admin;
