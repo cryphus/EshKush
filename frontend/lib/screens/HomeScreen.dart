@@ -159,7 +159,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   _buildNetworkImage(
-                    'http://91.186.217.192/images/packandearth.png',
+                    'http://91.186.217.192/images/img_packandearth.png',
                     width: 100,
                   ),
                 ],
@@ -177,7 +177,7 @@ class _HomePageState extends State<HomePage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: _buildNetworkImage(
-                      'http://91.186.217.192/images/shopicon.png',
+                      'http://91.186.217.192/images/img_shopicon.png',
                       width: 100,
                     ),
                   ),
@@ -217,9 +217,9 @@ class _HomePageState extends State<HomePage> {
             _buildSectionHeader('Категории', 'Все'),
             Row(
               children: [
-                _buildCategoryCard('Магазины', 'http://91.186.217.192/images/shop.png'),
+                _buildCategoryCard('Магазины', 'http://91.186.217.192/images/img_shop.png'),
                 const SizedBox(width: 16),
-                _buildCategoryCard('Рестораны', 'http://91.186.217.192/images/restoraunt.png'),
+                _buildCategoryCard('Рестораны', 'http://91.186.217.192/images/img_restoraunt.png'),
               ],
             ),
           ],
