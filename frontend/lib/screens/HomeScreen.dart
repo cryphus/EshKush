@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/FrontendAuthService.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../theme/colors.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'Food App',
       theme: ThemeData(
         primarySwatch: Colors.green,
-        scaffoldBackgroundColor: const Color(0xFFF0F4E4),
+        scaffoldBackgroundColor: AppColors.colorBackground,
       ),
       home: HomePage(),
     );
@@ -32,8 +33,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  static const darkGreen = Color(0xFF2E7D32);
-  static const lightGreen = Color(0xFFC8E6C9);
   List<String> navIconsUrls = [];
   bool _isLoadingIcons = true;
 
@@ -112,14 +111,14 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Icon(Icons.location_on, color: Colors.black, size: 20),
                 const SizedBox(width: 4),
-                Text('Тюмень',
+                Text('Город',
                     style: TextStyle(
                         color: Colors.black,
                         fontSize: 18,
                         fontWeight: FontWeight.w500)),
               ],
             ),
-            Icon(Icons.shopping_basket, color: darkGreen),
+            Icon(Icons.shopping_basket, color: AppColors.darkGreen),
           ],
         ),
       ),
@@ -137,8 +136,16 @@ class _HomePageState extends State<HomePage> {
               margin: const EdgeInsets.symmetric(vertical: 16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: lightGreen,
+                color: AppColors.veryLightGray,
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    offset: Offset(0, 4),
+                    blurRadius: 4,
+                    spreadRadius: 0,
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -169,7 +176,7 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green[800],
+                color: AppColors.accentGreen,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -186,7 +193,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('БулоШная',
-                          style: TextStyle(color: Colors.white, fontSize: 20)),
+                          style: TextStyle(color: AppColors.white, fontSize: 20)),
                       const SizedBox(height: 4),
                       Text('сегодня, 19:00 – 21:00',
                           style:
@@ -201,7 +208,7 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: lightGreen,
+                  backgroundColor: AppColors.lightGreen,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -226,23 +233,41 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       bottomNavigationBar: ClipRRect(
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white.withOpacity(0.7),
-          backgroundColor: lightGreen,
-          type: BottomNavigationBarType.fixed,
-          elevation: 10,
-          items: navIconsUrls
-              .map((url) => BottomNavigationBarItem(
-                    icon: _buildSvgIcon(url),
-                    label: '',
-                  ))
-              .toList(),
-          onTap: (index) => setState(() => _currentIndex = index),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: Container(
+          color: AppColors.lightGreen,
+          height: 70,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(navIconsUrls.length, (index) {
+              final isActive = _currentIndex == index;
+              return GestureDetector(
+                onTap: () => setState(() => _currentIndex = index),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      navIconsUrls[index],
+                      width: 28,
+                      height: 28,
+                      color: AppColors.white,
+                    ),
+                    const SizedBox(height: 6),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: 3,
+                      width: 24,
+                      decoration: BoxDecoration(
+                        color: isActive ? AppColors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -260,7 +285,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {},
             child: Text(action),
             style: TextButton.styleFrom(
-                foregroundColor: darkGreen, textStyle: TextStyle(fontSize: 16)),
+                foregroundColor: AppColors.accentGreen, textStyle: TextStyle(fontSize: 16)),
           ),
         ],
       ),
@@ -270,21 +295,36 @@ class _HomePageState extends State<HomePage> {
   Widget _buildCategoryCard(String title, String imageUrl) {
     return Expanded(
       child: Container(
-        height: 165,
+        height: 210,
         decoration: BoxDecoration(
-          color: lightGreen,
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.veryLightGray,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 12),
-            _buildNetworkImage(
-              imageUrl,
-              height: 100,
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              height: 130,
+              width: double.infinity,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 130,
+                  fit: BoxFit.fitWidth,
+                  alignment: Alignment.bottomCenter,
+                ),
+              ),
             ),
           ],
         ),
@@ -292,3 +332,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
