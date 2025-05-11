@@ -5,6 +5,8 @@ class Products {
   double weight;
   int sale;
   final int pointId;
+  final String? imageUrl;
+  final int partnerId;
   //
   String? description;
   bool isAvailable;
@@ -22,6 +24,8 @@ class Products {
     this.isAvailable = true,
     this.createdAt,
     this.updatedAt,
+    this.imageUrl,
+    required this.partnerId,
   }) {
     if (price < 0) throw ArgumentError('Price cannot be negative');
     if (weight < 0) throw ArgumentError('Weight cannot be negative');
@@ -40,6 +44,8 @@ class Products {
       isAvailable: json['isAvailable'] as bool? ?? true,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
+      imageUrl: json['imageUrl'] as String?,
+      partnerId: json['partnerId'] as int,
     );
   }
 
@@ -55,6 +61,8 @@ class Products {
       'isAvailable': isAvailable,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'imageUrl': imageUrl,
+      'partnerId': partnerId,
     };
   }
 
