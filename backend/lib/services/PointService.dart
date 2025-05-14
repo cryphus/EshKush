@@ -1,6 +1,6 @@
 import '../repositories/PointRepository.dart';
 import '../model/entities/Point.dart';
-import '../model/enums/PointCategory.dart';
+import '../model/entities/PointCategory.dart';
 
 class PointService {
   final PointRepository _pointRepository;
@@ -20,19 +20,29 @@ class PointService {
     }
   }
 
-  Future<List<Point>> getAllPoints({PointCategory? category}) async {
+  Future<List<Point>> getAllPoints() async {
     try {
-      final query = category != null 
-          ? 'SELECT * FROM points WHERE category = @category::point_category'
-          : 'SELECT * FROM points';
-      final Map<String, dynamic> params = category != null 
-          ? {'category': category.name.toLowerCase()} 
-          : {};
-      
-      final results = await _pointRepository.query(query, params: params);
-      return results.map((map) => Point.fromJson(map)).toList();
+      return await _pointRepository.findAll();
     } catch (e) {
       print('Ошибка получения списка точек: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Point>> getPointsByCategory(int categoryId) async {
+    try {
+      return await _pointRepository.findByCategory(categoryId);
+    } catch (e) {
+      print('Ошибка получения точек по категории: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<PointCategory>> getPointCategories(int pointId) async {
+    try {
+      return await _pointRepository.getCategoriesForPoint(pointId);
+    } catch (e) {
+      print('Ошибка получения категорий точки: $e');
       rethrow;
     }
   }
@@ -88,6 +98,15 @@ class PointService {
       }
     } catch (e) {
       print('Ошибка обновления рейтинга: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updatePointCategories(int pointId, List<int> categoryIds) async {
+    try {
+      await _pointRepository.updatePointCategories(pointId, categoryIds);
+    } catch (e) {
+      print('Ошибка обновления категорий точки: $e');
       rethrow;
     }
   }

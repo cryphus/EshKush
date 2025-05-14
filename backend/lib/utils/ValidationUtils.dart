@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:html_unescape/html_unescape.dart';
-import '../model/enums/PointCategory.dart';
 
 class ValidationUtils {
   static final _htmlUnescape = HtmlUnescape();
@@ -207,19 +206,6 @@ class ValidationUtils {
     
     if (data['address'] == null || data['address'].toString().trim().isEmpty) {
       errors.add('Адрес точки обязателен');
-    }
-    
-    if (data['category'] == null) {
-      errors.add('Категория точки обязательна');
-    } else {
-      try {
-        final category = PointCategory.values.firstWhere(
-          (e) => e.name.toLowerCase() == data['category'].toString().toLowerCase(),
-        );
-        data['category'] = category;
-      } catch (e) {
-        errors.add('Некорректная категория точки');
-      }
     }
     
     // Валидация координат

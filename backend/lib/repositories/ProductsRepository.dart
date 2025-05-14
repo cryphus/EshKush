@@ -1,4 +1,6 @@
+import 'package:postgres/postgres.dart';
 import '../model/entities/Products.dart';
+import '../model/entities/ProductCategory.dart';
 import 'BaseRepository.dart';
 
 class ProductsRepository extends BaseRepository {
@@ -20,6 +22,34 @@ class ProductsRepository extends BaseRepository {
   Future<List<Products>> findAll() async {
     final results = await query('SELECT * FROM products');
     return results.map((map) => Products.fromJson(map)).toList();
+  }
+
+  Future<List<Products>> findByCategory(int categoryId) async {
+    try {
+      final results = await query('''
+        SELECT p.* FROM products p
+        JOIN product_category_map pcm ON p.id = pcm.product_id
+        WHERE pcm.category_id = @categoryId
+      ''', params: {'categoryId': categoryId});
+      return results.map((map) => Products.fromJson(map)).toList();
+    } catch (e) {
+      print('Ошибка поиска продуктов по категории: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<ProductCategory>> getCategoriesForProduct(int productId) async {
+    try {
+      final results = await query('''
+        SELECT c.* FROM product_categories c
+        JOIN product_category_map pcm ON c.id = pcm.category_id
+        WHERE pcm.product_id = @productId
+      ''', params: {'productId': productId});
+      return results.map((map) => ProductCategory.fromJson(map)).toList();
+    } catch (e) {
+      print('Ошибка получения категорий для продукта: $e');
+      rethrow;
+    }
   }
 
   Future<Products> create(Products product) async {
@@ -86,6 +116,30 @@ class ProductsRepository extends BaseRepository {
       );
     } catch (e) {
       print('Ошибка удаления продукта: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateProductCategories(int productId, List<int> categoryIds) async {
+    try {
+      await transaction((txn) async {
+        await txn.query('''
+          DELETE FROM product_category_map WHERE product_id = @productId
+        ''', substitutionValues: {'productId': productId});
+
+        for (final categoryId in categoryIds) {
+          await txn.query('''
+            INSERT INTO product_category_map (product_id, category_id, created_at)
+            VALUES (@productId, @categoryId, @createdAt)
+          ''', substitutionValues: {
+            'productId': productId,
+            'categoryId': categoryId,
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+        }
+      });
+    } catch (e) {
+      print('Ошибка обновления категорий продукта: $e');
       rethrow;
     }
   }

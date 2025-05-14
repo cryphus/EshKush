@@ -1,4 +1,5 @@
 import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ProductsService.dart';
 import '../utils/AuthUtils.dart';
@@ -9,6 +10,21 @@ class ProductsController {
   final ProductsService _productsService;
 
   ProductsController(this._productsService);
+
+  Router get router {
+    final router = Router();
+
+    router.get('/products', getAllProducts);
+    router.get('/products/<id>', getProductById);
+    router.get('/products/category/<categoryId>', getProductsByCategory);
+    router.get('/products/<id>/categories', getProductCategories);
+    router.post('/products', createProduct);
+    router.put('/products/<id>', updateProduct);
+    router.put('/products/<id>/categories', updateProductCategories);
+    router.delete('/products/<id>', deleteProduct);
+
+    return router;
+  }
 
   Future<Response> getAllProducts(Request request) async {
     try {
@@ -234,6 +250,133 @@ class ProductsController {
     } catch (e) {
       await LoggingUtils.logError('Ошибка удаления продукта', e);
       return _createErrorResponse(500, 'Ошибка удаления: $e');
+    }
+  }
+
+  Future<Response> getProductsByCategory(Request request, String categoryId) async {
+    try {
+      await LoggingUtils.logRequest(
+        request.method,
+        request.url.path,
+        request.headers,
+        null,
+      );
+
+      final categoryIdInt = int.tryParse(categoryId);
+      if (categoryIdInt == null) {
+        return _createErrorResponse(400, 'Некорректный ID категории');
+      }
+
+      final products = await _productsService.getProductsByCategory(categoryIdInt);
+      
+      final response = Response.ok(
+        jsonEncode(products.map((p) => p.toJson()).toList()),
+        headers: _getCorsHeaders(),
+      );
+
+      await LoggingUtils.logResponse(
+        response.statusCode,
+        response.headers,
+        await response.readAsString(),
+      );
+
+      return response;
+    } catch (e) {
+      await LoggingUtils.logError('Ошибка получения продуктов по категории', e);
+      return _createErrorResponse(500, 'Ошибка: $e');
+    }
+  }
+
+  Future<Response> getProductCategories(Request request, String id) async {
+    try {
+      await LoggingUtils.logRequest(
+        request.method,
+        request.url.path,
+        request.headers,
+        null,
+      );
+
+      final productId = int.tryParse(id);
+      if (productId == null) {
+        return _createErrorResponse(400, 'Некорректный ID продукта');
+      }
+
+      final categories = await _productsService.getProductCategories(productId);
+      
+      final response = Response.ok(
+        jsonEncode(categories.map((c) => c.toJson()).toList()),
+        headers: _getCorsHeaders(),
+      );
+
+      await LoggingUtils.logResponse(
+        response.statusCode,
+        response.headers,
+        await response.readAsString(),
+      );
+
+      return response;
+    } catch (e) {
+      await LoggingUtils.logError('Ошибка получения категорий продукта', e);
+      return _createErrorResponse(500, 'Ошибка: $e');
+    }
+  }
+
+  Future<Response> updateProductCategories(Request request, String id) async {
+    try {
+      final body = await request.readAsString();
+      await LoggingUtils.logRequest(
+        request.method,
+        request.url.path,
+        request.headers,
+        body,
+      );
+
+      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
+      if (token == null) {
+        return _createErrorResponse(401, 'Требуется авторизация');
+      }
+
+      final payload = AuthUtils.verifyToken(token);
+      if (!_isAdmin(payload)) {
+        return _createErrorResponse(403, 'Нет прав доступа');
+      }
+
+      final productId = int.tryParse(id);
+      if (productId == null) {
+        return _createErrorResponse(400, 'Некорректный ID продукта');
+      }
+
+      final data = jsonDecode(body);
+      if (data['categoryIds'] == null || !(data['categoryIds'] is List)) {
+        return _createErrorResponse(400, 'Некорректный формат данных');
+      }
+
+      final categoryIds = List<int>.from(data['categoryIds']);
+      await _productsService.updateProductCategories(productId, categoryIds);
+      
+      await LoggingUtils.logInfo(
+        'Обновлены категории продукта',
+        context: {
+          'productId': productId,
+          'categoryIds': categoryIds,
+        },
+      );
+
+      final response = Response.ok(
+        jsonEncode({'message': 'Категории продукта успешно обновлены'}),
+        headers: _getCorsHeaders(),
+      );
+
+      await LoggingUtils.logResponse(
+        response.statusCode,
+        response.headers,
+        await response.readAsString(),
+      );
+
+      return response;
+    } catch (e) {
+      await LoggingUtils.logError('Ошибка обновления категорий продукта', e);
+      return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
 

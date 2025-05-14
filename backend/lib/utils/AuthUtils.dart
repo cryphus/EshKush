@@ -2,17 +2,34 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'dart:io';
+import 'package:bcrypt/bcrypt.dart';
 
 class AuthUtils {
-  static final String _jwtSecret = Platform.environment['JWT_SECRET'] ?? 'your-secret-key';
-  static final String _refreshSecret = Platform.environment['JWT_REFRESH_SECRET'] ?? 'your-refresh-secret-key';
-  static const int _tokenExpirationInMinutes = 60;
+  static String get _jwtSecret {
+    final secret = Platform.environment['JWT_SECRET'];
+    if (secret == null || secret.isEmpty) {
+      throw Exception('JWT_SECRET не установлен в переменных окружения');
+    }
+    return secret;
+  }
+
+  static String get _refreshSecret {
+    final secret = Platform.environment['JWT_REFRESH_SECRET'];
+    if (secret == null || secret.isEmpty) {
+      throw Exception('JWT_REFRESH_SECRET не установлен в переменных окружения');
+    }
+    return secret;
+  }
+
+  static const int _tokenExpirationInMinutes = 15;
   static const int _refreshTokenExpirationInDays = 7;
 
   static String hashPassword(String password) {
-    final bytes = utf8.encode(password);
-    final hash = sha256.convert(bytes);
-    return hash.toString();
+    return BCrypt.hashpw(password, BCrypt.gensalt());
+  }
+
+  static bool verifyPassword(String password, String hashedPassword) {
+    return BCrypt.checkpw(password, hashedPassword);
   }
 
   static Map<String, String> generateTokens(int userId, String role) {
@@ -32,6 +49,7 @@ class AuthUtils {
       'type': 'access',
       'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       'exp': DateTime.now().add(Duration(minutes: _tokenExpirationInMinutes)).millisecondsSinceEpoch ~/ 1000,
+      'jti': _generateJTI(),
     };
     
     final header = {
@@ -48,6 +66,7 @@ class AuthUtils {
       'type': 'refresh',
       'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       'exp': DateTime.now().add(Duration(days: _refreshTokenExpirationInDays)).millisecondsSinceEpoch ~/ 1000,
+      'jti': _generateJTI(),
     };
     
     final header = {
@@ -56,6 +75,12 @@ class AuthUtils {
     };
 
     return _encodeJWT(header, payload, _refreshSecret);
+  }
+
+  static String _generateJTI() {
+    final random = DateTime.now().millisecondsSinceEpoch.toString() + 
+                  (1000 + DateTime.now().microsecond).toString();
+    return sha256.convert(utf8.encode(random)).toString();
   }
 
   static String _encodeJWT(Map<String, dynamic> header, Map<String, dynamic> payload, String secret) {
@@ -75,16 +100,20 @@ class AuthUtils {
       final payload = JwtDecoder.decode(token);
       
       if (isRefreshToken && payload['type'] != 'refresh') {
-        throw Exception('Invalid token type');
+        throw Exception('Неверный тип токена');
       }
       
       if (!isRefreshToken && payload['type'] != 'access') {
-        throw Exception('Invalid token type');
+        throw Exception('Неверный тип токена');
+      }
+
+      if (payload['jti'] == null) {
+        throw Exception('Отсутствует JTI в токене');
       }
 
       return payload;
     } catch (e) {
-      throw Exception('Invalid token: $e');
+      throw Exception('Недействительный токен: $e');
     }
   }
 
