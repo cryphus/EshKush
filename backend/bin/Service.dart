@@ -7,14 +7,18 @@ import 'package:backend/database/Database.dart';
 import 'package:backend/services/AuthService.dart';
 import 'package:backend/repositories/UserRepository.dart';
 import 'package:backend/utils/AuthUtils.dart';
+import 'package:backend/controllers/SwaggerController.dart';
 
 void main() async {
   try {
     final db = await Database.instance;
     final userRepository = UserRepository(db.connection);
     final authService = AuthService(userRepository);
+    final swaggerController = SwaggerController();
 
     final app = Router();
+
+    app.mount('/swagger', swaggerController.router);
 
     final corsHeaders = {
       'Access-Control-Allow-Origin': '*',
