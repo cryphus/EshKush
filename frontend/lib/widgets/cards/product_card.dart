@@ -8,14 +8,25 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: _cardDecoration(),
-      child: Column(
-        children: [
-          _buildImageSection(),
-          _buildInfoSection(),
-        ],
+    return GestureDetector(
+      onTap: () => _navigateToProduct(context),
+      child: Container(
+        decoration: _cardDecoration(),
+        child: Column(
+          children: [
+            _buildImageSection(),
+            _buildInfoSection(),
+          ],
+        ),
       ),
+    );
+  }
+
+  void _navigateToProduct(BuildContext context) {
+    Navigator.pushNamed(
+      context,
+      '/product',
+      arguments: data,
     );
   }
 

@@ -23,7 +23,11 @@ class _CartPageState extends State<CartPage> {
       'price': '199 ₽',
       'image': 'http://91.186.217.192/images/img_shopicon.png',
       'logo': 'http://91.186.217.192/images/img_shopicon.png',
-      'options': ['Без лука', 'Доп. соус']
+      'options': ['Без лука', 'Доп. соус'],
+      'address': 'Улица Пушкина, дом 15',
+      'working_hours': '09:00 - 23:00',
+      'phone': '+7 (999) 123-45-67',
+      'description': 'Подробное описание заведения...',
     },
     {
       'name': 'Картофель фри',
@@ -34,7 +38,11 @@ class _CartPageState extends State<CartPage> {
       'price': '150 ₽',
       'image': 'http://91.186.217.192/images/img_shopicon.png',
       'logo': 'http://91.186.217.192/images/img_shopicon.png',
-      'options': ['Большая порция']
+      'options': ['Большая порция'],
+      'address': 'Улица Пушкина, дом 15',
+      'working_hours': '09:00 - 23:00',
+      'phone': '+7 (999) 123-45-67',
+      'description': 'Подробное описание заведения...',
     },
   ];
 
@@ -43,8 +51,7 @@ class _CartPageState extends State<CartPage> {
     return ScaffoldLayout(
       pageTitle: 'Корзина',
       bodyContent: _buildContent(),
-      currentNavIndex: _currentNavIndex,
-      onNavItemTapped: _handleNavItemTap,
+      showNavBar: false,
     );
   }
 

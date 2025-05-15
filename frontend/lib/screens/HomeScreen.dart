@@ -22,6 +22,10 @@ class _HomeContentState extends State<HomeContent> {
       theme: ThemeData(
         primarySwatch: Colors.green,
         scaffoldBackgroundColor: AppColors.colorBackground,
+        textTheme: TextTheme(
+          bodyMedium:
+              TextStyle(color: AppColors.primaryText), // Базовый цвет текста
+        ),
       ),
       home: const HomePage(),
     );
@@ -98,9 +102,25 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Привет,', style: _greetingTextStyle),
-                  Text('Гость', style: _greetingTextStyle),
+                  Text(
+                    'Гость',
+                    style: _greetingTextStyle,
+                  ),
                   const SizedBox(height: 8),
-                  const Text('Только в этом месяце ты сохранил 2 кг еды!'),
+                  Text(
+                    'Только в этом месяце',
+                    style: TextStyle(
+                      color: AppColors.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'ты сохранил 2 кг еды!',
+                    style: TextStyle(
+                      color: AppColors.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -112,9 +132,10 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
-  TextStyle get _greetingTextStyle => const TextStyle(
+  TextStyle get _greetingTextStyle => TextStyle(
         fontSize: 24,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w700,
+        color: AppColors.primaryText, // Явно задаем цвет
       );
 
   Widget _buildOrdersSection() => Column(
@@ -161,6 +182,7 @@ class _HomePageState extends State<HomePage> {
   TextStyle get _shopNameStyle => const TextStyle(
         color: AppColors.white,
         fontSize: 20,
+        fontWeight: FontWeight.w600,
       );
 
   TextStyle get _shopScheduleStyle => const TextStyle(
@@ -173,7 +195,7 @@ class _HomePageState extends State<HomePage> {
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.lightGreen,
-            foregroundColor: const Color.fromARGB(255, 255, 255, 255),
+            foregroundColor: AppColors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -187,7 +209,10 @@ class _HomePageState extends State<HomePage> {
           },
           child: const Text(
             'Больше предложений',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       );
@@ -205,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                 title: 'Магазины',
                 imageUrl: 'http://91.186.217.192/images/img_shop.png',
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               _CategoryCard(
                 title: 'Рестораны',
                 imageUrl: 'http://91.186.217.192/images/img_restoraunt.png',
@@ -239,15 +264,19 @@ class _SectionHeader extends StatelessWidget {
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 20,
+              color: AppColors.primaryText,
             ),
           ),
           TextButton(
             onPressed: onActionPressed,
-            child: Text(actionText),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.accentGreen,
-              textStyle: const TextStyle(fontSize: 16),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                decoration: TextDecoration.none, // Убираем подчеркивание
+              ),
             ),
+            child: Text(actionText),
           ),
         ],
       ),
@@ -279,6 +308,7 @@ class _CategoryCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
+                color: AppColors.primaryText,
               ),
             ),
             const Spacer(),

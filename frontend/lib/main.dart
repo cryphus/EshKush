@@ -1,4 +1,5 @@
 import 'package:eshkush/screens/MainScreen.dart';
+import 'package:eshkush/screens/ProductPage.dart';
 import 'package:eshkush/theme/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -46,6 +47,10 @@ class EshKush extends StatelessWidget {
         '/auth': (context) => const AuthScreen(),
         '/main': (context) => const MainScreen(),
         // '/registration': (context) => const RegistrationScreen(),
+        '/product': (context) => ProductPage(
+              data: ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>,
+            ),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('tg://eshkush/auth/telegram') ?? false) {
