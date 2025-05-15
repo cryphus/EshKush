@@ -1,5 +1,3 @@
-import '../enums/PointCategory.dart';
-
 class Point {
   final int id;
   final String name;
@@ -13,7 +11,6 @@ class Point {
   double longitude;
   double latitude;
   final Map<String, dynamic> tags;
-  final PointCategory category;
   
   Point({
     required this.id,
@@ -28,7 +25,6 @@ class Point {
     required this.longitude,
     required this.latitude,
     required this.tags,
-    required this.category,
   });
   
   factory Point.fromJson(Map<String, dynamic> json) {
@@ -45,10 +41,6 @@ class Point {
       longitude: (json['longitude'] as num).toDouble(),
       latitude: (json['latitude'] as num).toDouble(),
       tags: json['tags'] as Map<String, dynamic>,
-      category: PointCategory.values.firstWhere(
-        (e) => e.name.toLowerCase() == (json['category'] as String).toLowerCase(),
-        orElse: () => PointCategory.other,
-      ),
     );
   }
 
@@ -66,7 +58,6 @@ class Point {
       'longitude': longitude,
       'latitude': latitude,
       'tags': tags,
-      'category': category.name,
     };
   }
 } 

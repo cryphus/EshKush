@@ -1,0 +1,143 @@
+# Основные настройки сервера
+server:
+  host: "0.0.0.0"
+  port: 8080
+  base_url: "http://localhost:8080"
+
+# Настройки базы данных
+database:
+  host: "postgres"
+  port: 5432
+  name: "flutter_auth"
+  user: "postgres"
+  password: "TQr132123"
+
+# Настройки Docker
+docker:
+  services:
+    postgres:
+      image: "postgres:latest"
+      ports:
+        - "5433:5432"
+      volumes:
+        - "./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql"
+        - "postgres_data:/var/lib/postgresql/data"
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U postgres"]
+        interval: "5s"
+        timeout: "5s"
+        retries: 5
+
+    pgadmin:
+      image: "dpage/pgadmin4"
+      ports:
+        - "5050:80"
+      environment:
+        PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+        PGADMIN_DEFAULT_PASSWORD: "admin"
+
+    backend:
+      build:
+        context: "./backend"
+        dockerfile: "Dockerfile"
+      ports:
+        - "8080:8080"
+      environment:
+        DB_HOST: "postgres"
+        DB_PORT: "5432"
+        DB_NAME: "flutter_auth"
+        DB_USER: "postgres"
+        DB_PASSWORD: "TQr132123"
+      restart: "unless-stopped"
+
+    frontend:
+      build:
+        context: "."
+        dockerfile: "frontend/Dockerfile"
+      ports:
+        - "3000:80"
+      volumes:
+        - "./backend:/app/backend"
+
+  networks:
+    app_network:
+      driver: "bridge"
+
+  volumes:
+    postgres_data:
+    backend_deps:
+
+# Настройки Nginx
+nginx:
+  events:
+    worker_connections: 1024
+  
+  http:
+    include: "/etc/nginx/mime.types"
+    default_type: "application/octet-stream"
+    
+    server:
+      listen: 80
+      server_name: "localhost"
+      
+      locations:
+        root:
+          path: "/"
+          root: "/usr/share/nginx/html"
+          index: ["index.html", "index.htm"]
+          try_files: ["$uri", "$uri/", "/index.html"]
+        
+        api:
+          path: "/api/"
+          proxy_pass: "http://backend:3000/"
+          proxy_http_version: "1.1"
+          proxy_set_headers:
+            Upgrade: "$http_upgrade"
+            Connection: "upgrade"
+            Host: "$host"
+          proxy_cache_bypass: "$http_upgrade"
+          cors_headers:
+            Access-Control-Allow-Origin: "*"
+            Access-Control-Allow-Methods: "GET, POST, PUT, DELETE, OPTIONS"
+            Access-Control-Allow-Headers: "Origin, Content-Type, Accept"
+
+# Настройки Google OAuth
+google_oauth:
+  client_id: "672295969525-4rih26k55qehk1h9jj35rki5l4o8t8an.apps.googleusercontent.com"
+  scopes: ["email", "profile"]
+  redirect_uri: "http://localhost:8080/auth/google/callback"
+
+# Настройки Telegram
+telegram:
+  bot_token: "8194426358:AAGdJv_U8XkWgI9VAMcqNZ7MIwH1sTj5b90"
+  bot_username: "eshkush_bot"
+  webhook_url: "http://localhost:5000/telegram/webhook"
+
+# Настройки VK
+vk:
+  app_id: "53190268"
+  app_secret: "jZ4NDscBDmhDCZLjMpJv"
+  redirect_uri: "http://localhost:8080/auth/vk/callback"
+
+# Настройки PgAdmin
+pgadmin:
+  email: "admin@admin.com"
+  password: "admin"
+  port: 5050
+
+# Настройки портов сервисов
+ports:
+  frontend: 3000
+  backend: 8080
+  postgres: 5433
+  pgadmin: 5050
+
+# Настройки сетей
+networks:
+  app_network:
+    driver: "bridge"
+
+# Настройки томов
+volumes:
+  postgres_data: "/var/lib/postgresql/data"
+  backend_deps: "/app/deps" 

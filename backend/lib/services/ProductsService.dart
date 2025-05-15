@@ -1,4 +1,5 @@
 import '../model/entities/Products.dart';
+import '../model/entities/ProductCategory.dart';
 import '../repositories/ProductsRepository.dart';
 
 class ProductsService {
@@ -14,6 +15,14 @@ class ProductsService {
 
   Future<List<Products>> getAllProducts() async {
     return await _productsRepository.findAll();
+  }
+
+  Future<List<Products>> getProductsByCategory(int categoryId) async {
+    return await _productsRepository.findByCategory(categoryId);
+  }
+
+  Future<List<ProductCategory>> getProductCategories(int productId) async {
+    return await _productsRepository.getCategoriesForProduct(productId);
   }
 
   Future<Products> createProduct(Map<String, dynamic> data) async {
@@ -32,6 +41,10 @@ class ProductsService {
 
   Future<void> deleteProduct(int id) async {
     await _productsRepository.delete(id);
+  }
+
+  Future<void> updateProductCategories(int productId, List<int> categoryIds) async {
+    await _productsRepository.updateProductCategories(productId, categoryIds);
   }
 
   void _validateProductData(Map<String, dynamic> data) {

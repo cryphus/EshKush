@@ -1,0 +1,55 @@
+import 'dart:io';
+import 'package:dotenv/dotenv.dart';
+
+class AppConfig {
+  static final AppConfig _instance = AppConfig._internal();
+  factory AppConfig() => _instance;
+  AppConfig._internal();
+
+  late final String jwtSecret;
+  late final String jwtRefreshSecret;
+  late final String databaseUrl;
+  late final int port;
+  late final String environment;
+  late final List<String> allowedOrigins;
+  late final int rateLimitRequests;
+  late final Duration rateLimitWindow;
+
+  Future<void> initialize() async {
+    final env = DotEnv(includePlatformEnvironment: true)..load();
+
+    jwtSecret = env['JWT_SECRET'] ?? '';
+    jwtRefreshSecret = env['JWT_REFRESH_SECRET'] ?? '';
+    databaseUrl = env['DATABASE_URL'] ?? '';
+    port = int.tryParse(env['PORT'] ?? '3000') ?? 3000;
+    environment = env['ENVIRONMENT'] ?? 'development';
+    
+    allowedOrigins = (env['ALLOWED_ORIGINS'] ?? 'http://localhost:3000')
+        .split(',')
+        .map((e) => e.trim())
+        .toList();
+    
+    rateLimitRequests = int.tryParse(env['RATE_LIMIT_REQUESTS'] ?? '100') ?? 100;
+    rateLimitWindow = Duration(
+      minutes: int.tryParse(env['RATE_LIMIT_WINDOW_MINUTES'] ?? '1') ?? 1
+    );
+
+    _validateConfig();
+  }
+
+  void _validateConfig() {
+    if (jwtSecret.isEmpty) {
+      throw Exception('JWT_SECRET не установлен в переменных окружения');
+    }
+    if (jwtRefreshSecret.isEmpty) {
+      throw Exception('JWT_REFRESH_SECRET не установлен в переменных окружения');
+    }
+    if (databaseUrl.isEmpty) {
+      throw Exception('DATABASE_URL не установлен в переменных окружения');
+    }
+  }
+
+  bool get isDevelopment => environment == 'development';
+  bool get isProduction => environment == 'production';
+  bool get isTest => environment == 'test';
+} 

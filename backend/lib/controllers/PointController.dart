@@ -3,7 +3,6 @@ import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PointService.dart';
 import '../model/entities/Point.dart';
-import '../model/enums/PointCategory.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
@@ -18,8 +17,11 @@ class PointController {
 
     router.get('/points', _getAllPoints);
     router.get('/points/<id>', _getPointById);
+    router.get('/points/category/<categoryId>', _getPointsByCategory);
+    router.get('/points/<id>/categories', _getPointCategories);
     router.post('/points', _createPoint);
     router.put('/points/<id>', _updatePoint);
+    router.put('/points/<id>/categories', _updatePointCategories);
     router.delete('/points/<id>', _deletePoint);
     router.put('/points/<id>/rating', _updateRating);
 
@@ -35,13 +37,7 @@ class PointController {
         null,
       );
 
-      final category = request.url.queryParameters['category'];
-      final points = await _pointService.getAllPoints(
-        category: category != null ? PointCategory.values.firstWhere(
-          (e) => e.name.toLowerCase() == category.toLowerCase(),
-          orElse: () => PointCategory.other,
-        ) : null,
-      );
+      final points = await _pointService.getAllPoints();
 
       final response = Response.ok(
         jsonEncode(points.map((p) => p.toJson()).toList()),
@@ -95,6 +91,74 @@ class PointController {
     }
   }
 
+  Future<Response> _getPointsByCategory(Request request) async {
+    try {
+      await LoggingUtils.logRequest(
+        request.method,
+        request.url.path,
+        request.headers,
+        null,
+      );
+
+      final categoryId = int.tryParse(request.params['categoryId']!);
+      if (categoryId == null) {
+        return _createErrorResponse(400, 'Некорректный ID категории');
+      }
+
+      final points = await _pointService.getPointsByCategory(categoryId);
+
+      final response = Response.ok(
+        jsonEncode(points.map((p) => p.toJson()).toList()),
+        headers: _getCorsHeaders(),
+      );
+
+      await LoggingUtils.logResponse(
+        response.statusCode,
+        response.headers,
+        await response.readAsString(),
+      );
+
+      return response;
+    } catch (e) {
+      await LoggingUtils.logError('Ошибка получения точек по категории', e);
+      return _createErrorResponse(500, 'Ошибка: $e');
+    }
+  }
+
+  Future<Response> _getPointCategories(Request request) async {
+    try {
+      await LoggingUtils.logRequest(
+        request.method,
+        request.url.path,
+        request.headers,
+        null,
+      );
+
+      final id = int.tryParse(request.params['id']!);
+      if (id == null) {
+        return _createErrorResponse(400, 'Некорректный ID точки');
+      }
+
+      final categories = await _pointService.getPointCategories(id);
+
+      final response = Response.ok(
+        jsonEncode(categories.map((c) => c.toJson()).toList()),
+        headers: _getCorsHeaders(),
+      );
+
+      await LoggingUtils.logResponse(
+        response.statusCode,
+        response.headers,
+        await response.readAsString(),
+      );
+
+      return response;
+    } catch (e) {
+      await LoggingUtils.logError('Ошибка получения категорий точки', e);
+      return _createErrorResponse(500, 'Ошибка: $e');
+    }
+  }
+
   Future<Response> _createPoint(Request request) async {
     try {
       final body = await request.readAsString();
@@ -126,7 +190,6 @@ class PointController {
           context: {
             'pointId': point.id,
             'name': point.name,
-            'category': point.category.toString(),
           },
         );
 
@@ -187,7 +250,6 @@ class PointController {
           context: {
             'pointId': point.id,
             'name': point.name,
-            'category': point.category.toString(),
           },
         );
 
@@ -311,6 +373,65 @@ class PointController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('Ошибка обновления рейтинга', e);
+      return _createErrorResponse(400, 'Ошибка: $e');
+    }
+  }
+
+  Future<Response> _updatePointCategories(Request request) async {
+    try {
+      final body = await request.readAsString();
+      await LoggingUtils.logRequest(
+        request.method,
+        request.url.path,
+        request.headers,
+        body,
+      );
+
+      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
+      if (token == null) {
+        return _createErrorResponse(401, 'Требуется авторизация');
+      }
+
+      final payload = AuthUtils.verifyToken(token);
+      if (!_isAdmin(payload)) {
+        return _createErrorResponse(403, 'Нет прав доступа');
+      }
+
+      final id = int.tryParse(request.params['id']!);
+      if (id == null) {
+        return _createErrorResponse(400, 'Некорректный ID точки');
+      }
+
+      final data = jsonDecode(body);
+      if (data['categoryIds'] == null || !(data['categoryIds'] is List)) {
+        return _createErrorResponse(400, 'Некорректный формат данных');
+      }
+
+      final categoryIds = (data['categoryIds'] as List).map((id) => id as int).toList();
+      await _pointService.updatePointCategories(id, categoryIds);
+
+      await LoggingUtils.logInfo(
+        'Обновлены категории точки',
+        context: {
+          'pointId': id,
+          'categoryIds': categoryIds,
+        },
+      );
+
+      final response = Response.ok(
+        jsonEncode({'message': 'Категории успешно обновлены'}),
+        headers: _getCorsHeaders(),
+      );
+
+      await LoggingUtils.logResponse(
+        response.statusCode,
+        response.headers,
+        await response.readAsString(),
+      );
+
+      return response;
+    } catch (e) {
+      await LoggingUtils.logError('Ошибка обновления категорий точки', e);
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }

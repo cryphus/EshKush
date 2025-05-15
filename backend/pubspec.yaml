@@ -19,6 +19,9 @@ dependencies:
   json_annotation: ^4.8.1
   email_validator: ^2.1.17
   dotenv: ^4.1.0
+  logger: ^2.0.2+1
+  rate_limiter: ^1.0.0
+  helmet: ^1.0.0
 
 dev_dependencies:
   lints: ^2.1.1
@@ -27,3 +30,4 @@ dev_dependencies:
   http: ^1.1.0
   build_runner: ^2.4.6
   json_serializable: ^6.7.1
+  security_lint: ^1.0.0
