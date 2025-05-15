@@ -152,7 +152,7 @@ class _AuthScreenState extends State<AuthScreen> {
       child: SizedBox(
         width: double.infinity,
         child: _GuestButton(
-          onPressed: () => Navigator.of(context).pushReplacementNamed('/home'),
+          onPressed: () => Navigator.of(context).pushReplacementNamed('/main'),
         ),
       ),
     );

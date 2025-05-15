@@ -5,14 +5,14 @@ import '../theme/colors.dart';
 import '../widgets/layouts/scaffold_layout.dart';
 import '../screens/OffersScreen.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class HomeContent extends StatefulWidget {
+  const HomeContent({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeContent> createState() => _HomeContentState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeContentState extends State<HomeContent> {
   final _authService = FrontendAuthService();
 
   @override
@@ -61,12 +61,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldLayout(
-      pageTitle: 'Главная',
-      bodyContent: _buildBodyContent(),
-      currentNavIndex: _currentIndex,
-      onNavItemTapped: (index) => setState(() => _currentIndex = index),
-    );
+    return _buildBodyContent();
   }
 
   Widget _buildBodyContent() => SingleChildScrollView(

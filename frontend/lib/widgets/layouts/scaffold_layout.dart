@@ -30,7 +30,6 @@ class _ScaffoldLayoutState extends State<ScaffoldLayout> {
     'assets/icons/like.svg',
     'assets/icons/profile.svg',
   ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,11 +86,7 @@ class _ScaffoldLayoutState extends State<ScaffoldLayout> {
           children: [
             Text(
               widget.pageTitle,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 16),
             Expanded(child: widget.bodyContent),

@@ -37,12 +37,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldLayout(
-      pageTitle: 'Избранное',
-      bodyContent: _buildContent(),
-      currentNavIndex: _currentNavIndex,
-      onNavItemTapped: _handleNavItemTap,
-    );
+    return _buildContent();
   }
 
   void _handleNavItemTap(int index) => setState(() => _currentNavIndex = index);

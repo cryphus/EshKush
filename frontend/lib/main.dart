@@ -1,8 +1,7 @@
-import 'package:eshkush/screens/FavoritesScreen.dart';
+import 'package:eshkush/screens/MainScreen.dart';
+import 'package:eshkush/theme/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/HomeScreen.dart';
-import 'screens/OffersScreen.dart';
 import 'screens/RegistrationScreen.dart';
 import 'screens/AuthScreen.dart';
 
@@ -20,14 +19,33 @@ class EshKush extends StatelessWidget {
       title: 'EshKush',
       theme: ThemeData(
         primarySwatch: Colors.green,
-        textTheme: GoogleFonts.robotoTextTheme(),
+        textTheme: GoogleFonts.robotoTextTheme(
+          ThemeData.light().textTheme.copyWith(
+                headlineMedium: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                bodyLarge: const TextStyle(
+                  fontSize: 18,
+                  color: Colors.black87,
+                ),
+              ),
+        ),
+        scaffoldBackgroundColor: AppColors.colorBackground,
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.lightGreen,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+        ),
       ),
       initialRoute: '/auth',
       routes: {
         '/auth': (context) => const AuthScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/offers': (context) => const OffersPage(),
-        '/favorites': (context) => const FavoritesPage(),
+        '/main': (context) => const MainScreen(),
+        // '/registration': (context) => const RegistrationScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('tg://eshkush/auth/telegram') ?? false) {
