@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="EshKush project">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com https://content-people.googleapis.com http://91.186.217.192 https://91.186.217.192; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://www.gstatic.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' http://localhost:8080 https://accounts.google.com https://www.gstatic.com https://fonts.gstatic.com https://content-people.googleapis.com http://91.186.217.192 https://91.186.217.192; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://accounts.google.com; worker-src 'self' blob:; img-src 'self' data: blob: http://91.186.217.192 https://91.186.217.192 https://* http://*;">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="eshkush">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <!-- Google Sign-in -->
+  <meta name="google-signin-client_id" content="672295969525-4rih26k55qehk1h9jj35rki5l4o8t8an.apps.googleusercontent.com">
+
+  <title>EshKush</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
+  
+  <script>
+    const serviceWorkerVersion = null;
+  </script>
+  <script src="flutter.js" defer></script>
+</head>
+<body>
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Initialize google auth2
+      gapi.load('auth2', function() {
+        gapi.auth2.init({
+          client_id: '672295969525-4rih26k55qehk1h9jj35rki5l4o8t8an.apps.googleusercontent.com',
+          scope: 'profile email',
+        });
+      });
+      
+      // Handle deep links
+      if (window.location.href.startsWith('eshkush://')) {
+        window.location.href = window.location.href;
+      }
+      
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html> 
