@@ -268,6 +268,7 @@
             "type": "object"
           }
         }
+<<<<<<< HEAD
       },
       "Error": {
         "type": "object",
@@ -897,6 +898,8 @@
             "format": "date-time"
           }
         }
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
       }
     }
   },
@@ -904,7 +907,10 @@
     "/auth/google": {
       "post": {
         "summary": "Аутентификация через Google",
+<<<<<<< HEAD
         "tags": ["Аутентификация"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -972,7 +978,10 @@
     "/auth/register": {
       "post": {
         "summary": "Регистрация нового пользователя",
+<<<<<<< HEAD
         "tags": ["Аутентификация"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -1026,7 +1035,10 @@
     "/auth/refresh": {
       "post": {
         "summary": "Обновление токена",
+<<<<<<< HEAD
         "tags": ["Аутентификация"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -1067,7 +1079,10 @@
     "/points": {
       "get": {
         "summary": "Получить список точек",
+<<<<<<< HEAD
         "tags": ["Точки"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "parameters": [
           {
             "name": "latitude",
@@ -1104,6 +1119,7 @@
               "type": "integer",
               "format": "int64"
             }
+<<<<<<< HEAD
           },
           {
             "name": "search",
@@ -1163,6 +1179,8 @@
               "minimum": 0,
               "maximum": 5
             }
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
           }
         ],
         "responses": {
@@ -1171,6 +1189,7 @@
             "content": {
               "application/json": {
                 "schema": {
+<<<<<<< HEAD
                   "type": "object",
                   "properties": {
                     "items": {
@@ -1191,6 +1210,11 @@
                     "pages": {
                       "type": "integer"
                     }
+=======
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Point"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                   }
                 }
               }
@@ -1202,7 +1226,10 @@
     "/points/{id}": {
       "get": {
         "summary": "Получить информацию о точке",
+<<<<<<< HEAD
         "tags": ["Точки"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "parameters": [
           {
             "name": "id",
@@ -1231,7 +1258,10 @@
     "/points/{id}/reviews": {
       "get": {
         "summary": "Получить отзывы о точке",
+<<<<<<< HEAD
         "tags": ["Точки"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "parameters": [
           {
             "name": "id",
@@ -1261,7 +1291,10 @@
       },
       "post": {
         "summary": "Добавить отзыв о точке",
+<<<<<<< HEAD
         "tags": ["Точки"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1314,7 +1347,10 @@
     "/user/profile": {
       "get": {
         "summary": "Получить профиль пользователя",
+<<<<<<< HEAD
         "tags": ["Пользователи"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1335,7 +1371,10 @@
       },
       "put": {
         "summary": "Обновить профиль пользователя",
+<<<<<<< HEAD
         "tags": ["Пользователи"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1379,15 +1418,22 @@
         }
       }
     },
+<<<<<<< HEAD
     "/users/{userId}/favorites": {
       "get": {
         "summary": "Получить избранные точки пользователя",
         "tags": ["Пользователи"],
+=======
+    "/user/favorites": {
+      "get": {
+        "summary": "Получить избранные точки",
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
+<<<<<<< HEAD
         "parameters": [
           {
             "name": "userId",
@@ -1439,12 +1485,15 @@
             }
           }
         ],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "responses": {
           "200": {
             "description": "Список избранных точек",
             "content": {
               "application/json": {
                 "schema": {
+<<<<<<< HEAD
                   "type": "object",
                   "properties": {
                     "items": {
@@ -1465,6 +1514,11 @@
                     "pages": {
                       "type": "integer"
                     }
+=======
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Point"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                   }
                 }
               }
@@ -1474,12 +1528,16 @@
       },
       "post": {
         "summary": "Добавить точку в избранное",
+<<<<<<< HEAD
         "tags": ["Пользователи"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
+<<<<<<< HEAD
         "parameters": [
           {
             "name": "userId",
@@ -1491,6 +1549,8 @@
             }
           }
         ],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -1498,7 +1558,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
+<<<<<<< HEAD
                   "point_id": {
+=======
+                  "pointId": {
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                     "type": "integer",
                     "format": "int64"
                   }
@@ -1509,6 +1573,7 @@
         },
         "responses": {
           "200": {
+<<<<<<< HEAD
             "description": "Точка добавлена в избранное",
             "content": {
               "application/json": {
@@ -1517,17 +1582,24 @@
                 }
               }
             }
+=======
+            "description": "Точка добавлена в избранное"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
           }
         }
       },
       "delete": {
         "summary": "Удалить точку из избранного",
+<<<<<<< HEAD
         "tags": ["Пользователи"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
+<<<<<<< HEAD
         "parameters": [
           {
             "name": "userId",
@@ -1548,6 +1620,24 @@
             }
           }
         ],
+=======
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pointId": {
+                    "type": "integer",
+                    "format": "int64"
+                  }
+                }
+              }
+            }
+          }
+        },
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "responses": {
           "200": {
             "description": "Точка удалена из избранного"
@@ -1558,12 +1648,16 @@
     "/orders": {
       "get": {
         "summary": "Получить список заказов",
+<<<<<<< HEAD
         "tags": ["Заказы"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
+<<<<<<< HEAD
         "parameters": [
           {
             "name": "status",
@@ -1633,12 +1727,15 @@
             }
           }
         ],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "responses": {
           "200": {
             "description": "Список заказов",
             "content": {
               "application/json": {
                 "schema": {
+<<<<<<< HEAD
                   "type": "object",
                   "properties": {
                     "items": {
@@ -1659,6 +1756,11 @@
                     "pages": {
                       "type": "integer"
                     }
+=======
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                   }
                 }
               }
@@ -1668,7 +1770,10 @@
       },
       "post": {
         "summary": "Создать новый заказ",
+<<<<<<< HEAD
         "tags": ["Заказы"],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1711,16 +1816,28 @@
             "content": {
               "application/json": {
                 "schema": {
+<<<<<<< HEAD
                   "$ref": "#/components/schemas/UserSessions"
+=======
+                  "$ref": "#/components/schemas/Order"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                 }
               }
             }
           }
         }
+<<<<<<< HEAD
       },
       "delete": {
         "summary": "Удалить сессию",
         "tags": ["Пользователи"],
+=======
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "summary": "Получить информацию о заказе",
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1728,6 +1845,7 @@
         ],
         "parameters": [
           {
+<<<<<<< HEAD
             "name": "userId",
             "in": "path",
             "required": true,
@@ -1738,6 +1856,9 @@
           },
           {
             "name": "sessionId",
+=======
+            "name": "id",
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
             "in": "path",
             "required": true,
             "schema": {
@@ -1748,20 +1869,38 @@
         ],
         "responses": {
           "200": {
+<<<<<<< HEAD
             "description": "Сессия удалена"
+=======
+            "description": "Информация о заказе",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
           }
         }
       }
     },
+<<<<<<< HEAD
     "/changes": {
       "get": {
         "summary": "Получить список изменений",
         "tags": ["Изменения"],
+=======
+    "/partner/points": {
+      "get": {
+        "summary": "Получить список точек партнера",
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
+<<<<<<< HEAD
         "parameters": [
           {
             "name": "entityType",
@@ -1798,18 +1937,28 @@
         "responses": {
           "200": {
             "description": "Список изменений",
+=======
+        "responses": {
+          "200": {
+            "description": "Список точек",
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
+<<<<<<< HEAD
                     "$ref": "#/components/schemas/Changes"
+=======
+                    "$ref": "#/components/schemas/Point"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                   }
                 }
               }
             }
           }
         }
+<<<<<<< HEAD
       }
     },
     "/changes/{id}": {
@@ -1848,11 +1997,17 @@
       "post": {
         "summary": "Отменить изменение",
         "tags": ["Изменения"],
+=======
+      },
+      "post": {
+        "summary": "Создать новую точку",
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
+<<<<<<< HEAD
         "parameters": [
           {
             "name": "id",
@@ -1864,6 +2019,8 @@
             }
           }
         ],
+=======
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -1871,6 +2028,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
+<<<<<<< HEAD
                   "comment": {
                     "type": "string"
                   }
@@ -2256,12 +2414,37 @@
                     },
                     "pages": {
                       "type": "integer"
+=======
+                  "name": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "categoryIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "int64"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                     }
                   }
                 }
               }
             }
           }
+<<<<<<< HEAD
         }
       },
       "post": {
@@ -2289,6 +2472,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Products"
+=======
+        },
+        "responses": {
+          "200": {
+            "description": "Точка создана",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Point"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                 }
               }
             }
@@ -2296,6 +2489,7 @@
         }
       }
     },
+<<<<<<< HEAD
     "/products/{id}": {
       "get": {
         "summary": "Получить информацию о продукте",
@@ -2327,6 +2521,11 @@
       "put": {
         "summary": "Обновить информацию о продукте",
         "tags": ["Продукты"],
+=======
+    "/partner/points/{id}": {
+      "put": {
+        "summary": "Обновить информацию о точке",
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -2348,18 +2547,56 @@
           "content": {
             "application/json": {
               "schema": {
+<<<<<<< HEAD
                 "$ref": "#/components/schemas/Products"
+=======
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "categoryIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                }
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
               }
             }
           }
         },
         "responses": {
           "200": {
+<<<<<<< HEAD
             "description": "Информация о продукте обновлена",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Products"
+=======
+            "description": "Информация обновлена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Point"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                 }
               }
             }
@@ -2367,8 +2604,12 @@
         }
       },
       "delete": {
+<<<<<<< HEAD
         "summary": "Удалить продукт",
         "tags": ["Продукты"],
+=======
+        "summary": "Удалить точку",
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -2387,7 +2628,190 @@
         ],
         "responses": {
           "200": {
+<<<<<<< HEAD
             "description": "Продукт удален"
+=======
+            "description": "Точка удалена"
+          }
+        }
+      }
+    },
+    "/partner/products": {
+      "get": {
+        "summary": "Получить список товаров",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pointId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список товаров",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Создать новый товар",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "categoryId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "pointId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "isAvailable": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Товар создан",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/products/{id}": {
+      "put": {
+        "summary": "Обновить информацию о товаре",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "categoryId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "pointId": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "isAvailable": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Информация обновлена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Удалить товар",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Товар удален"
+>>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
           }
         }
       }

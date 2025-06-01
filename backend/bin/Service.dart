@@ -19,6 +19,9 @@ void main() async {
 
     final app = Router();
 
+    // Добавляем маршруты Swagger
+    app.mount('/swagger', swaggerController.handler);
+
     final corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
@@ -162,9 +165,6 @@ void main() async {
         );
       }
     });
-
-    // Добавляем маршруты Swagger
-    app.mount('/swagger', swaggerController.handler);
 
     final handler = const Pipeline()
         .addMiddleware(logRequests())

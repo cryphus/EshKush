@@ -85,4 +85,4 @@
   volumes:
     postgres_data:
     backend_deps:
-    certs:    # Добавляем определение тома для SSL-сертификатов 
+    certs:    # Том для SSL-сертификатов
