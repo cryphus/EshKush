@@ -13,7 +13,7 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
-        CREATE TYPE payment_method AS ENUM ('card', 'cash', 'google_pay', 'apple_pay');
+        CREATE TYPE payment_method AS ENUM ('cash', 'card', 'creditCard', 'mobilePayment', 'other');
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_transaction_status') THEN
@@ -21,27 +21,27 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_type') THEN
-        CREATE TYPE notification_type AS ENUM ('info', 'warning', 'error', 'success');
+        CREATE TYPE notification_type AS ENUM ('otherUpdate', 'promotion', 'system');
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'discount_type') THEN
-        CREATE TYPE discount_type AS ENUM ('percentage', 'fixed', 'free_shipping');
+        CREATE TYPE discount_type AS ENUM ('fixed', 'percentage');
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_type') THEN
-        CREATE TYPE action_type AS ENUM ('create', 'update', 'delete', 'login', 'logout');
+        CREATE TYPE action_type AS ENUM ('create', 'read', 'update', 'delete', 'login', 'logout', 'search', 'filter', 'other');
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'history_status') THEN
-        CREATE TYPE history_status AS ENUM ('active', 'archived', 'deleted');
+        CREATE TYPE history_status AS ENUM ('pending', 'completed', 'cancelled');
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'change_type') THEN
-        CREATE TYPE change_type AS ENUM ('field_update', 'relation_update', 'status_change');
+        CREATE TYPE change_type AS ENUM ('create', 'update', 'delete', 'restore');
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'entity_type') THEN
-        CREATE TYPE entity_type AS ENUM ('user', 'order', 'product', 'partner', 'category');
+        CREATE TYPE entity_type AS ENUM ('user', 'point', 'product', 'order', 'partner', 'category', 'promoCode', 'profile', 'other');
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'session_status') THEN
@@ -73,7 +73,6 @@ DROP TABLE IF EXISTS user_favorites CASCADE;
 DROP TABLE IF EXISTS product_category_map CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
-DROP TABLE IF EXISTS order_items CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS points CASCADE;
 DROP TABLE IF EXISTS partners CASCADE;
@@ -88,7 +87,8 @@ CREATE TABLE users (
     number VARCHAR(20) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     role user_role NOT NULL DEFAULT 'user',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Создаем таблицу cities
@@ -103,9 +103,11 @@ CREATE TABLE partners (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id),
     name VARCHAR(100) NOT NULL,
-    description TEXT,
-    logo_url TEXT,
-    website_url TEXT,
+    contact_person INTEGER NOT NULL,
+    contact_email VARCHAR(100) NOT NULL,
+    contact_phone VARCHAR(20) NOT NULL,
+    contact_document VARCHAR(50) NOT NULL,
+    max_discount DECIMAL(5,2) DEFAULT 0.0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -117,13 +119,30 @@ CREATE TABLE points (
     rating DECIMAL(3,2) DEFAULT 0.0,
     city_id INTEGER NOT NULL REFERENCES cities(id),
     products JSONB NOT NULL DEFAULT '{}',
-    opening_hours TIME NOT NULL,
-    closing_hours TIME NOT NULL,
+    opening_hours VARCHAR(5) NOT NULL,
+    closing_hours VARCHAR(5) NOT NULL,
     partner_id INTEGER NOT NULL REFERENCES partners(id),
     longitude DECIMAL(10,7) NOT NULL,
     latitude DECIMAL(10,7) NOT NULL,
     tags JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Создаем таблицу point_categories
+CREATE TABLE point_categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Создаем таблицу point_category_map
+CREATE TABLE point_category_map (
+    point_id INTEGER NOT NULL REFERENCES points(id) ON DELETE CASCADE,
+    category_id INTEGER NOT NULL REFERENCES point_categories(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (point_id, category_id)
 );
 
 -- Создаем таблицу orders
@@ -131,10 +150,12 @@ CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id),
     point_id INTEGER NOT NULL REFERENCES points(id),
+    products_id INTEGER[] NOT NULL,
     date TIMESTAMP WITH TIME ZONE NOT NULL,
     status order_status NOT NULL DEFAULT 'pending',
     total_price DECIMAL(10,2) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Создаем таблицу categories
@@ -145,31 +166,34 @@ CREATE TABLE categories (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Создаем таблицу products
-CREATE TABLE products (
+-- Создаем таблицу product_categories (под модель ProductCategory)
+CREATE TABLE product_categories (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(50) NOT NULL UNIQUE,
     description TEXT,
-    price DECIMAL(10, 2) NOT NULL,
-    image_url VARCHAR(255),
-    partner_id INTEGER NOT NULL REFERENCES partners(id),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Создаем таблицу order_items
-CREATE TABLE order_items (
+-- Создаем таблицу products (под модель Product)
+CREATE TABLE products (
     id SERIAL PRIMARY KEY,
-    order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    quantity INTEGER NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    image_url VARCHAR(255),
+    partner_id INTEGER NOT NULL REFERENCES partners(id),
+    point_id INTEGER NOT NULL REFERENCES points(id),
+    weight DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
+    is_available BOOLEAN NOT NULL DEFAULT TRUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Создаем таблицу product_category_map
 CREATE TABLE product_category_map (
-    product_id INTEGER NOT NULL REFERENCES products(id),
-    category_id INTEGER NOT NULL REFERENCES categories(id),
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    category_id INTEGER NOT NULL REFERENCES product_categories(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (product_id, category_id)
 );
@@ -192,14 +216,17 @@ CREATE TABLE reviews (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Создаем таблицу notifications
+-- Создаем таблицу notifications (под модель Notification)
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id),
-    title VARCHAR(100) NOT NULL,
     message TEXT NOT NULL,
+    type notification_type NOT NULL,
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    read_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Создаем таблицу profiles
@@ -210,10 +237,13 @@ CREATE TABLE profiles (
     last_name VARCHAR(50),
     avatar_url TEXT,
     bio TEXT,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    sum_co2 INTEGER DEFAULT 0,
+    saved_money DECIMAL(10,2) DEFAULT 0.0,
+    count_buy INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Создаем таблицу user_sessions
 CREATE TABLE user_sessions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -222,58 +252,81 @@ CREATE TABLE user_sessions (
     ip_address VARCHAR(45),
     status session_status NOT NULL DEFAULT 'active',
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_active TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Создаем таблицу partner_settings
 CREATE TABLE partner_settings (
     id SERIAL PRIMARY KEY,
     partner_id INTEGER NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
-    setting_key VARCHAR(50) NOT NULL,
-    setting_value TEXT NOT NULL,
+    branding_color VARCHAR(20) NOT NULL DEFAULT '#000000',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(partner_id, setting_key)
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Создаем таблицу partner_statistics
+-- Создаем таблицу partner_statistics (под модель PartnerStatistics)
 CREATE TABLE partner_statistics (
     id SERIAL PRIMARY KEY,
     partner_id INTEGER NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
-    total_orders INTEGER DEFAULT 0,
-    total_revenue DECIMAL(10, 2) DEFAULT 0,
-    average_rating DECIMAL(3,2) DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    point_id INTEGER NOT NULL REFERENCES points(id) ON DELETE CASCADE,
+    total_orders INTEGER NOT NULL DEFAULT 0,
+    total_revenue DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    total_cancel INTEGER NOT NULL DEFAULT 0,
+    average_rating DECIMAL(3,2) NOT NULL DEFAULT 0,
+    total_reviews INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE
 );
 
--- Создаем таблицу payment_transactions
+-- Создаем таблицу payment_transactions (под модель PaymentTransactions)
 CREATE TABLE payment_transactions (
     id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    amount DECIMAL(10, 2) NOT NULL,
-    status payment_transaction_status NOT NULL DEFAULT 'pending',
-    payment_method payment_method NOT NULL,
-    transaction_id VARCHAR(255),
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    order_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    status payment_transaction_status NOT NULL DEFAULT 'completed',
+    payment_method payment_method NOT NULL DEFAULT 'other',
+    provider_transaction_id INTEGER NOT NULL,
+    transaction_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE,
+    error_message TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Создаем таблицу action_logs
 CREATE TABLE action_logs (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
     action_type action_type NOT NULL,
     entity_type entity_type NOT NULL,
     entity_id INTEGER NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    details TEXT NOT NULL,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45) NOT NULL,
+    user_agent TEXT,
+    location TEXT,
+    is_success BOOLEAN NOT NULL DEFAULT TRUE,
+    error_message TEXT,
+    metadata JSONB
 );
 
--- Создаем таблицу order_history
+-- Создаем таблицу order_history (под модель OrderHistory)
 CREATE TABLE order_history (
     id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    status history_status NOT NULL DEFAULT 'active',
-    changes TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    point_id INTEGER NOT NULL REFERENCES points(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    order_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    completion_date TIMESTAMP WITH TIME ZONE,
+    total_sum DECIMAL(10,2) NOT NULL DEFAULT 0.0,
+    status history_status NOT NULL DEFAULT 'pending',
+    receipt_link TEXT,
+    discount_applied DECIMAL(10,2),
+    promo_code_used TEXT,
+    co2_saved INTEGER DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Создаем таблицу order_actions
@@ -285,7 +338,7 @@ CREATE TABLE order_actions (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Создаем таблицу changes
+-- Создаем таблицу changes (под модель Changes)
 CREATE TABLE changes (
     id SERIAL PRIMARY KEY,
     entity_type entity_type NOT NULL,
@@ -294,34 +347,52 @@ CREATE TABLE changes (
     field_name VARCHAR(100) NOT NULL,
     old_value TEXT,
     new_value TEXT,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    changed_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    comment TEXT,
+    is_reverted BOOLEAN NOT NULL DEFAULT FALSE,
+    reverted_at TIMESTAMP WITH TIME ZONE,
+    reverted_by INTEGER REFERENCES users(id)
 );
 
--- Создаем таблицу error_logs
+-- Создаем таблицу error_logs (под модель ErrorLogs)
 CREATE TABLE error_logs (
     id SERIAL PRIMARY KEY,
     severity error_severity NOT NULL,
     message TEXT NOT NULL,
-    stack_trace TEXT,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    error_code TEXT NOT NULL,
+    stack_trace TEXT NOT NULL,
+    time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    resolved BOOLEAN NOT NULL DEFAULT FALSE,
+    module TEXT,
+    user_id INTEGER REFERENCES users(id),
+    additional_info TEXT,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    resolved_by TEXT
 );
 
 -- Создаем таблицу promo_codes
 CREATE TABLE promo_codes (
     id SERIAL PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    min_order_sum DECIMAL(10,2) NOT NULL DEFAULT 0,
     discount_type discount_type NOT NULL,
-    discount_value DECIMAL(10, 2) NOT NULL,
+    discount_value DECIMAL(10,2) NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    usage_limit INTEGER,
+    current_usage INTEGER NOT NULL DEFAULT 0,
+    applicable_products INTEGER[],
+    applicable_points INTEGER[],
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- Создаем таблицу point_reviews
 CREATE TABLE point_reviews (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id),
     point_id INTEGER NOT NULL REFERENCES points(id),
-    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    rating DECIMAL(2,1) NOT NULL CHECK (rating >= 0 AND rating <= 5),
     comment TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -333,8 +404,6 @@ CREATE INDEX IF NOT EXISTS points_partner_id_idx ON points(partner_id);
 CREATE INDEX IF NOT EXISTS orders_user_id_idx ON orders(user_id);
 CREATE INDEX IF NOT EXISTS orders_point_id_idx ON orders(point_id);
 CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);
-CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id);
-CREATE INDEX IF NOT EXISTS order_items_product_id_idx ON order_items(product_id);
 CREATE INDEX IF NOT EXISTS partners_user_id_idx ON partners(user_id);
 CREATE INDEX IF NOT EXISTS products_partner_id_idx ON products(partner_id);
 CREATE INDEX IF NOT EXISTS product_category_map_product_id_idx ON product_category_map(product_id);
@@ -354,12 +423,19 @@ CREATE INDEX IF NOT EXISTS payment_transactions_order_id_idx ON payment_transact
 CREATE INDEX IF NOT EXISTS action_logs_user_id_idx ON action_logs(user_id);
 CREATE INDEX IF NOT EXISTS action_logs_entity_type_idx ON action_logs(entity_type);
 CREATE INDEX IF NOT EXISTS order_history_order_id_idx ON order_history(order_id);
+CREATE INDEX IF NOT EXISTS order_history_user_id_idx ON order_history(user_id);
+CREATE INDEX IF NOT EXISTS order_history_point_id_idx ON order_history(point_id);
+CREATE INDEX IF NOT EXISTS order_history_status_idx ON order_history(status);
 CREATE INDEX IF NOT EXISTS order_actions_order_id_idx ON order_actions(order_id);
+CREATE INDEX IF NOT EXISTS order_actions_action_type_idx ON order_actions(action_type);
 CREATE INDEX IF NOT EXISTS changes_entity_type_idx ON changes(entity_type);
 CREATE INDEX IF NOT EXISTS changes_entity_id_idx ON changes(entity_id);
 CREATE INDEX IF NOT EXISTS error_logs_severity_idx ON error_logs(severity);
 CREATE INDEX IF NOT EXISTS point_reviews_user_id_idx ON point_reviews(user_id);
 CREATE INDEX IF NOT EXISTS point_reviews_point_id_idx ON point_reviews(point_id);
+CREATE INDEX IF NOT EXISTS promo_codes_code_idx ON promo_codes(code);
+CREATE INDEX IF NOT EXISTS promo_codes_is_active_idx ON promo_codes(is_active);
+CREATE INDEX IF NOT EXISTS promo_codes_dates_idx ON promo_codes(start_date, end_date);
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

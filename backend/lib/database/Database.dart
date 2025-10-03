@@ -30,10 +30,13 @@ class Database {
       env['DB_NAME'] ?? 'flutter_auth',
       username: env['DB_USER'] ?? 'postgres',
       password: env['DB_PASSWORD'] ?? 'TQr132123',
+      timeoutInSeconds: 30,
+      useSSL: false,
     );
 
     try {
       await db._connection.open();
+      await db._connection.execute('SET client_encoding TO \'UTF8\'');
       print('Подключение к базе данных успешно установлено');
     } catch (e) {
       print('Ошибка подключения к базе данных: $e');

@@ -3,29 +3,29 @@ import 'package:backend/model/enums/ChangeType.dart';
 
 class Changes {
   final int id;
-  EntityType entityType;
+  final String entityType;
   final int entityId;
-  String fieldName;
-  String oldValue;
-  String newValue;
-  final int changedBy;
-  DateTime changedAt;
-  ChangeType changeType;
-  String? comment;
-  bool isReverted;
-  DateTime? revertedAt;
-  int? revertedBy;
+  final String changeType;
+  final String fieldName;
+  final String? oldValue;
+  final String? newValue;
+  final int? changedBy;
+  final DateTime createdAt;
+  final String? comment;
+  final bool isReverted;
+  final DateTime? revertedAt;
+  final int? revertedBy;
 
   Changes({
     required this.id,
     required this.entityType,
     required this.entityId,
+    required this.changeType,
     required this.fieldName,
-    required this.oldValue,
-    required this.newValue,
-    required this.changedBy,
-    required this.changedAt,
-    this.changeType = ChangeType.update,
+    this.oldValue,
+    this.newValue,
+    this.changedBy,
+    required this.createdAt,
     this.comment,
     this.isReverted = false,
     this.revertedAt,
@@ -38,55 +38,39 @@ class Changes {
   factory Changes.fromJson(Map<String, dynamic> json) {
     return Changes(
       id: json['id'] as int,
-      entityType: EntityType.values.firstWhere(
-        (e) => e.toString() == 'EntityType.${json['entityType']}',
-        orElse: () => EntityType.other,
-      ),
-      entityId: json['entityId'] as int,
-      fieldName: json['fieldName'] as String,
-      oldValue: json['oldValue'] as String,
-      newValue: json['newValue'] as String,
-      changedBy: json['changedBy'] as int,
-      changedAt: DateTime.parse(json['changedAt'] as String),
-      changeType: ChangeType.values.firstWhere(
-        (e) => e.toString() == 'ChangeType.${json['changeType']}',
-        orElse: () => ChangeType.update,
-      ),
+      entityType: json['entity_type'] as String,
+      entityId: json['entity_id'] as int,
+      changeType: json['change_type'] as String,
+      fieldName: json['field_name'] as String,
+      oldValue: json['old_value'] as String?,
+      newValue: json['new_value'] as String?,
+      changedBy: json['changed_by'] as int?,
+      createdAt: DateTime.parse(json['created_at'] as String),
       comment: json['comment'] as String?,
-      isReverted: json['isReverted'] as bool? ?? false,
-      revertedAt: json['revertedAt'] != null ? DateTime.parse(json['revertedAt'] as String) : null,
-      revertedBy: json['revertedBy'] as int?,
+      isReverted: json['is_reverted'] as bool? ?? false,
+      revertedAt: json['reverted_at'] != null ? DateTime.parse(json['reverted_at'] as String) : null,
+      revertedBy: json['reverted_by'] as int?,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'entityType': entityType.toString().split('.').last,
-      'entityId': entityId,
-      'fieldName': fieldName,
-      'oldValue': oldValue,
-      'newValue': newValue,
-      'changedBy': changedBy,
-      'changedAt': changedAt.toIso8601String(),
-      'changeType': changeType.toString().split('.').last,
+      'entity_type': entityType,
+      'entity_id': entityId,
+      'change_type': changeType,
+      'field_name': fieldName,
+      'old_value': oldValue,
+      'new_value': newValue,
+      'changed_by': changedBy,
+      'created_at': createdAt.toIso8601String(),
       'comment': comment,
-      'isReverted': isReverted,
-      'revertedAt': revertedAt?.toIso8601String(),
-      'revertedBy': revertedBy,
+      'is_reverted': isReverted,
+      'reverted_at': revertedAt?.toIso8601String(),
+      'reverted_by': revertedBy,
     };
   }
 
-  void revert(int revertedBy, {String? comment}) {
-    if (isReverted) throw StateError('Change is already reverted');
-    
-    isReverted = true;
-    this.revertedBy = revertedBy;
-    revertedAt = DateTime.now();
-    this.comment = comment;
-  }
-
-  bool get isRecent => DateTime.now().difference(changedAt) < const Duration(hours: 24);
-  Duration get age => DateTime.now().difference(changedAt);
-  Duration? get timeToRevert => revertedAt?.difference(changedAt);
+  bool get isRecent => DateTime.now().difference(createdAt) < const Duration(hours: 24);
+  Duration get age => DateTime.now().difference(createdAt);
 }

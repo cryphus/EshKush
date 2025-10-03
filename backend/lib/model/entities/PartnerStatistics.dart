@@ -28,8 +28,8 @@ class PartnerStatistics {
   }
 
   void _validate() {
-    if (id <= 0) {
-      throw ArgumentError('ID статистики должен быть положительным числом');
+    if (id < 0) {
+      throw ArgumentError('ID статистики не может быть отрицательным');
     }
     if (partnerId <= 0) {
       throw ArgumentError('ID партнера должен быть положительным числом');
@@ -83,19 +83,21 @@ class PartnerStatistics {
   }
 
   factory PartnerStatistics.fromJson(Map<String, dynamic> json) {
+    DateTime _parseDate(dynamic v) => v is DateTime ? v : DateTime.parse(v.toString());
+    double _parseDouble(dynamic v) => v == null ? 0.0 : (v is num ? v.toDouble() : double.parse(v.toString()));
+    int _parseInt(dynamic v) => v == null ? 0 : int.parse(v.toString());
+
     return PartnerStatistics(
-      id: json['id'] as int,
-      partnerId: json['partner_id'] as int,
-      pointId: json['point_id'] as int,
-      totalOrders: json['total_orders'] as int,
-      totalRevenue: (json['total_revenue'] as num).toDouble(),
-      totalCancel: json['total_cancel'] as int,
-      averageRating: (json['average_rating'] as num).toDouble(),
-      totalReviews: json['total_reviews'] as int,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
+      id: _parseInt(json['id']),
+      partnerId: _parseInt(json['partner_id']),
+      pointId: _parseInt(json['point_id']),
+      totalOrders: _parseInt(json['total_orders']),
+      totalRevenue: _parseDouble(json['total_revenue']),
+      totalCancel: _parseInt(json['total_cancel']),
+      averageRating: _parseDouble(json['average_rating']),
+      totalReviews: _parseInt(json['total_reviews']),
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: json['updated_at'] != null ? _parseDate(json['updated_at']) : null,
       isActive: json['is_active'] as bool? ?? true,
     );
   }

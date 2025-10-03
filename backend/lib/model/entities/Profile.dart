@@ -1,54 +1,110 @@
 class Profile {
   final int id;
-  int sumCO2;
-  double savedMoney;
-  int countBuy;
-  //
   final int userId;
-  DateTime createdAt;
-  DateTime updatedAt;
+  final String firstName;
+  final String lastName;
+  final String? avatarUrl;
+  final String? bio;
+  final int sumCO2;
+  final double savedMoney;
+  final int countBuy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Profile({
     required this.id,
     required this.userId,
-    this.savedMoney = 0.0,
-    this.countBuy = 0,
-    this.sumCO2 = 0,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) : 
-    createdAt = createdAt ?? DateTime.now(),
-    updatedAt = updatedAt ?? DateTime.now() {
-    if (savedMoney < 0) throw ArgumentError('Saved money cannot be negative');
-    if (sumCO2 < 0) throw ArgumentError('CO2 sum cannot be negative');
-    if (countBuy < 0) throw ArgumentError('Purchase count cannot be negative');
-  }
+    required this.firstName,
+    required this.lastName,
+    this.avatarUrl,
+    this.bio,
+    required this.sumCO2,
+    required this.savedMoney,
+    required this.countBuy,
+    required this.createdAt,
+    required this.updatedAt,
+  });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
     return Profile(
-      id: json['id'] as int,
-      userId: json['userId'] as int,
-      savedMoney: (json['savedMoney'] as num).toDouble(),
-      countBuy: json['countBuy'] as int,
-      sumCO2: json['sumCO2'] as int,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      id: int.parse(json['id'].toString()),
+      userId: int.parse(json['user_id'].toString()),
+      firstName: (json['first_name']?.toString() ?? ''),
+      lastName: (json['last_name']?.toString() ?? ''),
+      avatarUrl: (json['avatar_url'] == null || json['avatar_url'].toString().isEmpty)
+          ? null
+          : json['avatar_url'].toString(),
+      bio: (json['bio'] == null || json['bio'].toString().isEmpty)
+          ? null
+          : json['bio'].toString(),
+      sumCO2: int.tryParse(json['sum_co2']?.toString() ?? '') ?? 0,
+      savedMoney: double.tryParse(json['saved_money']?.toString() ?? '') ?? 0.0,
+      countBuy: int.tryParse(json['count_buy']?.toString() ?? '') ?? 0,
+      createdAt: (() {
+        final raw = json['created_at'];
+        if (raw is DateTime) return raw;
+        final parsed = DateTime.tryParse(raw?.toString() ?? '');
+        return parsed ?? DateTime.now();
+      })(),
+      updatedAt: (() {
+        final raw = json['updated_at'];
+        if (raw is DateTime) return raw;
+        final parsed = DateTime.tryParse(raw?.toString() ?? '');
+        return parsed ?? DateTime.now();
+      })(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'userId': userId,
-      'savedMoney': savedMoney,
-      'countBuy': countBuy,
-      'sumCO2': sumCO2,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'user_id': userId,
+      'first_name': firstName,
+      'last_name': lastName,
+      'avatar_url': avatarUrl,
+      'bio': bio,
+      'sum_co2': sumCO2,
+      'saved_money': savedMoney,
+      'count_buy': countBuy,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
-  double get averageCO2Saved => countBuy > 0 
-      ? sumCO2 / countBuy 
-      : 0.0;
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Profile &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          userId == other.userId &&
+          firstName == other.firstName &&
+          lastName == other.lastName &&
+          avatarUrl == other.avatarUrl &&
+          bio == other.bio &&
+          sumCO2 == other.sumCO2 &&
+          savedMoney == other.savedMoney &&
+          countBuy == other.countBuy &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt;
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      userId.hashCode ^
+      firstName.hashCode ^
+      lastName.hashCode ^
+      avatarUrl.hashCode ^
+      bio.hashCode ^
+      sumCO2.hashCode ^
+      savedMoney.hashCode ^
+      countBuy.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode;
+
+  @override
+  String toString() =>
+      'Profile(id: $id, userId: $userId, firstName: $firstName, lastName: $lastName, '
+      'avatarUrl: $avatarUrl, bio: $bio, sumCO2: $sumCO2, savedMoney: $savedMoney, '
+      'countBuy: $countBuy, createdAt: $createdAt, updatedAt: $updatedAt)';
 }

@@ -1,316 +1,333 @@
 import 'package:flutter/material.dart';
+import '../services/FrontendAuthService.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../theme/colors.dart';
+import '../widgets/layouts/scaffold_layout.dart';
+import '../screens/OffersScreen.dart';
 
-import 'OffersScreen.dart';
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class HomeContent extends StatefulWidget {
+  const HomeContent({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeContent> createState() => _HomeContentState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeContentState extends State<HomeContent> {
+  final _authService = FrontendAuthService();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Food App',
       theme: ThemeData(
         primarySwatch: Colors.green,
-        scaffoldBackgroundColor: const Color(0xFFF0F4E4),
+        scaffoldBackgroundColor: AppColors.colorBackground,
+        textTheme: TextTheme(
+          bodyMedium:
+              TextStyle(color: AppColors.primaryText), // Базовый цвет текста
+        ),
       ),
-      home: HomePage(),
+      home: const HomePage(),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  static const darkGreen = Color(0xFF2E7D32);
-  static const lightGreen = Color(0xFFC8E6C9);
 
-  final List<Widget> _pages = [
-    HomeContent(),
-    OffersScreen(),
-    Placeholder(), // Для третьей вкладки
-    Placeholder(), // Для четвертой вкладки
-  ];
+  Widget _buildNetworkImage(String url, {double? width}) => Image.network(
+        url,
+        width: width,
+        fit: BoxFit.contain,
+        loadingBuilder: (context, child, progress) =>
+            progress == null ? child : _buildLoadingIndicator(progress),
+        errorBuilder: (context, error, _) => Icon(
+          Icons.error,
+          size: width ?? 50,
+          color: Colors.red,
+        ),
+      );
+
+  Widget _buildLoadingIndicator(ImageChunkEvent progress) => Center(
+        child: CircularProgressIndicator(
+          value: progress.expectedTotalBytes != null
+              ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+              : null,
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _currentIndex == 0 ? _buildHomeAppBar() : null,
-      body: _pages[_currentIndex],
-      bottomNavigationBar: _buildBottomNavBar(),
-    );
+    return _buildBodyContent();
   }
 
-  AppBar _buildHomeAppBar() {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildBodyContent() => SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildUserGreetingCard(),
+            const SizedBox(height: 24),
+            _buildOrdersSection(),
+            const SizedBox(height: 24),
+            _buildCategoriesSection(),
+          ],
+        ),
+      );
+
+  Widget _buildUserGreetingCard() => Container(
+        margin: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.veryLightGray,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              offset: const Offset(0, 4),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Привет,', style: _greetingTextStyle),
+                  Text(
+                    'Гость',
+                    style: _greetingTextStyle,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Только в этом месяце',
+                    style: TextStyle(
+                      color: AppColors.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'ты сохранил 2 кг еды!',
+                    style: TextStyle(
+                      color: AppColors.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildNetworkImage(
+              'http://91.186.217.192/images/img_packandearth.png',
+              width: 100,
+            ),
+          ],
+        ),
+      );
+
+  TextStyle get _greetingTextStyle => TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: AppColors.primaryText, // Явно задаем цвет
+      );
+
+  Widget _buildOrdersSection() => Column(
         children: [
-          Row(
+          _SectionHeader(
+            title: 'Ваши заказы',
+            actionText: 'Все',
+            onActionPressed: () {},
+          ),
+          _buildOrderCard(),
+          const SizedBox(height: 16),
+          _buildMoreOffersButton(),
+        ],
+      );
+
+  Widget _buildOrderCard() => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.accentGreen,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: _buildNetworkImage(
+                'http://91.186.217.192/images/img_shopicon.png',
+                width: 100,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('БулоШная', style: _shopNameStyle),
+                const SizedBox(height: 4),
+                Text('сегодня, 19:00 – 21:00', style: _shopScheduleStyle),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  TextStyle get _shopNameStyle => const TextStyle(
+        color: AppColors.white,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      );
+
+  TextStyle get _shopScheduleStyle => const TextStyle(
+        color: Colors.white70,
+        fontSize: 14,
+      );
+
+  Widget _buildMoreOffersButton() => SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.lightGreen,
+            foregroundColor: AppColors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const OffersPage()),
+            );
+          },
+          child: const Text(
+            'Больше предложений',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+
+  Widget _buildCategoriesSection() => Column(
+        children: [
+          _SectionHeader(
+            title: 'Категории',
+            actionText: 'Все',
+            onActionPressed: () {},
+          ),
+          const Row(
             children: [
-              Icon(Icons.location_on, color: Colors.black, size: 20),
-              const SizedBox(width: 4),
-              Text('Тюмень',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500)),
+              _CategoryCard(
+                title: 'Магазины',
+                imageUrl: 'http://91.186.217.192/images/img_shop.png',
+              ),
+              SizedBox(width: 16),
+              _CategoryCard(
+                title: 'Рестораны',
+                imageUrl: 'http://91.186.217.192/images/img_restoraunt.png',
+              ),
             ],
           ),
-          Icon(Icons.shopping_basket, color: darkGreen),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      child: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white.withOpacity(0.7),
-        backgroundColor: lightGreen,
-        type: BottomNavigationBarType.fixed,
-        elevation: 10,
-        items: [
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/home.svg',
-              width: 24,
-              height: 24,
-              color: _currentIndex == 0
-                  ? Colors.white
-                  : Colors.white.withOpacity(0.7),
-            ),
-            label: 'Главная',
-          ),
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/products.svg',
-              width: 24,
-              height: 24,
-              color: _currentIndex == 1
-                  ? Colors.white
-                  : Colors.white.withOpacity(0.7),
-            ),
-            label: 'Предложения',
-          ),
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/likes.svg',
-              width: 24,
-              height: 24,
-              color: _currentIndex == 2
-                  ? Colors.white
-                  : Colors.white.withOpacity(0.7),
-            ),
-            label: 'Избранное',
-          ),
-          BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/icons/profile.svg',
-              width: 24,
-              height: 24,
-              color: _currentIndex == 3
-                  ? Colors.white
-                  : Colors.white.withOpacity(0.7),
-            ),
-            label: 'Профиль',
-          ),
-        ],
-        onTap: (index) => setState(() => _currentIndex = index),
-      ),
-    );
-  }
+      );
 }
 
-class HomeContent extends StatelessWidget {
-  final darkGreen = const Color(0xFF2E7D32);
-  final lightGreen = const Color(0xFFC8E6C9);
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String actionText;
+  final VoidCallback onActionPressed;
+
+  const _SectionHeader({
+    required this.title,
+    required this.actionText,
+    required this.onActionPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Главная',
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black)),
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: lightGreen,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Привет,',
-                          style: TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.w500)),
-                      Text('Гость',
-                          style: TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 8),
-                      Text('Только в этом месяце ты сохранил 2 кг еды!',
-                          style: TextStyle(fontSize: 14)),
-                    ],
-                  ),
-                ),
-                Image.network(
-                  'http://91.186.217.192/images/packandearth.png',
-                  width: 100,
-                  errorBuilder: (context, error, stackTrace) =>
-                      Icon(Icons.error, size: 50, color: Colors.red),
-                ),
-              ],
-            ),
-          ),
-          _buildSectionHeader('Ваши заказы', 'Все'),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green[800],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    'http://91.186.217.192/images/shopicon.png',
-                    width: 100,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Icon(Icons.error, size: 50, color: Colors.red),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('БулоШная',
-                        style: TextStyle(color: Colors.white, fontSize: 20)),
-                    const SizedBox(height: 4),
-                    Text('сегодня, 19:00 – 21:00',
-                        style: TextStyle(color: Colors.white70, fontSize: 14)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: lightGreen,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              onPressed: () {},
-              child: Text('Больше предложений',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
-            ),
-          ),
-          _buildSectionHeader('Категории', 'Все'),
-          Row(
-            children: [
-              _buildCategoryCard(
-                  'Магазины', 'http://91.186.217.192/images/shop.png'),
-              const SizedBox(width: 16),
-              _buildCategoryCard(
-                  'Рестораны', 'http://91.186.217.192/images/restoraunt.png'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, String action) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: AppColors.primaryText,
+            ),
+          ),
           TextButton(
-            onPressed: () {},
-            child: Text(action),
+            onPressed: onActionPressed,
             style: TextButton.styleFrom(
-                foregroundColor: darkGreen, textStyle: TextStyle(fontSize: 16)),
+              foregroundColor: AppColors.accentGreen,
+              textStyle: const TextStyle(
+                fontSize: 16,
+                decoration: TextDecoration.none, // Убираем подчеркивание
+              ),
+            ),
+            child: Text(actionText),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildCategoryCard(String title, String imageUrl) {
+class _CategoryCard extends StatelessWidget {
+  final String title;
+  final String imageUrl;
+
+  const _CategoryCard({required this.title, required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        height: 165,
+        height: 210,
         decoration: BoxDecoration(
-          color: lightGreen,
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.veryLightGray,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(title,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 12),
-            Image.network(
-              imageUrl,
-              height: 100,
-              errorBuilder: (context, error, stackTrace) =>
-                  Icon(Icons.error, size: 50, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+                color: AppColors.primaryText,
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              height: 130,
+              width: double.infinity,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 130,
+                  fit: BoxFit.fitWidth,
+                  alignment: Alignment.bottomCenter,
+                ),
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class OffersContent extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.local_offer, size: 64, color: Colors.green),
-          const SizedBox(height: 16),
-          Text('Специальные предложения',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text('Здесь будут отображаться акции и скидки',
-              style: TextStyle(fontSize: 16, color: Colors.grey)),
-        ],
       ),
     );
   }

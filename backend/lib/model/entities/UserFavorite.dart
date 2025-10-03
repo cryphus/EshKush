@@ -23,10 +23,14 @@ class UserFavorite extends BaseMap {
   }
 
   factory UserFavorite.fromJson(Map<String, dynamic> json) {
+    final createdRaw = json['created_at'];
+    final created = createdRaw is DateTime
+        ? createdRaw
+        : DateTime.tryParse(createdRaw?.toString() ?? '') ?? DateTime.now();
     return UserFavorite(
-      userId: json['user_id'] as int,
-      pointId: json['point_id'] as int,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      userId: int.parse(json['user_id'].toString()),
+      pointId: int.parse(json['point_id'].toString()),
+      createdAt: created,
     );
   }
 

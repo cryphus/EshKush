@@ -1,0 +1,1854 @@
+openapi: 3.0.0
+info:
+  title: EshKush API
+  version: 1.0.0
+  description: API для работы с продуктами и заказами
+
+servers:
+  - url: http://localhost:8080
+    description: Локальный сервер разработки
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        categoryId:
+          type: integer
+        pointId:
+          type: integer
+        isAvailable:
+          type: boolean
+        imageUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+
+    ProductInput:
+      type: object
+      required:
+        - name
+        - description
+        - price
+        - categoryId
+        - pointId
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        categoryId:
+          type: integer
+        pointId:
+          type: integer
+        isAvailable:
+          type: boolean
+        imageUrl:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        number:
+          type: string
+        role:
+          type: string
+          enum: [admin, user, partner, support, guest]
+        created_at:
+          type: string
+          format: date-time
+
+    Point:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+        rating:
+          type: number
+          format: float
+        cityId:
+          type: integer
+        products:
+          type: object
+        openingHours:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+        closingHours:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+        partnerId:
+          type: integer
+        longitude:
+          type: number
+          format: float
+        latitude:
+          type: number
+          format: float
+        tags:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        pointId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, confirmed, completed, cancelled]
+        totalSum:
+          type: number
+          format: float
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [orderUpdate, systemUpdate, promoUpdate, otherUpdate]
+        message:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    ErrorLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        message:
+          type: string
+        stackTrace:
+          type: string
+        module:
+          type: string
+        userId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        parentId:
+          type: integer
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        pointId:
+          type: integer
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Promo:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        discount:
+          type: number
+          format: float
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        productId:
+          type: integer
+        quantity:
+          type: integer
+        price:
+          type: number
+          format: float
+        createdAt:
+          type: string
+          format: date-time
+
+    PointSchedule:
+      type: object
+      properties:
+        id:
+          type: integer
+        pointId:
+          type: integer
+        dayOfWeek:
+          type: integer
+          minimum: 1
+          maximum: 7
+        openTime:
+          type: string
+          format: time
+        closeTime:
+          type: string
+          format: time
+        isActive:
+          type: boolean
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        avatar:
+          type: string
+        preferences:
+          type: object
+          properties:
+            notifications:
+              type: boolean
+            theme:
+              type: string
+              enum: [light, dark, system]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PointImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        pointId:
+          type: integer
+        url:
+          type: string
+        isMain:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    PointContact:
+      type: object
+      properties:
+        id:
+          type: integer
+        pointId:
+          type: integer
+        type:
+          type: string
+          enum: [phone, email, website, social]
+        value:
+          type: string
+        isActive:
+          type: boolean
+
+    PointPayment:
+      type: object
+      properties:
+        id:
+          type: integer
+        pointId:
+          type: integer
+        type:
+          type: string
+          enum: [cash, card, online]
+        isActive:
+          type: boolean
+
+    OrderStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, confirmed, completed, cancelled]
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    OrderPayment:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        amount:
+          type: number
+          format: float
+        type:
+          type: string
+          enum: [cash, card, online]
+        status:
+          type: string
+          enum: [pending, completed, failed, refunded]
+        createdAt:
+          type: string
+          format: date-time
+
+    UserAddress:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        address:
+          type: string
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        isDefault:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    UserFavorite:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        pointId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    UserHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        action:
+          type: string
+          enum: [view, search, order]
+        data:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    PointReview:
+      type: object
+      properties:
+        id:
+          type: integer
+        pointId:
+          type: integer
+        userId:
+          type: integer
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Аутентификация
+      summary: Регистрация нового пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+                - email
+                - number
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                number:
+                  type: string
+      responses:
+        '200':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /auth/login:
+    post:
+      tags:
+        - Аутентификация
+      summary: Вход в систему
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Аутентификация
+      summary: Обновление токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Токен обновлен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+
+  /products:
+    get:
+      tags:
+        - Продукты
+      summary: Получить список всех продуктов
+      responses:
+        '200':
+          description: Список продуктов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+    post:
+      tags:
+        - Продукты
+      summary: Создать новый продукт
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      responses:
+        '201':
+          description: Продукт создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          description: Требуется авторизация
+        '400':
+          description: Некорректные данные
+
+  /products/{id}:
+    get:
+      tags:
+        - Продукты
+      summary: Получить продукт по ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Продукт найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Продукт не найден
+    put:
+      tags:
+        - Продукты
+      summary: Обновить продукт
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      responses:
+        '200':
+          description: Продукт обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          description: Требуется авторизация
+        '404':
+          description: Продукт не найден
+    delete:
+      tags:
+        - Продукты
+      summary: Удалить продукт
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Продукт удален
+        '401':
+          description: Требуется авторизация
+        '404':
+          description: Продукт не найден
+
+  /products/category/{categoryId}:
+    get:
+      tags:
+        - Продукты
+      summary: Получить продукты по категории
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список продуктов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+  /products/{id}/categories:
+    get:
+      tags:
+        - Продукты
+      summary: Получить категории продукта
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список ID категорий
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+    put:
+      tags:
+        - Продукты
+      summary: Обновить категории продукта
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categoryIds:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '200':
+          description: Категории обновлены
+        '401':
+          description: Требуется авторизация
+        '404':
+          description: Продукт не найден
+
+  /points:
+    get:
+      tags:
+        - Точки продаж
+      summary: Получить список всех точек
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Point'
+    post:
+      summary: Создать новую точку
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Point'
+      responses:
+        '201':
+          description: Точка успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Point'
+
+  /points/{id}:
+    get:
+      summary: Получить точку по ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Point'
+    put:
+      summary: Обновить точку
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Point'
+      responses:
+        '200':
+          description: Точка успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Point'
+    delete:
+      summary: Удалить точку
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Точка успешно удалена
+
+  /points/{id}/rating:
+    put:
+      summary: Обновить рейтинг точки
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: number
+                  format: float
+                  minimum: 0
+                  maximum: 5
+      responses:
+        '200':
+          description: Рейтинг успешно обновлен
+
+  /points/{id}/categories:
+    get:
+      summary: Получить категории точки
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+    put:
+      summary: Обновить категории точки
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categoryIds:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '200':
+          description: Категории успешно обновлены
+
+  /points/category/{categoryId}:
+    get:
+      summary: Получить точки по категории
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Point'
+
+  /points/{id}/schedule:
+    get:
+      tags:
+        - Точки продаж
+      summary: Получить расписание точки
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Расписание точки
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointSchedule'
+    put:
+      tags:
+        - Точки продаж
+      summary: Обновить расписание точки
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PointSchedule'
+      responses:
+        '200':
+          description: Расписание обновлено
+        '401':
+          description: Требуется авторизация
+
+  /points/{id}/images:
+    get:
+      tags:
+        - Точки продаж
+      summary: Получить изображения точки
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список изображений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointImage'
+    post:
+      tags:
+        - Точки продаж
+      summary: Добавить изображение
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                isMain:
+                  type: boolean
+      responses:
+        '201':
+          description: Изображение добавлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointImage'
+
+  /points/{id}/contacts:
+    get:
+      tags:
+        - Точки продаж
+      summary: Получить контакты точки
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список контактов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointContact'
+    post:
+      tags:
+        - Точки продаж
+      summary: Добавить контакт
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - value
+              properties:
+                type:
+                  type: string
+                  enum: [phone, email, website, social]
+                value:
+                  type: string
+      responses:
+        '201':
+          description: Контакт добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointContact'
+
+  /points/{id}/payments:
+    get:
+      tags:
+        - Точки продаж
+      summary: Получить способы оплаты точки
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список способов оплаты
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointPayment'
+    post:
+      tags:
+        - Точки продаж
+      summary: Добавить способ оплаты
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [cash, card, online]
+      responses:
+        '201':
+          description: Способ оплаты добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointPayment'
+
+  /orders:
+    get:
+      tags:
+        - Заказы
+      summary: Получить список заказов
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список заказов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+    post:
+      tags:
+        - Заказы
+      summary: Создать новый заказ
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pointId
+                - products
+              properties:
+                pointId:
+                  type: integer
+                products:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId:
+                        type: integer
+                      quantity:
+                        type: integer
+                promoCode:
+                  type: string
+      responses:
+        '201':
+          description: Заказ создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /orders/{id}:
+    get:
+      tags:
+        - Заказы
+      summary: Получить информацию о заказе
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация о заказе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /orders/{id}/items:
+    get:
+      tags:
+        - Заказы
+      summary: Получить товары в заказе
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список товаров в заказе
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderItem'
+
+  /orders/{id}/status:
+    get:
+      tags:
+        - Заказы
+      summary: Получить историю статусов заказа
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: История статусов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderStatus'
+
+  /orders/{id}/payment:
+    get:
+      tags:
+        - Заказы
+      summary: Получить информацию об оплате заказа
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация об оплате
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPayment'
+    post:
+      tags:
+        - Заказы
+      summary: Оплатить заказ
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [cash, card, online]
+      responses:
+        '201':
+          description: Заказ оплачен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPayment'
+
+  /categories:
+    get:
+      tags:
+        - Категории
+      summary: Получить список категорий
+      responses:
+        '200':
+          description: Список категорий
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+    post:
+      tags:
+        - Категории
+      summary: Создать новую категорию
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                parentId:
+                  type: integer
+      responses:
+        '201':
+          description: Категория создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+
+  /categories/{id}:
+    get:
+      tags:
+        - Категории
+      summary: Получить категорию по ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Категория найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+    put:
+      tags:
+        - Категории
+      summary: Обновить категорию
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                parentId:
+                  type: integer
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          description: Категория обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+    delete:
+      tags:
+        - Категории
+      summary: Удалить категорию
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Категория удалена
+
+  /reviews:
+    get:
+      tags:
+        - Отзывы
+      summary: Получить список отзывов
+      parameters:
+        - name: pointId
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список отзывов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+    post:
+      tags:
+        - Отзывы
+      summary: Создать новый отзыв
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pointId
+                - rating
+              properties:
+                pointId:
+                  type: integer
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        '201':
+          description: Отзыв создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+
+  /promos:
+    get:
+      tags:
+        - Промокоды
+      summary: Получить список промокодов
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список промокодов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Promo'
+    post:
+      tags:
+        - Промокоды
+      summary: Создать новый промокод
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - discount
+                - startDate
+                - endDate
+              properties:
+                code:
+                  type: string
+                discount:
+                  type: number
+                  format: float
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Промокод создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promo'
+
+  /promos/{code}:
+    get:
+      tags:
+        - Промокоды
+      summary: Проверить промокод
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Информация о промокоде
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promo'
+
+  /notifications:
+    get:
+      tags:
+        - Уведомления
+      summary: Получить уведомления
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список уведомлений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+
+  /notifications/{id}/read:
+    put:
+      tags:
+        - Уведомления
+      summary: Отметить уведомление как прочитанное
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Уведомление отмечено как прочитанное
+
+  /error-logs:
+    get:
+      tags:
+        - Логи
+      summary: Получить логи ошибок
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список логов ошибок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorLog'
+
+  /users/profile:
+    get:
+      tags:
+        - Пользователи
+      summary: Получить профиль пользователя
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+    put:
+      tags:
+        - Пользователи
+      summary: Обновить профиль пользователя
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                avatar:
+                  type: string
+                preferences:
+                  type: object
+                  properties:
+                    notifications:
+                      type: boolean
+                    theme:
+                      type: string
+                      enum: [light, dark, system]
+      responses:
+        '200':
+          description: Профиль обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /users/addresses:
+    get:
+      tags:
+        - Пользователи
+      summary: Получить адреса пользователя
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список адресов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserAddress'
+    post:
+      tags:
+        - Пользователи
+      summary: Добавить адрес
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address
+                - latitude
+                - longitude
+              properties:
+                address:
+                  type: string
+                latitude:
+                  type: number
+                  format: float
+                longitude:
+                  type: number
+                  format: float
+                isDefault:
+                  type: boolean
+      responses:
+        '201':
+          description: Адрес добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAddress'
+
+  /users/addresses/{id}:
+    put:
+      tags:
+        - Пользователи
+      summary: Обновить адрес
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address:
+                  type: string
+                latitude:
+                  type: number
+                  format: float
+                longitude:
+                  type: number
+                  format: float
+                isDefault:
+                  type: boolean
+      responses:
+        '200':
+          description: Адрес обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAddress'
+    delete:
+      tags:
+        - Пользователи
+      summary: Удалить адрес
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Адрес удален
+
+  /users/favorites:
+    get:
+      tags:
+        - Пользователи
+      summary: Получить избранные точки
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список избранных точек
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Point'
+    post:
+      tags:
+        - Пользователи
+      summary: Добавить точку в избранное
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pointId
+              properties:
+                pointId:
+                  type: integer
+      responses:
+        '201':
+          description: Точка добавлена в избранное
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFavorite'
+
+  /users/favorites/{pointId}:
+    delete:
+      tags:
+        - Пользователи
+      summary: Удалить точку из избранного
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pointId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Точка удалена из избранного
+
+  /users/history:
+    get:
+      tags:
+        - Пользователи
+      summary: Получить историю действий
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: История действий
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserHistory'
+
+  /points/{id}/reviews:
+    get:
+      tags:
+        - Отзывы
+      summary: Получить отзывы точки
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список отзывов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointReview'
+    post:
+      tags:
+        - Отзывы
+      summary: Создать новый отзыв
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PointReview'
+      responses:
+        '201':
+          description: Отзыв создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointReview' 
