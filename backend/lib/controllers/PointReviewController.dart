@@ -6,6 +6,7 @@ import '../model/entities/PointReview.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class PointReviewController {
   final PointReviewService _service;
@@ -32,6 +33,7 @@ class PointReviewController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final id = int.tryParse(request.params['id']!);
@@ -54,11 +56,12 @@ class PointReviewController {
         response.statusCode,
         response.headers,
         reviewJson,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения отзыва', e);
+      await LoggingUtils.logError('Ошибка получения отзыва', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
@@ -155,14 +158,13 @@ class PointReviewController {
       data['user_id'] = userId;
 
       try {
-        // Временно отключаем валидацию для тестирования
-        // final sanitizedData = ValidationUtils.validateAndSanitizeReviewData(data);
+        final sanitizedData = ValidationUtils.validateAndSanitizeReviewData(data);
         final review = PointReview(
           id: 0, // Временный ID, будет заменен при создании в БД
-          pointId: int.parse(data['point_id'].toString()),
-          userId: int.parse(data['user_id'].toString()),
-          rating: double.parse(data['rating'].toString()),
-          comment: data['comment'] as String?,
+          pointId: sanitizedData['point_id'] as int,
+          userId: sanitizedData['user_id'] as int,
+          rating: sanitizedData['rating'] as double,
+          comment: sanitizedData['comment'] as String?,
           createdAt: DateTime.now(),
         );
         final created = await _service.create(review);

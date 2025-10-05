@@ -2,10 +2,10 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PointService.dart';
-import '../model/entities/Point.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class PointController {
   final PointService _pointService;
@@ -37,6 +37,7 @@ class PointController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final points = await _pointService.getAllPoints();
@@ -51,11 +52,12 @@ class PointController {
         response.statusCode,
         response.headers,
         pointsJson,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения списка точек', e);
+      await LoggingUtils.logError('Ошибка получения списка точек', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
@@ -67,6 +69,7 @@ class PointController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final id = int.tryParse(request.params['id']!);
@@ -86,11 +89,12 @@ class PointController {
         response.statusCode,
         response.headers,
         pointJson,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения точки', e);
+      await LoggingUtils.logError('Ошибка получения точки', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(404, 'Точка не найдена');
     }
   }
@@ -102,6 +106,7 @@ class PointController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final categoryId = int.tryParse(request.params['categoryId']!);
@@ -121,11 +126,12 @@ class PointController {
         response.statusCode,
         response.headers,
         pointsJson,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения точек по категории', e);
+      await LoggingUtils.logError('Ошибка получения точек по категории', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
@@ -137,6 +143,7 @@ class PointController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final id = int.tryParse(request.params['id']!);
@@ -156,11 +163,12 @@ class PointController {
         response.statusCode,
         response.headers,
         categoriesJson,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения категорий точки', e);
+      await LoggingUtils.logError('Ошибка получения категорий точки', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
@@ -175,6 +183,7 @@ class PointController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -197,6 +206,7 @@ class PointController {
             'pointId': point.id,
             'name': point.name,
           },
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         final response = Response.ok(
@@ -208,6 +218,7 @@ class PointController {
           response.statusCode,
           response.headers,
           jsonEncode(point.toJson()),
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         return response;
@@ -215,7 +226,7 @@ class PointController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания точки', e);
+      await LoggingUtils.logError('Ошибка создания точки', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -230,6 +241,7 @@ class PointController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -258,6 +270,7 @@ class PointController {
             'pointId': point.id,
             'name': point.name,
           },
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         final response = Response.ok(
@@ -269,6 +282,7 @@ class PointController {
           response.statusCode,
           response.headers,
           pointJson,
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         return response;
@@ -276,7 +290,7 @@ class PointController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления точки', e);
+      await LoggingUtils.logError('Ошибка обновления точки', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -288,6 +302,7 @@ class PointController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -310,6 +325,7 @@ class PointController {
       await LoggingUtils.logInfo(
         'Удалена точка',
         context: {'pointId': id},
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final responseJson = jsonEncode({'message': 'Точка успешно удалена'});
@@ -322,11 +338,12 @@ class PointController {
         response.statusCode,
         response.headers,
         responseJson,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка удаления точки', e);
+      await LoggingUtils.logError('Ошибка удаления точки', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -341,6 +358,7 @@ class PointController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -348,7 +366,7 @@ class PointController {
         return _createErrorResponse(401, 'Требуется авторизация');
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
         return _createErrorResponse(400, 'Некорректный ID точки');
@@ -366,6 +384,7 @@ class PointController {
           'pointId': id,
           'rating': data['rating'],
         },
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final responseJson = jsonEncode({'message': 'Рейтинг успешно обновлен'});
@@ -378,11 +397,12 @@ class PointController {
         response.statusCode,
         response.headers,
         responseJson,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления рейтинга', e);
+      await LoggingUtils.logError('Ошибка обновления рейтинга', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -397,6 +417,7 @@ class PointController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -404,10 +425,7 @@ class PointController {
         return _createErrorResponse(401, 'Требуется авторизация');
       }
 
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
-      }
+      AuthUtils.verifyToken(token);
 
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
@@ -427,6 +445,7 @@ class PointController {
           'pointId': id,
           'categoryIds': categoryIds,
         },
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final responseJson = jsonEncode({'message': 'Категории успешно обновлены'});
@@ -439,11 +458,12 @@ class PointController {
         response.statusCode,
         response.headers,
         responseJson,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления категорий точки', e);
+      await LoggingUtils.logError('Ошибка обновления категорий точки', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -455,6 +475,7 @@ class PointController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final id = int.tryParse(request.params['id']!);
@@ -474,11 +495,12 @@ class PointController {
         response.statusCode,
         response.headers,
         reviewsJson,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения отзывов точки', e);
+      await LoggingUtils.logError('Ошибка получения отзывов точки', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
@@ -491,6 +513,7 @@ class PointController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -522,6 +545,7 @@ class PointController {
             'pointId': review.pointId,
             'userId': review.userId,
           },
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         final response = Response.ok(
@@ -533,6 +557,7 @@ class PointController {
           response.statusCode,
           response.headers,
           reviewJson,
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         return response;
@@ -540,7 +565,7 @@ class PointController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания отзыва', e);
+      await LoggingUtils.logError('Ошибка создания отзыва', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }

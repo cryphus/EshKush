@@ -6,6 +6,7 @@ import '../model/enums/HistoryStatus.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class OrderHistoryController {
   final OrderHistoryService _orderHistoryService;
@@ -32,6 +33,7 @@ class OrderHistoryController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -39,7 +41,7 @@ class OrderHistoryController {
         return _createErrorResponse(401, 'Требуется авторизация');
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final id = int.tryParse(request.url.queryParameters['id'] ?? '');
       if (id == null) {
         return _createErrorResponse(400, 'Неверный ID истории заказа');
@@ -57,11 +59,12 @@ class OrderHistoryController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения истории заказа', e);
+      await LoggingUtils.logError('Ошибка получения истории заказа', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -73,6 +76,7 @@ class OrderHistoryController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -80,7 +84,7 @@ class OrderHistoryController {
         return _createErrorResponse(401, 'Требуется авторизация');
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
       if (userId == null) {
         return _createErrorResponse(400, 'Неверный ID пользователя');
@@ -98,11 +102,12 @@ class OrderHistoryController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения истории заказов пользователя', e);
+      await LoggingUtils.logError('Ошибка получения истории заказов пользователя', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -114,6 +119,7 @@ class OrderHistoryController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -121,10 +127,7 @@ class OrderHistoryController {
         return _createErrorResponse(401, 'Требуется авторизация');
       }
 
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
-      }
+      AuthUtils.verifyToken(token);
 
       final pointId = int.tryParse(request.url.queryParameters['pointId'] ?? '');
       if (pointId == null) {
@@ -143,11 +146,12 @@ class OrderHistoryController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения истории заказов точки', e);
+      await LoggingUtils.logError('Ошибка получения истории заказов точки', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -160,6 +164,7 @@ class OrderHistoryController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -168,6 +173,9 @@ class OrderHistoryController {
       }
 
       final payload = AuthUtils.verifyToken(token);
+      if (!_isAdmin(payload)) {
+        return _createErrorResponse(403, 'Нет прав доступа');
+      }
       final data = jsonDecode(body);
       
       try {
@@ -186,7 +194,7 @@ class OrderHistoryController {
               : HistoryStatus.pending,
         );
 
-        await LoggingUtils.logOrderOperation('create', orderHistory.id, sanitizedData);
+        await LoggingUtils.logOrderOperation('create', orderHistory.id, sanitizedData, requestId: RequestContextUtils.getRequestId(request));
         
         final responseBody = jsonEncode(orderHistory.toJson());
         final response = Response.ok(
@@ -198,6 +206,7 @@ class OrderHistoryController {
           response.statusCode,
           response.headers,
           responseBody,
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         return response;
@@ -205,7 +214,7 @@ class OrderHistoryController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания истории заказа', e);
+      await LoggingUtils.logError('Ошибка создания истории заказа', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -218,6 +227,7 @@ class OrderHistoryController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -225,7 +235,7 @@ class OrderHistoryController {
         return _createErrorResponse(401, 'Требуется авторизация');
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final data = jsonDecode(body);
       
       if (data['id'] == null || data['totalSum'] == null || data['co2Saved'] == null) {
@@ -244,7 +254,7 @@ class OrderHistoryController {
         notes: data['notes'],
       );
 
-      await LoggingUtils.logOrderOperation('complete', orderHistory.id, data);
+      await LoggingUtils.logOrderOperation('complete', orderHistory.id, data, requestId: RequestContextUtils.getRequestId(request));
       
       final response = Response.ok(
         jsonEncode(orderHistory.toJson()),
@@ -254,12 +264,13 @@ class OrderHistoryController {
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        await response.readAsString(),
+        jsonEncode(orderHistory.toJson()),
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка завершения заказа', e);
+      await LoggingUtils.logError('Ошибка завершения заказа', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -272,6 +283,7 @@ class OrderHistoryController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -279,7 +291,7 @@ class OrderHistoryController {
         return _createErrorResponse(401, 'Требуется авторизация');
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final data = jsonDecode(body);
       
       if (data['id'] == null || data['reason'] == null) {
@@ -291,7 +303,7 @@ class OrderHistoryController {
         data['reason'],
       );
 
-      await LoggingUtils.logOrderOperation('cancel', orderHistory.id, data);
+      await LoggingUtils.logOrderOperation('cancel', orderHistory.id, data, requestId: RequestContextUtils.getRequestId(request));
       
       final response = Response.ok(
         jsonEncode(orderHistory.toJson()),
@@ -301,12 +313,13 @@ class OrderHistoryController {
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        await response.readAsString(),
+        jsonEncode(orderHistory.toJson()),
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка отмены заказа', e);
+      await LoggingUtils.logError('Ошибка отмены заказа', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -318,6 +331,7 @@ class OrderHistoryController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -350,12 +364,13 @@ class OrderHistoryController {
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        await response.readAsString(),
+        jsonEncode(orderHistory.map((o) => o.toJson()).toList()),
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения заказов по статусу', e);
+      await LoggingUtils.logError('Ошибка получения заказов по статусу', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }
@@ -367,6 +382,7 @@ class OrderHistoryController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -402,12 +418,13 @@ class OrderHistoryController {
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        await response.readAsString(),
+        jsonEncode(orderHistory.map((o) => o.toJson()).toList()),
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения заказов по диапазону дат', e);
+      await LoggingUtils.logError('Ошибка получения заказов по диапазону дат', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка: $e');
     }
   }

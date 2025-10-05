@@ -30,6 +30,8 @@ class SafeLoggingUtils {
     'private',
     'Private',
     'PRIVATE',
+    'ssn', 'card', 'cvv', 'iban', 'pan',
+    'authorization', 'cookie', 'set-cookie', 'x-api-key',
   ];
 
   /// Создает безопасную копию данных для логирования, скрывая чувствительные поля

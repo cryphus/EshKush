@@ -7,6 +7,7 @@ import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class ProfileController {
   final ProfileService _profileService;
@@ -29,6 +30,7 @@ class ProfileController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -62,11 +64,12 @@ class ProfileController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения профиля', e);
+      await LoggingUtils.logError('Ошибка получения профиля', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка: $e'}),
         headers: _getCorsHeaders(),
@@ -76,17 +79,16 @@ class ProfileController {
 
   Future<Response> _getProfileById(Request request, String id) async {
     try {
-      print('Получен запрос на получение профиля по ID: $id');
-      
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      print('Токен авторизации: ${token != null ? 'присутствует' : 'отсутствует'}');
+      await LoggingUtils.logInfo('Проверка токена в _getProfileById', context: {'hasToken': token != null}, requestId: RequestContextUtils.getRequestId(request));
       
       if (token == null) {
         return Response(401, 
@@ -96,7 +98,7 @@ class ProfileController {
       }
 
       final profile = await _profileService.getProfileById(int.parse(id));
-      print('Профиль найден: ${profile != null}');
+      await LoggingUtils.logInfo('Результат поиска профиля', context: {'found': profile != null}, requestId: RequestContextUtils.getRequestId(request));
 
       if (profile == null) {
         return Response(404, 
@@ -118,12 +120,12 @@ class ProfileController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      print('Ошибка при получении профиля по ID: $e');
-      await LoggingUtils.logError('Ошибка получения профиля по ID', e);
+      await LoggingUtils.logError('Ошибка получения профиля по ID', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка: $e'}),
         headers: _getCorsHeaders(),
@@ -139,6 +141,7 @@ class ProfileController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -153,8 +156,6 @@ class ProfileController {
       final data = jsonDecode(body);
       
       SafeLoggingUtils.logData('Данные для создания профиля', data);
-      print('Тип first_name: ${data['first_name'].runtimeType}');
-      print('Тип last_name: ${data['last_name'].runtimeType}');
       
       final now = DateTime.now();
       final profile = Profile(
@@ -183,11 +184,12 @@ class ProfileController {
           response.statusCode,
           response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
         );
 
         return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания профиля', e);
+      await LoggingUtils.logError('Ошибка создания профиля', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка создания профиля: $e'}),
         headers: _getCorsHeaders(),
@@ -247,6 +249,7 @@ class ProfileController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -263,6 +266,7 @@ class ProfileController {
       await LoggingUtils.logInfo(
         'Удален профиль',
         context: {'userId': payload['id']},
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final response = Response.ok(
@@ -273,12 +277,13 @@ class ProfileController {
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        await response.readAsString(),
+        jsonEncode({'message': 'Профиль успешно удален'}),
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка удаления профиля', e);
+      await LoggingUtils.logError('Ошибка удаления профиля', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка удаления профиля: $e'}),
       headers: _getCorsHeaders(),

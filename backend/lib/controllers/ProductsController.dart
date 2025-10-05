@@ -6,6 +6,7 @@ import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class ProductsController {
   final ProductsService _productsService;
@@ -35,6 +36,7 @@ class ProductsController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final products = await _productsService.getAllProducts();
@@ -49,11 +51,12 @@ class ProductsController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения списка продуктов', e);
+      await LoggingUtils.logError('Ошибка получения списка продуктов', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
@@ -65,6 +68,7 @@ class ProductsController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final productId = int.tryParse(id);
@@ -84,11 +88,12 @@ class ProductsController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения продукта', e);
+      await LoggingUtils.logError('Ошибка получения продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(404, 'Продукт не найден');
     }
   }
@@ -101,6 +106,7 @@ class ProductsController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -115,24 +121,19 @@ class ProductsController {
 
       final data = jsonDecode(body);
       SafeLoggingUtils.logData('Полученные данные', data);
-      print('Тип price: ${data['price'].runtimeType}');
-      print('Тип weight: ${data['weight'].runtimeType}');
       
       try {
         final sanitizedData = ValidationUtils.validateAndSanitizeProductData(data);
         SafeLoggingUtils.logData('Очищенные данные', sanitizedData);
-        print('Тип price после очистки: ${sanitizedData['price'].runtimeType}');
-        print('Тип weight после очистки: ${sanitizedData['weight'].runtimeType}');
         
         final product = await _productsService.createProduct(sanitizedData);
-        print('Созданный продукт: ${product.toJson()}');
-        
         await LoggingUtils.logInfo(
           'Создан новый продукт',
           context: {
             'productId': product.id,
             'name': product.name,
           },
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         final responseBody = jsonEncode(product.toJson());
@@ -145,6 +146,7 @@ class ProductsController {
           response.statusCode,
           response.headers,
           responseBody,
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         return response;
@@ -152,7 +154,7 @@ class ProductsController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания продукта', e);
+      await LoggingUtils.logError('Ошибка создания продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка создания: $e');
     }
   }
@@ -165,6 +167,7 @@ class ProductsController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -194,6 +197,7 @@ class ProductsController {
             'productId': product.id,
             'name': product.name,
           },
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         final responseBody = jsonEncode(product.toJson());
@@ -206,6 +210,7 @@ class ProductsController {
           response.statusCode,
           response.headers,
           responseBody,
+          requestId: RequestContextUtils.getRequestId(request),
         );
 
         return response;
@@ -213,7 +218,7 @@ class ProductsController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления продукта', e);
+      await LoggingUtils.logError('Ошибка обновления продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(400, 'Ошибка обновления: $e');
     }
   }
@@ -225,6 +230,7 @@ class ProductsController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -247,6 +253,7 @@ class ProductsController {
       await LoggingUtils.logInfo(
         'Удален продукт',
         context: {'productId': productId},
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final responseBody = jsonEncode({'message': 'Продукт успешно удален'});
@@ -259,11 +266,12 @@ class ProductsController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка удаления продукта', e);
+      await LoggingUtils.logError('Ошибка удаления продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка удаления: $e');
     }
   }
@@ -275,6 +283,7 @@ class ProductsController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final categoryIdInt = int.tryParse(categoryId);
@@ -294,11 +303,12 @@ class ProductsController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения продуктов по категории', e);
+      await LoggingUtils.logError('Ошибка получения продуктов по категории', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
@@ -310,6 +320,7 @@ class ProductsController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final productId = int.parse(id);
@@ -320,7 +331,7 @@ class ProductsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения категорий продукта', e);
+      await LoggingUtils.logError('Ошибка получения категорий продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
@@ -332,6 +343,7 @@ class ProductsController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -356,7 +368,7 @@ class ProductsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления категорий продукта', e);
+      await LoggingUtils.logError('Ошибка обновления категорий продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
@@ -368,6 +380,7 @@ class ProductsController {
         request.url.path,
         request.headers,
         null,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final pointIdInt = int.tryParse(pointId);
@@ -387,11 +400,12 @@ class ProductsController {
         response.statusCode,
         response.headers,
         responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения продуктов по ID точки', e);
+      await LoggingUtils.logError('Ошибка получения продуктов по ID точки', e, requestId: RequestContextUtils.getRequestId(request));
       return _createErrorResponse(500, 'Ошибка: $e');
     }
   }

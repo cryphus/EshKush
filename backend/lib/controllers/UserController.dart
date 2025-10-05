@@ -4,6 +4,8 @@ import 'dart:convert';
 import '../services/UserService.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
+import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class UserController {
   final UserService _userService;
@@ -18,6 +20,7 @@ class UserController {
 
   Future<Response> _getProfile(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -29,22 +32,20 @@ class UserController {
       final payload = AuthUtils.verifyToken(token);
       final user = await _userService.getUserById(payload['id']);
 
-      return Response.ok(
-        jsonEncode({
+      final body = jsonEncode({
           'id': user.id,
           'username': user.username,
           'email': user.email,
           'number': user.number,
           'role': user.role.name.toLowerCase(),
           'created_at': user.createdAt.toIso8601String(),
-        }),
-        headers: _getCorsHeaders(),
-      );
+        });
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения профиля пользователя', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -58,12 +59,11 @@ class UserController {
         );
       }
 
-      print('Получен токен: $token');
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final payload = AuthUtils.verifyToken(token);
-      print('Данные токена: $payload');
 
       final body = await request.readAsString();
-      print('Тело запроса: ${SafeLoggingUtils.sanitizeString(body)}');
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, SafeLoggingUtils.sanitizeString(body), requestId: RequestContextUtils.getRequestId(request));
       final data = jsonDecode(body);
       SafeLoggingUtils.logData('Данные для обновления', data);
       
@@ -81,32 +81,27 @@ class UserController {
         );
       }
 
-      print('Обновляем пользователя с ID: ${payload['id']}');
       final user = await _userService.updateUser(payload['id'], data);
-      print('Пользователь обновлен: $user');
-
-      return Response.ok(
-        jsonEncode({
+      final bodyOut = jsonEncode({
           'id': user.id,
           'username': user.username,
           'email': user.email,
           'number': user.number,
           'role': user.role.name.toLowerCase(),
           'created_at': user.createdAt.toIso8601String(),
-        }),
-        headers: _getCorsHeaders(),
-      );
+        });
+      final resp = Response.ok(bodyOut, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, bodyOut, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      print('Ошибка обновления профиля: $e');
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка обновления профиля: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка обновления профиля', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка обновления профиля: $e'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> addToFavorites(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -126,10 +121,10 @@ class UserController {
       }
 
       await _userService.addToFavorites(payload['id'], data['point_id']);
-      return Response.ok(
-        jsonEncode({'message': 'Точка добавлена в избранное'}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Точка добавлена в избранное'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка: $e'}),
@@ -140,6 +135,7 @@ class UserController {
 
   Future<Response> removeFromFavorites(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -159,10 +155,10 @@ class UserController {
       }
 
       await _userService.removeFromFavorites(payload['id'], data['point_id']);
-      return Response.ok(
-        jsonEncode({'message': 'Точка удалена из избранного'}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Точка удалена из избранного'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка: $e'}),
@@ -173,6 +169,7 @@ class UserController {
 
   Future<Response> updateBalance(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -192,10 +189,10 @@ class UserController {
       }
 
       await _userService.updateBalance(payload['id'], data['amount']);
-      return Response.ok(
-        jsonEncode({'message': 'Баланс обновлен'}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Баланс обновлен'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка: $e'}),

@@ -4,6 +4,9 @@ import 'dart:convert';
 import '../services/NotificationService.dart';
 import '../model/enums/NotificationType.dart';
 import '../utils/AuthUtils.dart';
+import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
+import '../utils/ValidationUtils.dart';
 
 class NotificationController {
   final NotificationService _service;
@@ -26,6 +29,7 @@ class NotificationController {
 
   Future<Response> getUserNotifications(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -34,7 +38,7 @@ class NotificationController {
         );
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
       
       if (userId == null) {
@@ -45,20 +49,19 @@ class NotificationController {
       }
 
       final notifications = await _service.getUserNotifications(userId);
-      return Response.ok(
-        jsonEncode(notifications.map((n) => n.toJson()).toList()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(notifications.map((n) => n.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка при получении уведомлений пользователя: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения уведомлений пользователя', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка при получении уведомлений пользователя: $e'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> getNotificationsByType(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -67,7 +70,7 @@ class NotificationController {
         );
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final type = request.url.queryParameters['type'] ?? '';
       
       if (type.isEmpty) {
@@ -83,20 +86,19 @@ class NotificationController {
       );
       
       final notifications = await _service.getNotificationsByType(notificationType);
-      return Response.ok(
-        jsonEncode(notifications.map((n) => n.toJson()).toList()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(notifications.map((n) => n.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка при получении уведомлений по типу: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения уведомлений по типу', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка при получении уведомлений по типу: $e'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> getUnreadNotifications(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -105,7 +107,7 @@ class NotificationController {
         );
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
       
       if (userId == null) {
@@ -116,20 +118,19 @@ class NotificationController {
       }
 
       final notifications = await _service.getUnreadNotifications(userId);
-      return Response.ok(
-        jsonEncode(notifications.map((n) => n.toJson()).toList()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(notifications.map((n) => n.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка при получении непрочитанных уведомлений: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения непрочитанных уведомлений', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка при получении непрочитанных уведомлений: $e'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> getRecentNotifications(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -138,18 +139,16 @@ class NotificationController {
         );
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final limit = int.tryParse(request.url.queryParameters['limit'] ?? '100') ?? 100;
       final notifications = await _service.getRecentNotifications(limit: limit);
-      return Response.ok(
-        jsonEncode(notifications.map((n) => n.toJson()).toList()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(notifications.map((n) => n.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка при получении последних уведомлений: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения последних уведомлений', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка при получении последних уведомлений: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -163,26 +162,20 @@ class NotificationController {
         );
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final data = jsonDecode(await request.readAsString());
-      
-      if (data['userId'] == null || data['message'] == null || data['type'] == null) {
-        return Response(400, 
-          body: jsonEncode({'error': 'Отсутствуют обязательные поля'}),
-          headers: _getCorsHeaders(),
-        );
-      }
+      final sanitized = ValidationUtils.validateAndSanitizeNotificationData(data);
 
       final notificationType = NotificationType.values.firstWhere(
-        (t) => t.toString().split('.').last == data['type'],
+        (t) => t.toString().split('.').last == sanitized['type'],
         orElse: () => throw Exception('Неизвестный тип уведомления'),
       );
 
       final notification = await _service.createNotification(
-        userId: data['userId'],
-        message: data['message'],
+        userId: sanitized['userId'],
+        message: sanitized['message'],
         type: notificationType,
-        metadata: data['metadata'],
+        metadata: sanitized['metadata'],
       );
 
       return Response.ok(
@@ -207,7 +200,7 @@ class NotificationController {
         );
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final notificationId = int.tryParse(request.url.queryParameters['notificationId'] ?? '');
       
       if (notificationId == null) {
@@ -240,7 +233,7 @@ class NotificationController {
         );
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final notificationId = int.tryParse(request.url.queryParameters['notificationId'] ?? '');
       
       if (notificationId == null) {

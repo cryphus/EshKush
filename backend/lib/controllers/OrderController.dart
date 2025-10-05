@@ -1,10 +1,12 @@
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import '../services/OrderService.dart';
-import '../model/entities/Order.dart';
 import '../model/enums/OrderStatus.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
+import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
+import '../utils/ValidationUtils.dart';
 import 'dart:convert';
 
 class OrderController {
@@ -27,6 +29,7 @@ class OrderController {
 
   Future<Response> _getAllOrders(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final status = request.url.queryParameters['status'];
       final orders = await _orderService.getAllOrders(
         status: status != null ? OrderStatus.values.firstWhere(
@@ -35,49 +38,43 @@ class OrderController {
         ) : null,
       );
 
-      return Response.ok(
-        orders.map((o) => o.toJson()).toList().toString(),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(orders.map((o) => o.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response.internalServerError(
-        body: {'error': e.toString()}.toString(),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения заказов', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response.internalServerError(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _getOrderById(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final id = int.parse(request.params['id']!);
       final order = await _orderService.getOrderById(id);
-
-      return Response.ok(
-        order.toJson().toString(),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(order.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response.notFound(
-        {'error': 'Заказ не найден'}.toString(),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Заказ не найден', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response.notFound(jsonEncode({'error': 'Заказ не найден'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _getUserOrders(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final userId = int.parse(request.params['userId']!);
       final orders = await _orderService.getUserOrders(userId);
-
-      return Response.ok(
-        orders.map((o) => o.toJson()).toList().toString(),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(orders.map((o) => o.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response.badRequest(
-        body: {'error': e.toString()}.toString(),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения заказов пользователя', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response.badRequest(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
     }
   }
 
@@ -91,35 +88,17 @@ class OrderController {
       }
 
       final data = await request.readAsString();
-      print('Полученные данные: ${SafeLoggingUtils.sanitizeString(data)}');
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, SafeLoggingUtils.sanitizeString(data), requestId: RequestContextUtils.getRequestId(request));
       final jsonData = jsonDecode(data) as Map<String, dynamic>;
-      
-      // Преобразуем все числовые значения в правильные типы
-      final orderData = {
-        'user_id': jsonData['user_id'],
-        'point_id': jsonData['point_id'],
-        'products_id': jsonData['products_id'],
-        'total_price': jsonData['total_price'] is String 
-            ? double.parse(jsonData['total_price']) 
-            : (jsonData['total_price'] as num).toDouble(),
-        'partner_id': jsonData['partner_id'],
-        'date': jsonData['date'] ?? DateTime.now().toIso8601String(),
-      };
-
-      print('Данные для создания заказа: $orderData');
-      
-      final order = await _orderService.createOrder(orderData);
-
-      return Response.ok(
-        jsonEncode(order.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final sanitized = ValidationUtils.validateAndSanitizeOrderCreateData(jsonData);
+      final order = await _orderService.createOrder(sanitized);
+      final body = jsonEncode(order.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      print('Ошибка в контроллере: $e');
-      return Response.badRequest(
-        body: jsonEncode({'error': e.toString()}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка создания заказа', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response.badRequest(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
     }
   }
 
@@ -134,6 +113,7 @@ class OrderController {
 
       final id = int.parse(request.params['id']!);
       final data = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, data, requestId: RequestContextUtils.getRequestId(request));
       final jsonData = jsonDecode(data) as Map<String, dynamic>;
       final status = OrderStatus.values.firstWhere(
         (e) => e.name.toLowerCase() == jsonData['status'].toString().toLowerCase(),
@@ -141,16 +121,13 @@ class OrderController {
       );
       
       final order = await _orderService.updateOrderStatus(id, status);
-
-      return Response.ok(
-        jsonEncode(order.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(order.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response.badRequest(
-        body: jsonEncode({'error': e.toString()}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка обновления статуса заказа', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response.badRequest(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
     }
   }
 
@@ -163,18 +140,16 @@ class OrderController {
         );
       }
 
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final id = int.parse(request.params['id']!);
       await _orderService.deleteOrder(id);
-
-      return Response.ok(
-        {'message': 'Заказ успешно удален'}.toString(),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Заказ успешно удален'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response.badRequest(
-        body: {'error': e.toString()}.toString(),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка удаления заказа', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response.badRequest(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
     }
   }
 
@@ -184,8 +159,8 @@ class OrderController {
 
     try {
       final token = authHeader.split(' ').last;
-      final payload = await AuthUtils.verifyToken(token);
-      return payload != null;
+      AuthUtils.verifyToken(token);
+      return true;
     } catch (e) {
       return false;
     }

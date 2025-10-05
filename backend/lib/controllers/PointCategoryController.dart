@@ -3,6 +3,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PointCategoryService.dart';
 import '../model/entities/PointCategory.dart';
+import '../utils/ValidationUtils.dart';
 
 class PointCategoryController {
   final PointCategoryService _categoryService;
@@ -60,18 +61,12 @@ class PointCategoryController {
   Future<Response> _createCategory(Request request) async {
     try {
       final data = jsonDecode(await request.readAsString());
-      
-      if (data['name'] == null) {
-        return Response(400,
-          body: jsonEncode({'error': 'Поле name обязательно'}),
-          headers: _getCorsHeaders(),
-        );
-      }
+      final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
 
       final category = PointCategory(
         id: 0,
-        name: data['name'] as String,
-        description: data['description'] as String?,
+        name: sanitized['name'] as String,
+        description: sanitized['description'] as String?,
         createdAt: DateTime.now(),
       );
 
@@ -92,8 +87,9 @@ class PointCategoryController {
     try {
       final categoryId = int.parse(id);
       final data = jsonDecode(await request.readAsString());
+      final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
       
-      final updatedCategory = await _categoryService.updateCategory(categoryId, data);
+      final updatedCategory = await _categoryService.updateCategory(categoryId, sanitized);
       return Response.ok(
         jsonEncode(updatedCategory.toJson()),
         headers: _getCorsHeaders(),

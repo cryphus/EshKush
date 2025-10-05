@@ -2,6 +2,8 @@ import 'package:shelf/shelf.dart';
 import 'dart:convert';
 import '../services/PartnerSettingsService.dart';
 import 'package:shelf_router/shelf_router.dart';
+import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class PartnerSettingsController {
   final PartnerSettingsService _service;
@@ -19,6 +21,7 @@ class PartnerSettingsController {
 
   Future<Response> _getSettings(Request request, String id) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final settingsId = int.parse(id);
       final settings = await _service.getSettings(settingsId);
       
@@ -29,36 +32,35 @@ class PartnerSettingsController {
         );
       }
 
-      return Response.ok(
-        jsonEncode(settings.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(settings.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _getAllSettings(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final settings = await _service.getAllSettings();
-      return Response.ok(
-        jsonEncode(settings.map((s) => s.toJson()).toList()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(settings.map((s) => s.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка получения настроек: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка получения настроек: $e'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _createSettings(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final raw = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, raw, requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(raw);
       
       if (data['partner_id'] == null || data['branding_color'] == null) {
         return Response(400,
@@ -72,49 +74,47 @@ class PartnerSettingsController {
         data['branding_color'],
       );
 
-      return Response.ok(
-        jsonEncode(settings.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(settings.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка создания настроек: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка создания настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка создания настроек: $e'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _updateSettings(Request request, String id) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final settingsId = int.parse(id);
-      final data = jsonDecode(await request.readAsString());
+      final raw = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, raw, requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(raw);
       
       final updatedSettings = await _service.updateSettings(settingsId, data);
-      return Response.ok(
-        jsonEncode(updatedSettings.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(updatedSettings.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка обновления настроек: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка обновления настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка обновления настроек: $e'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _deleteSettings(Request request, String id) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final settingsId = int.parse(id);
       await _service.deleteSettings(settingsId);
-      return Response.ok(
-        jsonEncode({'message': 'Настройки успешно удалены'}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Настройки успешно удалены'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка удаления настроек: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка удаления настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка удаления настроек: $e'}), headers: _getCorsHeaders());
     }
   }
 

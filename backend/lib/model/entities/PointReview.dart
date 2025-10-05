@@ -1,3 +1,5 @@
+import '../../utils/ValidationUtils.dart';
+
 class PointReview {
   final int id;
   final int pointId;
@@ -14,8 +16,8 @@ class PointReview {
     this.rating = 0.0,
     this.comment,
   }) {
-    // Временно отключаем валидацию для тестирования
-    // _validate();
+     _sanitize();
+     _validate();
   }
 
   void _validate() {
@@ -28,29 +30,61 @@ class PointReview {
     if (userId <= 0) {
       throw ArgumentError('ID пользователя должен быть положительным числом');
     }
-    if (rating < 0 || rating > 5) {
+    if (!rating.isFinite || rating < 0 || rating > 5) {
       throw ArgumentError('Рейтинг должен быть от 0 до 5');
+    }
+    // Разрешаем небольшой временной дрейф (5 минут), но защищаемся от явного будущего времени
+    if (createdAt.isAfter(DateTime.now().add(const Duration(minutes: 5)))) {
+      throw ArgumentError('Дата создания не может быть в будущем');
+    }
+    if (comment != null && comment!.length > ValidationUtils.maxDescriptionLength) {
+      throw ArgumentError('Комментарий не должен превышать 1000 символов');
+    }
+  }
+
+  void _sanitize() {
+    if (comment != null) {
+      final sanitized = ValidationUtils.sanitizeString(comment!);
+      comment = sanitized.isEmpty ? null : sanitized;
     }
   }
 
   void updateRating(double newRating) {
-    if (newRating < 0 || newRating > 5) {
+    if (!newRating.isFinite || newRating < 0 || newRating > 5) {
       throw ArgumentError('Рейтинг должен быть от 0 до 5');
     }
     rating = newRating;
   }
 
   void updateComment(String? newComment) {
-    comment = newComment;
+    if (newComment == null) {
+      comment = null;
+      return;
+    }
+    final sanitized = ValidationUtils.sanitizeString(newComment);
+    if (sanitized.isEmpty) {
+      comment = null;
+      return;
+    }
+    if (sanitized.length > ValidationUtils.maxDescriptionLength) {
+      throw ArgumentError('Комментарий не должен превышать 1000 символов');
+    }
+    comment = sanitized;
   }
 
   factory PointReview.fromJson(Map<String, dynamic> json) {
+    final rawComment = json['comment'];
+    String? sanitizedComment;
+    if (rawComment != null) {
+      final s = ValidationUtils.sanitizeString(rawComment.toString());
+      sanitizedComment = s.isEmpty ? null : s;
+    }
     return PointReview(
       id: int.parse(json['id'].toString()),
       pointId: int.parse(json['point_id'].toString()),
       userId: int.parse(json['user_id'].toString()),
       rating: double.parse(json['rating'].toString()),
-      comment: json['comment'] as String?,
+      comment: sanitizedComment,
       createdAt: json['created_at'] == null 
           ? DateTime.now()
           : json['created_at'] is DateTime 

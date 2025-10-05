@@ -7,8 +7,8 @@ import 'package:backend/database/Database.dart';
 import 'package:backend/services/AuthService.dart';
 import 'package:backend/repositories/UserRepository.dart';
 import 'package:backend/utils/AuthUtils.dart';
-import 'package:path/path.dart' as p;
-import 'package:shelf_cors_headers/shelf_cors_headers.dart';
+// import 'package:path/path.dart' as p;
+// import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 import 'package:backend/controllers/PointController.dart';
 import 'package:backend/services/PointService.dart';
 import 'package:backend/repositories/PointRepository.dart';
@@ -74,6 +74,7 @@ import 'package:backend/repositories/NotificationRepository.dart';
 import 'package:backend/controllers/PaymentTransactionsController.dart';
 import 'package:backend/services/PaymentTransactionsService.dart';
 import 'package:backend/repositories/PaymentTransactionsRepository.dart';
+import 'package:backend/middleware/LoggingMiddleware.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 void main() async {
@@ -193,11 +194,8 @@ void main() async {
 
     app.post('/auth/google', (Request request) async {
       try {
-        print('Получен запрос на аутентификацию через Google');
         final body = await request.readAsString();
-        print('Тело запроса: $body');
         final data = jsonDecode(body);
-        print('Данные запроса: $data');
         
         // Проверяем наличие idToken
         if (data['idToken'] == null) {
@@ -232,7 +230,7 @@ void main() async {
         }
         
         final user = await userRepository.findByEmail(data['email']);
-        print('Найденный пользователь: $user');
+        
         
         if (user != null) {
           final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
@@ -257,7 +255,6 @@ void main() async {
           );
         }
       } catch (e) {
-        print('Ошибка аутентификации через Google: $e');
         return Response(
           400,
           body: jsonEncode({'error': e.toString()}),
@@ -267,10 +264,8 @@ void main() async {
 
     app.post('/auth/register', (Request request) async {
       try {
-        print('Получен запрос на регистрацию');
         final body = await request.readAsString();
         final data = jsonDecode(body);
-        print('Данные регистрации: $data');
         
         final result = await authService.register(data);
         
@@ -278,7 +273,6 @@ void main() async {
           jsonEncode(result),
         );
       } catch (e) {
-        print('Ошибка регистрации: $e');
         return Response(
           400,
           body: jsonEncode({'error': e.toString()}),
@@ -348,7 +342,6 @@ void main() async {
           }),
         );
       } catch (e) {
-        print('Ошибка проверки пользователя: $e');
         return Response(
           400,
           body: jsonEncode({'error': e.toString()}),
@@ -417,7 +410,7 @@ void main() async {
 
     final handler = const Pipeline()
         .addMiddleware(corsHandler)
-        .addMiddleware(logRequests())
+        .addMiddleware(LoggingMiddleware.requestResponseLogger())
         .addHandler(app.call);
 
     final server = await io.serve(handler, '0.0.0.0', 8080);

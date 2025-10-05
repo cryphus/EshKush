@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:dotenv/dotenv.dart';
 
 class AppConfig {
@@ -14,6 +13,8 @@ class AppConfig {
   late final List<String> allowedOrigins;
   late final int rateLimitRequests;
   late final Duration rateLimitWindow;
+  late final String logLevel; // debug|info|warn|error
+  late final bool logJson;
 
   Future<void> initialize() async {
     final env = DotEnv(includePlatformEnvironment: true)..load();
@@ -33,6 +34,9 @@ class AppConfig {
     rateLimitWindow = Duration(
       minutes: int.tryParse(env['RATE_LIMIT_WINDOW_MINUTES'] ?? '1') ?? 1
     );
+
+    logLevel = (env['LOG_LEVEL'] ?? 'info').toLowerCase();
+    logJson = (env['LOG_JSON'] ?? 'true').toLowerCase() == 'true';
 
     _validateConfig();
   }

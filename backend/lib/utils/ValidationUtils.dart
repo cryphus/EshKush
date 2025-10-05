@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:html_unescape/html_unescape.dart';
 import 'SafeLoggingUtils.dart';
 import '../model/enums/UserRole.dart';
@@ -13,6 +12,10 @@ class ValidationUtils {
   static const int maxDescriptionLength = 1000;
   static const int maxCodeLength = 50;
   static const int maxNotesLength = 500;
+  static const int maxCategoryNameLength = 100;
+  static const int maxCategoryDescriptionLength = 500;
+  static const int maxPromoCodeLength = 50;
+  static const int maxNotificationMessageLength = 1000;
 
   // Валидация email
   static bool isValidEmail(String email) {
@@ -182,6 +185,44 @@ class ValidationUtils {
     };
     print('ValidationUtils: Результат валидации: $result');
     return result;
+  }
+
+  // Валидация и санитизация заказа (создание)
+  static Map<String, dynamic> validateAndSanitizeOrderCreateData(Map<String, dynamic> data) {
+    final sanitized = sanitizeJson(data);
+    final errors = <String, String>{};
+
+    if (sanitized['user_id'] == null || !isValidNumber(sanitized['user_id'], min: 1)) {
+      errors['user_id'] = 'Некорректный ID пользователя';
+    }
+    if (sanitized['point_id'] == null || !isValidNumber(sanitized['point_id'], min: 1)) {
+      errors['point_id'] = 'Некорректный ID точки';
+    }
+    if (sanitized['products_id'] == null || sanitized['products_id'] is! List || (sanitized['products_id'] as List).isEmpty) {
+      errors['products_id'] = 'Список продуктов обязателен';
+    }
+    if (sanitized['total_price'] == null || !isValidNumber(sanitized['total_price'], min: 0)) {
+      errors['total_price'] = 'Некорректная сумма заказа';
+    }
+    if (sanitized['partner_id'] != null && !isValidNumber(sanitized['partner_id'], min: 1)) {
+      errors['partner_id'] = 'Некорректный ID партнера';
+    }
+    if (sanitized['date'] != null && sanitized['date'] is String && !isValidDate(sanitized['date'])) {
+      errors['date'] = 'Некорректная дата заказа';
+    }
+
+    if (errors.isNotEmpty) {
+      throw ValidationException(errors.toString());
+    }
+
+    return {
+      'user_id': int.parse(sanitized['user_id'].toString()),
+      'point_id': int.parse(sanitized['point_id'].toString()),
+      'products_id': List<dynamic>.from(sanitized['products_id']),
+      'total_price': double.parse(sanitized['total_price'].toString()),
+      'partner_id': sanitized['partner_id'] != null ? int.parse(sanitized['partner_id'].toString()) : null,
+      'date': sanitized['date'] ?? DateTime.now().toIso8601String(),
+    };
   }
 
   // Валидация и санитизация данных действия
@@ -603,6 +644,107 @@ class ValidationUtils {
     return data;
   }
 
+  // Валидация категорий продуктов/точек
+  static Map<String, dynamic> validateAndSanitizeCategoryData(Map<String, dynamic> data) {
+    final sanitized = sanitizeJson(data);
+    final errors = <String>[];
+    if (sanitized['name'] == null || sanitized['name'].toString().trim().isEmpty) {
+      errors.add('Поле name обязательно');
+    } else if (sanitized['name'].toString().length > maxCategoryNameLength) {
+      errors.add('Название категории слишком длинное');
+    }
+    if (sanitized['description'] != null && sanitized['description'].toString().length > maxCategoryDescriptionLength) {
+      errors.add('Описание категории слишком длинное');
+    }
+    if (errors.isNotEmpty) {
+      throw ValidationException(errors.join(', '));
+    }
+    return sanitized;
+  }
+
+  // Валидация партнёра (create/update)
+  static Map<String, dynamic> validateAndSanitizePartnerData(Map<String, dynamic> data) {
+    final sanitized = sanitizeJson(data);
+    final errors = <String>[];
+    if (sanitized['user_id'] == null || !isValidNumber(sanitized['user_id'], min: 1)) {
+      errors.add('Некорректный ID пользователя');
+    }
+    if (sanitized['name'] == null || !isValidName(sanitized['name'])) {
+      errors.add('Некорректное имя партнера');
+    }
+    if (sanitized['contact_email'] != null && !isValidEmail(sanitized['contact_email'])) {
+      errors.add('Некорректный email контактного лица');
+    }
+    if (sanitized['contact_phone'] != null && !isValidPhone(sanitized['contact_phone'])) {
+      errors.add('Некорректный телефон контактного лица');
+    }
+    if (sanitized['max_discount'] != null && !isValidNumber(sanitized['max_discount'], min: 0, max: 100)) {
+      errors.add('Скидка должна быть в диапазоне 0-100');
+    }
+    if (errors.isNotEmpty) {
+      throw ValidationException(errors.join(', '));
+    }
+    if (sanitized['max_discount'] != null) {
+      sanitized['max_discount'] = double.parse(sanitized['max_discount'].toString());
+    }
+    return sanitized;
+  }
+
+  // Валидация промокода (create/update)
+  static Map<String, dynamic> validateAndSanitizePromoCodeData(Map<String, dynamic> data) {
+    final sanitized = sanitizeJson(data);
+    final errors = <String>[];
+    if (sanitized['code'] == null || sanitized['code'].toString().isEmpty || sanitized['code'].toString().length > maxPromoCodeLength) {
+      errors.add('Некорректный код промокода');
+    }
+    if (sanitized['description'] == null || sanitized['description'].toString().isEmpty) {
+      errors.add('Описание обязательно');
+    }
+    if (sanitized['startDate'] == null || sanitized['endDate'] == null || !isValidDate(sanitized['startDate']) || !isValidDate(sanitized['endDate'])) {
+      errors.add('Некорректные даты промокода');
+    } else if (DateTime.parse(sanitized['endDate']).isBefore(DateTime.parse(sanitized['startDate']))) {
+      errors.add('Дата окончания раньше даты начала');
+    }
+    if (sanitized['minOrderSum'] == null || !isValidNumber(sanitized['minOrderSum'], min: 0)) {
+      errors.add('Некорректная минимальная сумма заказа');
+    }
+    if (sanitized['discountType'] == null) {
+      errors.add('Тип скидки обязателен');
+    }
+    if (sanitized['discountValue'] == null || !isValidNumber(sanitized['discountValue'], min: 0.01)) {
+      errors.add('Некорректное значение скидки');
+    }
+    if (sanitized['usageLimit'] != null && !isValidNumber(sanitized['usageLimit'], min: 1)) {
+      errors.add('Некорректный лимит использования');
+    }
+    if (errors.isNotEmpty) {
+      throw ValidationException(errors.join(', '));
+    }
+    sanitized['minOrderSum'] = double.parse(sanitized['minOrderSum'].toString());
+    sanitized['discountValue'] = double.parse(sanitized['discountValue'].toString());
+    return sanitized;
+  }
+
+  // Валидация уведомления
+  static Map<String, dynamic> validateAndSanitizeNotificationData(Map<String, dynamic> data) {
+    final sanitized = sanitizeJson(data);
+    final errors = <String>[];
+    if (sanitized['userId'] == null || !isValidNumber(sanitized['userId'], min: 1)) {
+      errors.add('Некорректный пользователь');
+    }
+    if (sanitized['message'] == null || sanitized['message'].toString().isEmpty) {
+      errors.add('Сообщение обязательно');
+    } else if (sanitized['message'].toString().length > maxNotificationMessageLength) {
+      errors.add('Сообщение слишком длинное');
+    }
+    if (sanitized['type'] == null || sanitized['type'].toString().isEmpty) {
+      errors.add('Тип уведомления обязателен');
+    }
+    if (errors.isNotEmpty) {
+      throw ValidationException(errors.join(', '));
+    }
+    return sanitized;
+  }
   
 
   static Map<String, dynamic> validateAndSanitizeReviewData(Map<String, dynamic> data) {

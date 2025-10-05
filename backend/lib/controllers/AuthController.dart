@@ -3,6 +3,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/AuthService.dart';
 import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class AuthController {
   final AuthService _authService;
@@ -27,6 +28,7 @@ class AuthController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final data = jsonDecode(body);
@@ -40,12 +42,13 @@ class AuthController {
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        await response.readAsString(),
+        jsonEncode(result),
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка регистрации', e);
+      await LoggingUtils.logError('Ошибка регистрации', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(
         400,
         body: jsonEncode({'error': e.toString()}),
@@ -62,6 +65,7 @@ class AuthController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final data = jsonDecode(body);
@@ -78,12 +82,13 @@ class AuthController {
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        await response.readAsString(),
+        jsonEncode(result),
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка входа', e);
+      await LoggingUtils.logError('Ошибка входа', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(
         400,
         body: jsonEncode({'error': e.toString()}),
@@ -100,6 +105,7 @@ class AuthController {
         request.url.path,
         request.headers,
         body,
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       final data = jsonDecode(body);
@@ -113,12 +119,13 @@ class AuthController {
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        await response.readAsString(),
+        jsonEncode(result),
+        requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления токена', e);
+      await LoggingUtils.logError('Ошибка обновления токена', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(
         400,
         body: jsonEncode({'error': e.toString()}),
