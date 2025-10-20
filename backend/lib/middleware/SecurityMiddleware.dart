@@ -1,6 +1,5 @@
 import 'package:shelf/shelf.dart';
-import '../utils/AuthUtils.dart';
-import 'dart:async';
+import '../utils/AuthUtilsWithCache.dart' as AuthCache;
 
 class SecurityMiddleware {
   static final Map<String, List<DateTime>> _requests = {};
@@ -53,7 +52,23 @@ class SecurityMiddleware {
         }
 
         try {
-          final payload = AuthUtils.verifyToken(token);
+          // Проверяем, не заблокирован ли токен
+          if (await AuthCache.AuthUtils.isTokenBlacklisted(token)) {
+            return Response.unauthorized('Токен заблокирован');
+          }
+
+          // Проверяем токен с кешированием
+          final payload = await AuthCache.AuthUtils.verifyTokenWithCache(token);
+          if (payload == null) {
+            return Response.unauthorized('Недействительный токен');
+          }
+
+          // Проверяем, не заблокирован ли пользователь
+          final userId = payload['id'] as int;
+          if (await AuthCache.AuthUtils.isUserBlacklisted(userId)) {
+            return Response.unauthorized('Пользователь заблокирован');
+          }
+
           final modifiedRequest = request.change(context: {
             'user': payload,
           });

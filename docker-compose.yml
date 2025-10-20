@@ -42,11 +42,15 @@ services:
     expose:
       - "8080"
     environment:
+      - DATABASE_URL=postgresql://postgres:TQr132123@postgres:5432/flutter_auth
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=flutter_auth
       - DB_USER=postgres
       - DB_PASSWORD=TQr132123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
       - JWT_SECRET=EshKushDev2024SecretKey123!@#
       - JWT_REFRESH_SECRET=EshKushDev2024RefreshKey456!@#
       - PORT=8080
@@ -83,6 +87,17 @@ services:
     depends_on:
       - backend
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
   swagger:
     build:
       context: ./backend
@@ -103,3 +118,4 @@ networks:
 volumes:
   postgres_data:
   backend_deps:
+  redis_data:

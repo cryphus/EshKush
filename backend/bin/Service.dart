@@ -7,6 +7,8 @@ import 'package:backend/database/Database.dart';
 import 'package:backend/services/AuthService.dart';
 import 'package:backend/repositories/UserRepository.dart';
 import 'package:backend/utils/AuthUtils.dart';
+import 'package:backend/services/CacheService.dart';
+import 'package:backend/config/AppConfig.dart';
 // import 'package:path/path.dart' as p;
 // import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 import 'package:backend/controllers/PointController.dart';
@@ -68,6 +70,7 @@ import 'package:backend/repositories/ActionLogRepository.dart';
 import 'package:backend/controllers/ErrorLogsController.dart';
 import 'package:backend/services/ErrorLogsService.dart';
 import 'package:backend/repositories/ErrorLogsRepository.dart';
+import 'package:backend/controllers/CacheController.dart';
 import 'package:backend/controllers/NotificationController.dart';
 import 'package:backend/services/NotificationService.dart';
 import 'package:backend/repositories/NotificationRepository.dart';
@@ -79,12 +82,20 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 
 void main() async {
   try {
+    // Инициализация конфигурации
+    final config = AppConfig();
+    await config.initialize();
+    
+    // Инициализация кеша
+    final cacheService = CacheService();
+    await cacheService.initialize();
+    
     final db = await Database.instance;
     final userRepository = UserRepository(db.connection);
     final authService = AuthService(userRepository);
     final changesRepository = ChangesRepository(db.connection);
     final changesService = ChangesService(changesRepository);
-    final userService = UserService(userRepository);
+    final userService = UserService(userRepository, cacheService);
     final userController = UserController(userService);
     final userFavoriteController = UserFavoriteController(
       UserFavoriteService(
@@ -97,7 +108,7 @@ void main() async {
       ),
     );
     final pointRepository = PointRepository(db.connection);
-    final pointService = PointService(pointRepository);
+    final pointService = PointService(pointRepository, cacheService);
     final pointController = PointController(pointService);
     final cityRepository = CityRepository(db.connection);
     final cityService = CityService(cityRepository);
@@ -125,7 +136,7 @@ void main() async {
     final pointReviewService = PointReviewService(pointReviewRepository);
     final pointReviewController = PointReviewController(pointReviewService);
     final productsRepository = ProductsRepository(db.connection);
-    final productsService = ProductsService(productsRepository);
+    final productsService = ProductsService(productsRepository, cacheService);
     final productsController = ProductsController(productsService);
     final orderRepository = OrderRepository(db.connection);
     final orderService = OrderService(
@@ -164,6 +175,7 @@ void main() async {
         ErrorLogsRepository(db.connection),
       ),
     );
+    final cacheController = CacheController(cacheService);
 
     final notificationController = NotificationController(
       NotificationService(
@@ -403,6 +415,8 @@ void main() async {
     app.mount('/action-logs', actionLogController.router);
     // Подключаем маршруты ErrorLogsController
     app.mount('/error-logs', errorLogsController.router);
+    // Подключаем маршруты CacheController
+    app.mount('/cache', cacheController.router);
     // Подключаем маршруты NotificationController
     app.mount('/notifications', notificationController.router);
     // Подключаем маршруты PaymentTransactionsController

@@ -4,14 +4,24 @@ import '../model/enums/UserRole.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/ValidationUtils.dart';
+import 'CacheService.dart';
 
 class UserService {
   final UserRepository _userRepository;
+  final CacheService _cacheService;
 
-  UserService(this._userRepository);
+  UserService(this._userRepository, this._cacheService);
 
   Future<User> getUserById(int id) async {
     try {
+      // Пытаемся получить из кеша
+      final cacheKey = CacheKeys.user(id);
+      final cachedUser = await _cacheService.get<User>(cacheKey);
+      if (cachedUser != null) {
+        return cachedUser;
+      }
+
+      // Если нет в кеше, получаем из БД
       final result = await _userRepository.queryOne(
         'SELECT * FROM users WHERE id = @id',
         params: {'id': id},
@@ -19,7 +29,13 @@ class UserService {
       if (result == null) {
         throw Exception('Пользователь не найден');
       }
-      return User.fromJson(result);
+      
+      final user = User.fromJson(result);
+      
+      // Сохраняем в кеш
+      await _cacheService.set(cacheKey, user, ttl: CacheTTL.user);
+      
+      return user;
     } catch (e) {
       print('Ошибка получения пользователя: $e');
       rethrow;
@@ -28,6 +44,19 @@ class UserService {
 
   Future<List<User>> getAllUsers({UserRole? role}) async {
     try {
+      // Определяем ключ кеша
+      final cacheKey = role != null 
+          ? CacheKeys.usersByRole(role.name.toLowerCase())
+          : CacheKeys.allUsers();
+      
+      // Пытаемся получить из кеша
+      final cachedData = await _cacheService.get<List>(cacheKey);
+      if (cachedData != null) {
+        // Конвертируем JSON обратно в List<User>
+        return cachedData.map((json) => User.fromJson(json as Map<String, dynamic>)).toList();
+      }
+
+      // Если нет в кеше, получаем из БД
       final query = role != null 
           ? 'SELECT * FROM users WHERE role = @role::user_role'
           : 'SELECT * FROM users';
@@ -36,7 +65,12 @@ class UserService {
           : {};
       
       final results = await _userRepository.query(query, params: params);
-      return results.map((map) => User.fromJson(map)).toList();
+      final users = results.map((map) => User.fromJson(map)).toList();
+      
+      // Сохраняем в кеш
+      await _cacheService.set(cacheKey, users, ttl: CacheTTL.user);
+      
+      return users;
     } catch (e) {
       print('Ошибка получения списка пользователей: $e');
       rethrow;
@@ -66,6 +100,10 @@ class UserService {
       if (result == null) {
         throw Exception('Пользователь не найден');
       }
+      
+      // Инвалидируем кеш
+      await _invalidateUserCache(id);
+      
       return result;
     } catch (e) {
       print('Ошибка обновления пользователя: $e');
@@ -82,6 +120,9 @@ class UserService {
       if (result == null) {
         throw Exception('Пользователь не найден');
       }
+      
+      // Инвалидируем кеш
+      await _invalidateUserCache(id);
     } catch (e) {
       print('Ошибка удаления пользователя: $e');
       rethrow;
@@ -176,6 +217,21 @@ class UserService {
       } catch (e) {
         throw Exception('Некорректная роль пользователя');
       }
+    }
+  }
+
+  /// Инвалидация кеша пользователя
+  Future<void> _invalidateUserCache(int userId) async {
+    try {
+      // Удаляем конкретного пользователя
+      await _cacheService.delete(CacheKeys.user(userId));
+      
+      // Удаляем списки пользователей (они могут измениться)
+      await _cacheService.delete(CacheKeys.allUsers());
+      await _cacheService.deleteByPattern('users:role:*');
+    } catch (e) {
+      print('Ошибка инвалидации кеша пользователя: $e');
+      // Не пробрасываем ошибку, так как это не критично
     }
   }
 }
