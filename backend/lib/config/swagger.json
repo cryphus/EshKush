@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.1.0",
   "info": {
     "title": "EshKush API",
     "version": "1.0.0",
@@ -268,7 +268,6 @@
             "type": "object"
           }
         }
-<<<<<<< HEAD
       },
       "Error": {
         "type": "object",
@@ -898,8 +897,6 @@
             "format": "date-time"
           }
         }
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
       }
     }
   },
@@ -907,10 +904,7 @@
     "/auth/google": {
       "post": {
         "summary": "Аутентификация через Google",
-<<<<<<< HEAD
         "tags": ["Аутентификация"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -978,10 +972,7 @@
     "/auth/register": {
       "post": {
         "summary": "Регистрация нового пользователя",
-<<<<<<< HEAD
         "tags": ["Аутентификация"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -1035,10 +1026,7 @@
     "/auth/refresh": {
       "post": {
         "summary": "Обновление токена",
-<<<<<<< HEAD
         "tags": ["Аутентификация"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -1079,10 +1067,7 @@
     "/points": {
       "get": {
         "summary": "Получить список точек",
-<<<<<<< HEAD
         "tags": ["Точки"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "parameters": [
           {
             "name": "latitude",
@@ -1119,7 +1104,6 @@
               "type": "integer",
               "format": "int64"
             }
-<<<<<<< HEAD
           },
           {
             "name": "search",
@@ -1179,8 +1163,6 @@
               "minimum": 0,
               "maximum": 5
             }
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
           }
         ],
         "responses": {
@@ -1189,7 +1171,6 @@
             "content": {
               "application/json": {
                 "schema": {
-<<<<<<< HEAD
                   "type": "object",
                   "properties": {
                     "items": {
@@ -1210,11 +1191,6 @@
                     "pages": {
                       "type": "integer"
                     }
-=======
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Point"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                   }
                 }
               }
@@ -1226,10 +1202,7 @@
     "/points/{id}": {
       "get": {
         "summary": "Получить информацию о точке",
-<<<<<<< HEAD
         "tags": ["Точки"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "parameters": [
           {
             "name": "id",
@@ -1258,10 +1231,7 @@
     "/points/{id}/reviews": {
       "get": {
         "summary": "Получить отзывы о точке",
-<<<<<<< HEAD
         "tags": ["Точки"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "parameters": [
           {
             "name": "id",
@@ -1291,10 +1261,7 @@
       },
       "post": {
         "summary": "Добавить отзыв о точке",
-<<<<<<< HEAD
         "tags": ["Точки"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1347,10 +1314,7 @@
     "/user/profile": {
       "get": {
         "summary": "Получить профиль пользователя",
-<<<<<<< HEAD
         "tags": ["Пользователи"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1371,10 +1335,7 @@
       },
       "put": {
         "summary": "Обновить профиль пользователя",
-<<<<<<< HEAD
         "tags": ["Пользователи"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1418,22 +1379,15 @@
         }
       }
     },
-<<<<<<< HEAD
     "/users/{userId}/favorites": {
       "get": {
         "summary": "Получить избранные точки пользователя",
         "tags": ["Пользователи"],
-=======
-    "/user/favorites": {
-      "get": {
-        "summary": "Получить избранные точки",
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
-<<<<<<< HEAD
         "parameters": [
           {
             "name": "userId",
@@ -1485,15 +1439,12 @@
             }
           }
         ],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "responses": {
           "200": {
             "description": "Список избранных точек",
             "content": {
               "application/json": {
                 "schema": {
-<<<<<<< HEAD
                   "type": "object",
                   "properties": {
                     "items": {
@@ -1514,11 +1465,6 @@
                     "pages": {
                       "type": "integer"
                     }
-=======
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Point"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                   }
                 }
               }
@@ -1528,16 +1474,12 @@
       },
       "post": {
         "summary": "Добавить точку в избранное",
-<<<<<<< HEAD
         "tags": ["Пользователи"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
-<<<<<<< HEAD
         "parameters": [
           {
             "name": "userId",
@@ -1549,8 +1491,6 @@
             }
           }
         ],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -1558,11 +1498,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-<<<<<<< HEAD
                   "point_id": {
-=======
-                  "pointId": {
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                     "type": "integer",
                     "format": "int64"
                   }
@@ -1573,7 +1509,6 @@
         },
         "responses": {
           "200": {
-<<<<<<< HEAD
             "description": "Точка добавлена в избранное",
             "content": {
               "application/json": {
@@ -1582,24 +1517,17 @@
                 }
               }
             }
-=======
-            "description": "Точка добавлена в избранное"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
           }
         }
       },
       "delete": {
         "summary": "Удалить точку из избранного",
-<<<<<<< HEAD
         "tags": ["Пользователи"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
-<<<<<<< HEAD
         "parameters": [
           {
             "name": "userId",
@@ -1620,24 +1548,6 @@
             }
           }
         ],
-=======
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "pointId": {
-                    "type": "integer",
-                    "format": "int64"
-                  }
-                }
-              }
-            }
-          }
-        },
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "responses": {
           "200": {
             "description": "Точка удалена из избранного"
@@ -1648,16 +1558,12 @@
     "/orders": {
       "get": {
         "summary": "Получить список заказов",
-<<<<<<< HEAD
         "tags": ["Заказы"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
-<<<<<<< HEAD
         "parameters": [
           {
             "name": "status",
@@ -1727,15 +1633,12 @@
             }
           }
         ],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "responses": {
           "200": {
             "description": "Список заказов",
             "content": {
               "application/json": {
                 "schema": {
-<<<<<<< HEAD
                   "type": "object",
                   "properties": {
                     "items": {
@@ -1756,11 +1659,6 @@
                     "pages": {
                       "type": "integer"
                     }
-=======
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Order"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                   }
                 }
               }
@@ -1770,10 +1668,7 @@
       },
       "post": {
         "summary": "Создать новый заказ",
-<<<<<<< HEAD
         "tags": ["Заказы"],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1816,28 +1711,16 @@
             "content": {
               "application/json": {
                 "schema": {
-<<<<<<< HEAD
-                  "$ref": "#/components/schemas/UserSessions"
-=======
                   "$ref": "#/components/schemas/Order"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                 }
               }
             }
           }
         }
-<<<<<<< HEAD
       },
       "delete": {
         "summary": "Удалить сессию",
         "tags": ["Пользователи"],
-=======
-      }
-    },
-    "/orders/{id}": {
-      "get": {
-        "summary": "Получить информацию о заказе",
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -1845,7 +1728,6 @@
         ],
         "parameters": [
           {
-<<<<<<< HEAD
             "name": "userId",
             "in": "path",
             "required": true,
@@ -1856,9 +1738,6 @@
           },
           {
             "name": "sessionId",
-=======
-            "name": "id",
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
             "in": "path",
             "required": true,
             "schema": {
@@ -1869,38 +1748,20 @@
         ],
         "responses": {
           "200": {
-<<<<<<< HEAD
             "description": "Сессия удалена"
-=======
-            "description": "Информация о заказе",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Order"
-                }
-              }
-            }
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
           }
         }
       }
     },
-<<<<<<< HEAD
     "/changes": {
       "get": {
         "summary": "Получить список изменений",
         "tags": ["Изменения"],
-=======
-    "/partner/points": {
-      "get": {
-        "summary": "Получить список точек партнера",
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
-<<<<<<< HEAD
         "parameters": [
           {
             "name": "entityType",
@@ -1937,28 +1798,18 @@
         "responses": {
           "200": {
             "description": "Список изменений",
-=======
-        "responses": {
-          "200": {
-            "description": "Список точек",
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-<<<<<<< HEAD
                     "$ref": "#/components/schemas/Changes"
-=======
-                    "$ref": "#/components/schemas/Point"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                   }
                 }
               }
             }
           }
         }
-<<<<<<< HEAD
       }
     },
     "/changes/{id}": {
@@ -1997,17 +1848,11 @@
       "post": {
         "summary": "Отменить изменение",
         "tags": ["Изменения"],
-=======
-      },
-      "post": {
-        "summary": "Создать новую точку",
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
           }
         ],
-<<<<<<< HEAD
         "parameters": [
           {
             "name": "id",
@@ -2019,8 +1864,6 @@
             }
           }
         ],
-=======
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "requestBody": {
           "required": true,
           "content": {
@@ -2028,7 +1871,6 @@
               "schema": {
                 "type": "object",
                 "properties": {
-<<<<<<< HEAD
                   "comment": {
                     "type": "string"
                   }
@@ -2414,37 +2256,12 @@
                     },
                     "pages": {
                       "type": "integer"
-=======
-                  "name": {
-                    "type": "string"
-                  },
-                  "address": {
-                    "type": "string"
-                  },
-                  "latitude": {
-                    "type": "number",
-                    "format": "float"
-                  },
-                  "longitude": {
-                    "type": "number",
-                    "format": "float"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "categoryIds": {
-                    "type": "array",
-                    "items": {
-                      "type": "integer",
-                      "format": "int64"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                     }
                   }
                 }
               }
             }
           }
-<<<<<<< HEAD
         }
       },
       "post": {
@@ -2472,16 +2289,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Products"
-=======
-        },
-        "responses": {
-          "200": {
-            "description": "Точка создана",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Point"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                 }
               }
             }
@@ -2489,7 +2296,6 @@
         }
       }
     },
-<<<<<<< HEAD
     "/products/{id}": {
       "get": {
         "summary": "Получить информацию о продукте",
@@ -2521,11 +2327,6 @@
       "put": {
         "summary": "Обновить информацию о продукте",
         "tags": ["Продукты"],
-=======
-    "/partner/points/{id}": {
-      "put": {
-        "summary": "Обновить информацию о точке",
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -2547,56 +2348,18 @@
           "content": {
             "application/json": {
               "schema": {
-<<<<<<< HEAD
                 "$ref": "#/components/schemas/Products"
-=======
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "address": {
-                    "type": "string"
-                  },
-                  "latitude": {
-                    "type": "number",
-                    "format": "float"
-                  },
-                  "longitude": {
-                    "type": "number",
-                    "format": "float"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "categoryIds": {
-                    "type": "array",
-                    "items": {
-                      "type": "integer",
-                      "format": "int64"
-                    }
-                  }
-                }
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
               }
             }
           }
         },
         "responses": {
           "200": {
-<<<<<<< HEAD
             "description": "Информация о продукте обновлена",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Products"
-=======
-            "description": "Информация обновлена",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Point"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
                 }
               }
             }
@@ -2604,12 +2367,8 @@
         }
       },
       "delete": {
-<<<<<<< HEAD
         "summary": "Удалить продукт",
         "tags": ["Продукты"],
-=======
-        "summary": "Удалить точку",
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
         "security": [
           {
             "bearerAuth": []
@@ -2628,17 +2387,536 @@
         ],
         "responses": {
           "200": {
-<<<<<<< HEAD
             "description": "Продукт удален"
-=======
-            "description": "Точка удалена"
           }
         }
       }
     },
-    "/partner/products": {
+    "/points/{id}/categories": {
       "get": {
-        "summary": "Получить список товаров",
+        "summary": "Получить категории точки",
+        "tags": ["Точки"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список категорий",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PointCategory"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Обновить категории точки",
+        "tags": ["Точки"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Категории обновлены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PointCategory"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/points/{id}/rating": {
+      "put": {
+        "summary": "Обновить рейтинг точки",
+        "tags": ["Точки"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": {
+                    "type": "number",
+                    "format": "float",
+                    "minimum": 0,
+                    "maximum": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Рейтинг обновлен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Point"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "summary": "Получить информацию о заказе",
+        "tags": ["Заказы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Информация о заказе",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Удалить заказ",
+        "tags": ["Заказы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Заказ удален"
+          }
+        }
+      }
+    },
+    "/orders/{id}/status": {
+      "put": {
+        "summary": "Обновить статус заказа",
+        "tags": ["Заказы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "confirmed", "completed", "cancelled"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Статус обновлен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/user/{userId}": {
+      "get": {
+        "summary": "Получить заказы пользователя",
+        "tags": ["Заказы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список заказов пользователя",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/user/{userId}": {
+      "get": {
+        "summary": "Получить уведомления пользователя",
+        "tags": ["Уведомления"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список уведомлений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notification"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/type/{type}": {
+      "get": {
+        "summary": "Получить уведомления по типу",
+        "tags": ["Уведомления"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["orderUpdate", "systemUpdate", "promoUpdate", "otherUpdate"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список уведомлений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notification"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/unread/{userId}": {
+      "get": {
+        "summary": "Получить непрочитанные уведомления",
+        "tags": ["Уведомления"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список непрочитанных уведомлений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notification"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/recent": {
+      "get": {
+        "summary": "Получить последние уведомления",
+        "tags": ["Уведомления"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список последних уведомлений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notification"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{notificationId}/read": {
+      "post": {
+        "summary": "Отметить уведомление как прочитанное",
+        "tags": ["Уведомления"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Уведомление отмечено как прочитанное",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{notificationId}/sent": {
+      "post": {
+        "summary": "Отметить уведомление как отправленное",
+        "tags": ["Уведомления"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Уведомление отмечено как отправленное",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/favorites/user/{userId}": {
+      "get": {
+        "summary": "Получить избранное пользователя",
+        "tags": ["Избранное"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список избранных точек",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Point"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/favorites/point/{pointId}": {
+      "get": {
+        "summary": "Получить избранное по точке",
+        "tags": ["Избранное"],
         "security": [
           {
             "bearerAuth": []
@@ -2647,8 +2925,8 @@
         "parameters": [
           {
             "name": "pointId",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -2657,67 +2935,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Список товаров",
+            "description": "Список пользователей, добавивших точку в избранное",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Product"
+                    "$ref": "#/components/schemas/UserFavorite"
                   }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Создать новый товар",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "price": {
-                    "type": "number",
-                    "format": "float"
-                  },
-                  "categoryId": {
-                    "type": "integer",
-                    "format": "int64"
-                  },
-                  "pointId": {
-                    "type": "integer",
-                    "format": "int64"
-                  },
-                  "isAvailable": {
-                    "type": "boolean"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Товар создан",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Product"
                 }
               }
             }
@@ -2725,23 +2950,13 @@
         }
       }
     },
-    "/partner/products/{id}": {
-      "put": {
-        "summary": "Обновить информацию о товаре",
+    "/favorites": {
+      "post": {
+        "summary": "Добавить точку в избранное",
+        "tags": ["Избранное"],
         "security": [
           {
             "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
           }
         ],
         "requestBody": {
@@ -2749,49 +2964,29 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "price": {
-                    "type": "number",
-                    "format": "float"
-                  },
-                  "categoryId": {
-                    "type": "integer",
-                    "format": "int64"
-                  },
-                  "pointId": {
-                    "type": "integer",
-                    "format": "int64"
-                  },
-                  "isAvailable": {
-                    "type": "boolean"
-                  }
-                }
+                "$ref": "#/components/schemas/UserFavorite"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Информация обновлена",
+            "description": "Точка добавлена в избранное",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Product"
+                  "$ref": "#/components/schemas/UserFavorite"
                 }
               }
             }
           }
         }
-      },
-      "delete": {
-        "summary": "Удалить товар",
+      }
+    },
+    "/statistics/point/{pointId}": {
+      "get": {
+        "summary": "Получить статистику точки",
+        "tags": ["Статистика"],
         "security": [
           {
             "bearerAuth": []
@@ -2799,7 +2994,7 @@
         ],
         "parameters": [
           {
-            "name": "id",
+            "name": "pointId",
             "in": "path",
             "required": true,
             "schema": {
@@ -2810,8 +3005,537 @@
         ],
         "responses": {
           "200": {
-            "description": "Товар удален"
->>>>>>> ca3216b02f9e6c1a4fe54322636013c5fafec9c1
+            "description": "Статистика точки",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerStatistics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics": {
+      "post": {
+        "summary": "Создать статистику",
+        "tags": ["Статистика"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerStatistics"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Статистика создана",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerStatistics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs/user/{userId}": {
+      "get": {
+        "summary": "Получить логи пользователя",
+        "tags": ["Логи"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список логов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActionLog"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs/entity/{entityType}/{entityId}": {
+      "get": {
+        "summary": "Получить логи сущности",
+        "tags": ["Логи"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["user", "point", "order", "product", "other"]
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список логов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActionLog"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs/action/{actionType}": {
+      "get": {
+        "summary": "Получить логи по типу действия",
+        "tags": ["Логи"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "actionType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["create", "update", "delete", "login", "logout", "other"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список логов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActionLog"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs/recent": {
+      "get": {
+        "summary": "Получить последние логи",
+        "tags": ["Логи"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список последних логов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActionLog"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/changes/entity/{entityType}/{entityId}": {
+      "get": {
+        "summary": "Получить изменения сущности",
+        "tags": ["Изменения"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["user", "order", "product", "point", "partner", "other"]
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список изменений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Changes"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/changes/user/{userId}": {
+      "get": {
+        "summary": "Получить изменения пользователя",
+        "tags": ["Изменения"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список изменений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Changes"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/changes/type/{changeType}": {
+      "get": {
+        "summary": "Получить изменения по типу",
+        "tags": ["Изменения"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "changeType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["create", "update", "delete", "restore"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список изменений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Changes"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/changes/recent": {
+      "get": {
+        "summary": "Получить последние изменения",
+        "tags": ["Изменения"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список последних изменений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Changes"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/errors/severity/{severity}": {
+      "get": {
+        "summary": "Получить ошибки по уровню серьезности",
+        "tags": ["Ошибки"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "severity",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["critical", "high", "medium", "low"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список ошибок",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorLogs"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/errors/module/{module}": {
+      "get": {
+        "summary": "Получить ошибки по модулю",
+        "tags": ["Ошибки"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "module",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список ошибок",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorLogs"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/errors/user/{userId}": {
+      "get": {
+        "summary": "Получить ошибки пользователя",
+        "tags": ["Ошибки"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список ошибок",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorLogs"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/errors/unresolved": {
+      "get": {
+        "summary": "Получить нерешенные ошибки",
+        "tags": ["Ошибки"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список нерешенных ошибок",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorLogs"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/errors/recent": {
+      "get": {
+        "summary": "Получить последние ошибки",
+        "tags": ["Ошибки"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список последних ошибок",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorLogs"
+                  }
+                }
+              }
+            }
           }
         }
       }

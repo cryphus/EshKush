@@ -57,7 +57,13 @@ class OrderActionsRepository {
   Future<List<OrderActions>> findByPartnerId(int partnerId) async {
     try {
       final results = await query(
-        'SELECT * FROM order_actions WHERE partner_id = @partnerId',
+        '''
+        SELECT oa.*
+        FROM order_actions oa
+        JOIN orders o ON oa.order_id = o.id
+        JOIN points p ON o.point_id = p.id
+        WHERE p.partner_id = @partnerId
+        ''' ,
         params: {'partnerId': partnerId},
       );
       return results.map((map) => OrderActions.fromJson(map)).toList();
@@ -72,23 +78,17 @@ class OrderActionsRepository {
       final result = await queryOne(
         '''
         INSERT INTO order_actions (
-          order_id, partner_id, action_type, action_description,
-          action_timestamp, updated_at, is_active
+          order_id, action_type, description
         )
         VALUES (
-          @orderId, @partnerId, @actionType::action_type, @actionDescription,
-          @actionTimestamp, @updatedAt, @isActive
+          @orderId, @actionType::action_type, @description
         )
         RETURNING *
         ''',
         params: {
           'orderId': action.orderId,
-          'partnerId': action.partnerId,
           'actionType': action.actionType.toString().split('.').last,
-          'actionDescription': action.actionDescription,
-          'actionTimestamp': action.actionTimestamp,
-          'updatedAt': action.updatedAt,
-          'isActive': action.isActive,
+          'description': action.description,
         },
       );
       if (result == null) {
@@ -105,23 +105,17 @@ class OrderActionsRepository {
     try {
       final result = await queryOne(
         '''
-        UPDATE order_actions 
-        SET 
+        UPDATE order_actions
+        SET
           action_type = @actionType::action_type,
-          action_description = @actionDescription,
-          action_timestamp = @actionTimestamp,
-          updated_at = @updatedAt,
-          is_active = @isActive
+          description = @description
         WHERE id = @id
         RETURNING *
         ''',
         params: {
           'id': action.id,
           'actionType': action.actionType.toString().split('.').last,
-          'actionDescription': action.actionDescription,
-          'actionTimestamp': action.actionTimestamp,
-          'updatedAt': action.updatedAt,
-          'isActive': action.isActive,
+          'description': action.description,
         },
       );
       if (result == null) {
@@ -149,9 +143,7 @@ class OrderActionsRepository {
 
   Future<List<OrderActions>> getActiveActions() async {
     try {
-      final results = await query(
-        'SELECT * FROM order_actions WHERE is_active = true',
-      );
+      final results = await query('SELECT * FROM order_actions');
       return results.map((map) => OrderActions.fromJson(map)).toList();
     } catch (e) {
       print('Ошибка получения активных действий: $e');

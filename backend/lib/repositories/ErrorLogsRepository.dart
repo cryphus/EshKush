@@ -33,19 +33,19 @@ class ErrorLogsRepository {
       final result = await queryOne(
         '''
         INSERT INTO error_logs (
-          error_message, error_code, stack_trace, time, severity,
+          message, error_code, stack_trace, time, severity,
           module, user_id, additional_info, resolved, resolved_at,
           resolved_by
         )
         VALUES (
-          @errorMessage, @errorCode, @stackTrace, @time,
+          @message, @errorCode, @stackTrace, @time,
           @severity::error_severity, @module, @userId, @additionalInfo,
           @resolved, @resolvedAt, @resolvedBy
         )
         RETURNING *
         ''',
         params: {
-          'errorMessage': error.errorMessage,
+          'message': error.errorMessage,
           'errorCode': error.errorCode,
           'stackTrace': error.stackTrace,
           'time': error.time,

@@ -1,15 +1,30 @@
 import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PartnerService.dart';
 import '../model/entities/Partner.dart';
+import '../utils/SafeLoggingUtils.dart';
+import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
+import '../utils/ValidationUtils.dart';
 
 class PartnerController {
   final PartnerService _partnerService;
+  final Router _router = Router();
 
-  PartnerController(this._partnerService);
+  PartnerController(this._partnerService) {
+    _router.get('/', _getAllPartners);
+    _router.post('/', _createPartner);
+    _router.get('/<id>', _getPartner);
+    _router.put('/<id>', _updatePartner);
+    _router.delete('/<id>', _deletePartner);
+  }
 
-  Future<Response> getPartner(Request request, String id) async {
+  Router get router => _router;
+
+  Future<Response> _getPartner(Request request, String id) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final partnerId = int.parse(id);
       final partner = await _partnerService.getPartner(partnerId);
       
@@ -20,25 +35,24 @@ class PartnerController {
         );
       }
 
-      return Response.ok(
-        jsonEncode(partner.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(partner.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения партнера', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> getAllPartners(Request request) async {
+  Future<Response> _getAllPartners(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final partners = await _partnerService.getAllPartners();
-      return Response.ok(
-        jsonEncode(partners.map((p) => p.toJson()).toList()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(partners.map((p) => p.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
       return Response(400,
         body: jsonEncode({'error': 'Ошибка: $e'}),
@@ -47,44 +61,51 @@ class PartnerController {
     }
   }
 
-  Future<Response> createPartner(Request request) async {
+  Future<Response> _createPartner(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
-      
+      final body = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(body);
+      SafeLoggingUtils.logData('Полученные данные', data);
+      final sanitized = ValidationUtils.validateAndSanitizePartnerData(data);
+
       final partner = Partner(
-        id: 0, // ID будет назначен базой данных
-        name: data['name'],
-        contactPerson: data['contact_person'],
-        concactEmail: data['contact_email'],
-        contactPhone: data['contact_phone'],
-        contactDocument: data['contact_document'],
-        maxDiscount: (data['max_discount'] ?? 0.0).toDouble(),
+        id: 0,
+        userId: int.parse(sanitized['user_id'].toString()),
+        name: sanitized['name'],
+        contactPerson: sanitized['contact_person'],
+        contactEmail: sanitized['contact_email'],
+        contactPhone: sanitized['contact_phone'],
+        contactDocument: sanitized['contact_document'],
+        maxDiscount: (sanitized['max_discount'] ?? 0.0) as double,
         createdAt: DateTime.now(),
       );
 
       final createdPartner = await _partnerService.createPartner(partner);
-      return Response.ok(
-        jsonEncode(createdPartner.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final out = jsonEncode(createdPartner.toJson());
+      final resp = Response.ok(out, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка создания партнера: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка создания партнера', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка создания партнера: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> updatePartner(Request request, String id) async {
+  Future<Response> _updatePartner(Request request, String id) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final partnerId = int.parse(id);
-      final data = jsonDecode(await request.readAsString());
+      final body = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(body);
+      final sanitized = ValidationUtils.validateAndSanitizePartnerData(data);
       
-      final updatedPartner = await _partnerService.updatePartner(partnerId, data);
-      return Response.ok(
-        jsonEncode(updatedPartner.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final updatedPartner = await _partnerService.updatePartner(partnerId, sanitized);
+      final out = jsonEncode(updatedPartner.toJson());
+      final resp = Response.ok(out, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
       return Response(400,
         body: jsonEncode({'error': 'Ошибка обновления партнера: $e'}),
@@ -93,14 +114,15 @@ class PartnerController {
     }
   }
 
-  Future<Response> deletePartner(Request request, String id) async {
+  Future<Response> _deletePartner(Request request, String id) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final partnerId = int.parse(id);
       await _partnerService.deletePartner(partnerId);
-      return Response.ok(
-        jsonEncode({'message': 'Партнер успешно удален'}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Партнер успешно удален'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
       return Response(400,
         body: jsonEncode({'error': 'Ошибка удаления партнера: $e'}),

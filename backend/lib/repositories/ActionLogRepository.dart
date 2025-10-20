@@ -34,13 +34,13 @@ class ActionLogRepository {
       final result = await queryOne(
         '''
         INSERT INTO action_logs (
-          user_id, action_type, target_entity, target_id, details,
+          user_id, action_type, entity_type, entity_id, details,
           timestamp, ip_address, user_agent, location, is_success,
           error_message, metadata
         )
         VALUES (
-          @userId, @actionType::action_type, @targetEntity::entity_type,
-          @targetId, @details, @timestamp, @ipAddress, @userAgent,
+          @userId, @actionType::action_type, @entityType::entity_type,
+          @entityId, @details, @timestamp, @ipAddress, @userAgent,
           @location, @isSuccess, @errorMessage, @metadata
         )
         RETURNING *
@@ -48,8 +48,8 @@ class ActionLogRepository {
         params: {
           'userId': log.userId,
           'actionType': log.actionType.toString().split('.').last,
-          'targetEntity': log.targetEntity.toString().split('.').last,
-          'targetId': log.targetId,
+          'entityType': log.targetEntity.toString().split('.').last,
+          'entityId': log.targetId,
           'details': log.details,
           'timestamp': log.timestamp,
           'ipAddress': log.ipAddress,
@@ -90,8 +90,8 @@ class ActionLogRepository {
       final results = await query(
         '''
         SELECT * FROM action_logs 
-        WHERE target_entity = @entityType::entity_type 
-        AND target_id = @entityId 
+        WHERE entity_type = @entityType::entity_type 
+        AND entity_id = @entityId 
         ORDER BY timestamp DESC
         ''',
         params: {

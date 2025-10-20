@@ -16,7 +16,9 @@ class PointCategory {
       id: json['id'] as int,
       name: json['name'] as String,
       description: json['description'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] is DateTime 
+          ? json['created_at'] as DateTime 
+          : DateTime.parse(json['created_at'].toString()),
     );
   }
 

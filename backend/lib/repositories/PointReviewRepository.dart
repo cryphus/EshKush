@@ -8,6 +8,7 @@ class PointReviewRepository {
 
   Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
     try {
+      await _connection.execute('SET client_encoding TO \'UTF8\'');
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       if (results.isEmpty) return null;
       return results.first.values.first;
@@ -19,6 +20,7 @@ class PointReviewRepository {
 
   Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
     try {
+      await _connection.execute('SET client_encoding TO \'UTF8\'');
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
@@ -30,7 +32,17 @@ class PointReviewRepository {
   Future<PointReview?> findById(int id) async {
     try {
       final result = await queryOne(
-        'SELECT * FROM point_reviews WHERE id = @id',
+        '''
+        SELECT 
+          id,
+          point_id,
+          user_id,
+          rating,
+          comment,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
+        FROM point_reviews 
+        WHERE id = @id
+        ''',
         params: {'id': id},
       );
       return result == null ? null : PointReview.fromJson(result);
@@ -43,8 +55,18 @@ class PointReviewRepository {
   Future<List<PointReview>> findByPointId(int pointId) async {
     try {
       final results = await query(
-        'SELECT * FROM point_reviews WHERE point_id = @pointId',
-        params: {'pointId': pointId},
+        '''
+        SELECT 
+          id,
+          point_id,
+          user_id,
+          rating,
+          comment,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
+        FROM point_reviews 
+        WHERE point_id = @point_id
+        ''',
+        params: {'point_id': pointId},
       );
       return results.map((map) => PointReview.fromJson(map)).toList();
     } catch (e) {
@@ -56,8 +78,18 @@ class PointReviewRepository {
   Future<List<PointReview>> findByUserId(int userId) async {
     try {
       final results = await query(
-        'SELECT * FROM point_reviews WHERE user_id = @userId',
-        params: {'userId': userId},
+        '''
+        SELECT 
+          id,
+          point_id,
+          user_id,
+          rating,
+          comment,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
+        FROM point_reviews 
+        WHERE user_id = @user_id
+        ''',
+        params: {'user_id': userId},
       );
       return results.map((map) => PointReview.fromJson(map)).toList();
     } catch (e) {
@@ -70,16 +102,21 @@ class PointReviewRepository {
     try {
       final result = await queryOne(
         '''
-        INSERT INTO point_reviews (point_id, user_id, rating, comment, review_date)
-        VALUES (@pointId, @userId, @rating, @comment, @reviewDate)
-        RETURNING *
+        INSERT INTO point_reviews (point_id, user_id, rating, comment, created_at)
+        VALUES (@point_id, @user_id, @rating, @comment, CURRENT_TIMESTAMP)
+        RETURNING 
+          id,
+          point_id,
+          user_id,
+          rating,
+          comment,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
         ''',
         params: {
-          'pointId': review.pointId,
-          'userId': review.userId,
+          'point_id': review.pointId,
+          'user_id': review.userId,
           'rating': review.rating,
           'comment': review.comment,
-          'reviewDate': review.reviewDate.toIso8601String(),
         },
       );
       if (result == null) {
@@ -97,12 +134,20 @@ class PointReviewRepository {
       final result = await queryOne(
         '''
         UPDATE point_reviews 
-        SET rating = @rating, comment = @comment
+        SET point_id = @point_id, user_id = @user_id, rating = @rating, comment = @comment
         WHERE id = @id
-        RETURNING *
+        RETURNING 
+          id,
+          point_id,
+          user_id,
+          rating,
+          comment,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
         ''',
         params: {
           'id': review.id,
+          'point_id': review.pointId,
+          'user_id': review.userId,
           'rating': review.rating,
           'comment': review.comment,
         },

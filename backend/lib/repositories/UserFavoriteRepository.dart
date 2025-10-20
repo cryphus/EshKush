@@ -83,7 +83,7 @@ class UserFavoriteRepository {
         '''
         DELETE FROM user_favorites 
         WHERE user_id = @userId AND point_id = @pointId 
-        RETURNING id
+        RETURNING user_id
         ''',
         params: {
           'userId': userId,

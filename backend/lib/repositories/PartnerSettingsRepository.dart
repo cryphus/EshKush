@@ -30,7 +30,16 @@ class PartnerSettingsRepository {
   Future<PartnerSettings?> findById(int id) async {
     try {
       final result = await queryOne(
-        'SELECT * FROM partner_settings WHERE id = @id',
+        '''
+        SELECT 
+          id,
+          partner_id,
+          branding_color,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
+        FROM partner_settings 
+        WHERE id = @id
+        ''',
         params: {'id': id},
       );
       return result == null ? null : PartnerSettings.fromJson(result);
@@ -43,7 +52,16 @@ class PartnerSettingsRepository {
   Future<PartnerSettings?> findByPartnerId(int partnerId) async {
     try {
       final result = await queryOne(
-        'SELECT * FROM partner_settings WHERE partner_id = @partner_id',
+        '''
+        SELECT 
+          id,
+          partner_id,
+          branding_color,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
+        FROM partner_settings 
+        WHERE partner_id = @partner_id
+        ''',
         params: {'partner_id': partnerId},
       );
       return result == null ? null : PartnerSettings.fromJson(result);
@@ -59,7 +77,12 @@ class PartnerSettingsRepository {
         '''
         INSERT INTO partner_settings (partner_id, branding_color, created_at, updated_at)
         VALUES (@partner_id, @branding_color, @created_at, @updated_at)
-        RETURNING *
+        RETURNING 
+          id,
+          partner_id,
+          branding_color,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
         ''',
         params: {
           'partner_id': settings.partnerId,
@@ -68,9 +91,11 @@ class PartnerSettingsRepository {
           'updated_at': settings.updatedAt.toIso8601String(),
         },
       );
+
       if (result == null) {
         throw Exception('Ошибка создания настроек партнера');
       }
+
       return PartnerSettings.fromJson(result);
     } catch (e) {
       print('Ошибка создания настроек партнера: $e');
@@ -91,7 +116,12 @@ class PartnerSettingsRepository {
           branding_color = COALESCE(@branding_color, branding_color),
           updated_at = @updated_at
         WHERE id = @id
-        RETURNING *
+        RETURNING 
+          id,
+          partner_id,
+          branding_color,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
         ''',
         params: {
           'id': id,
@@ -120,6 +150,26 @@ class PartnerSettingsRepository {
       }
     } catch (e) {
       print('Ошибка удаления настроек партнера: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<PartnerSettings>> findAll() async {
+    try {
+      final results = await query(
+        '''
+        SELECT 
+          id,
+          partner_id,
+          branding_color,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
+        FROM partner_settings
+        '''
+      );
+      return results.map((map) => PartnerSettings.fromJson(map)).toList();
+    } catch (e) {
+      print('Ошибка получения списка настроек: $e');
       rethrow;
     }
   }

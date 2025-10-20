@@ -38,23 +38,25 @@ class ActionLog {
   factory ActionLog.fromJson(Map<String, dynamic> json) {
     return ActionLog(
       id: json['id'] as int,
-      userId: json['userId'] as int,
+      userId: json['user_id'] as int,
       actionType: ActionType.values.firstWhere(
-        (e) => e.toString() == 'ActionType.${json['actionType']}',
+        (e) => e.toString().split('.').last == json['action_type'],
         orElse: () => ActionType.other,
       ),
       targetEntity: EntityType.values.firstWhere(
-        (e) => e.toString() == 'EntityType.${json['targetEntity']}',
+        (e) => e.toString().split('.').last == json['entity_type'],
         orElse: () => EntityType.other,
       ),
-      targetId: json['targetId'] as int,
+      targetId: json['entity_id'] as int,
       details: json['details'] as String,
-      timestamp: DateTime.parse(json['timestamp'] as String),
-      ipAddress: json['ipAddress'] as String,
-      userAgent: json['userAgent'] as String?,
+      timestamp: json['timestamp'] is DateTime 
+          ? json['timestamp'] as DateTime
+          : DateTime.parse(json['timestamp'] as String),
+      ipAddress: json['ip_address'] as String,
+      userAgent: json['user_agent'] as String?,
       location: json['location'] as String?,
-      isSuccess: json['isSuccess'] as bool? ?? true,
-      errorMessage: json['errorMessage'] as String?,
+      isSuccess: json['is_success'] as bool? ?? true,
+      errorMessage: json['error_message'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }
@@ -62,17 +64,17 @@ class ActionLog {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'userId': userId,
-      'actionType': actionType.toString().split('.').last,
-      'targetEntity': targetEntity.toString().split('.').last,
-      'targetId': targetId,
+      'user_id': userId,
+      'action_type': actionType.toString().split('.').last,
+      'entity_type': targetEntity.toString().split('.').last,
+      'entity_id': targetId,
       'details': details,
       'timestamp': timestamp.toIso8601String(),
-      'ipAddress': ipAddress,
-      'userAgent': userAgent,
+      'ip_address': ipAddress,
+      'user_agent': userAgent,
       'location': location,
-      'isSuccess': isSuccess,
-      'errorMessage': errorMessage,
+      'is_success': isSuccess,
+      'error_message': errorMessage,
       'metadata': metadata,
     };
   }

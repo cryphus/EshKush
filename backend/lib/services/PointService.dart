@@ -1,18 +1,33 @@
 import '../repositories/PointRepository.dart';
 import '../model/entities/Point.dart';
 import '../model/entities/PointCategory.dart';
+import '../model/entities/PointReview.dart';
+import 'CacheService.dart';
 
 class PointService {
   final PointRepository _pointRepository;
+  final CacheService _cacheService;
 
-  PointService(this._pointRepository);
+  PointService(this._pointRepository, this._cacheService);
 
   Future<Point> getPointById(int id) async {
     try {
+      // Пытаемся получить из кеша
+      final cacheKey = CacheKeys.point(id);
+      final cachedPoint = await _cacheService.get<Point>(cacheKey);
+      if (cachedPoint != null) {
+        return cachedPoint;
+      }
+
+      // Если нет в кеше, получаем из БД
       final result = await _pointRepository.findById(id);
       if (result == null) {
         throw Exception('Точка не найдена');
       }
+      
+      // Сохраняем в кеш
+      await _cacheService.set(cacheKey, result, ttl: CacheTTL.point);
+      
       return result;
     } catch (e) {
       print('Ошибка получения точки: $e');
@@ -22,7 +37,21 @@ class PointService {
 
   Future<List<Point>> getAllPoints() async {
     try {
-      return await _pointRepository.findAll();
+      // Пытаемся получить из кеша
+      final cacheKey = CacheKeys.allPoints();
+      final cachedData = await _cacheService.get<List>(cacheKey);
+      if (cachedData != null) {
+        // Конвертируем JSON обратно в List<Point>
+        return cachedData.map((json) => Point.fromJson(json as Map<String, dynamic>)).toList();
+      }
+
+      // Если нет в кеше, получаем из БД
+      final points = await _pointRepository.findAll();
+      
+      // Сохраняем в кеш
+      await _cacheService.set(cacheKey, points, ttl: CacheTTL.point);
+      
+      return points;
     } catch (e) {
       print('Ошибка получения списка точек: $e');
       rethrow;
@@ -31,7 +60,21 @@ class PointService {
 
   Future<List<Point>> getPointsByCategory(int categoryId) async {
     try {
-      return await _pointRepository.findByCategory(categoryId);
+      // Пытаемся получить из кеша
+      final cacheKey = CacheKeys.pointsByCategory(categoryId);
+      final cachedData = await _cacheService.get<List>(cacheKey);
+      if (cachedData != null) {
+        // Конвертируем JSON обратно в List<Point>
+        return cachedData.map((json) => Point.fromJson(json as Map<String, dynamic>)).toList();
+      }
+
+      // Если нет в кеше, получаем из БД
+      final points = await _pointRepository.findByCategory(categoryId);
+      
+      // Сохраняем в кеш
+      await _cacheService.set(cacheKey, points, ttl: CacheTTL.point);
+      
+      return points;
     } catch (e) {
       print('Ошибка получения точек по категории: $e');
       rethrow;
@@ -52,6 +95,10 @@ class PointService {
       _validatePointData(data);
       
       final result = await _pointRepository.createPoint(data);
+      
+      // Инвалидируем кеш
+      await _invalidatePointCache();
+      
       return result;
     } catch (e) {
       print('Ошибка создания точки: $e');
@@ -67,6 +114,10 @@ class PointService {
       if (result == null) {
         throw Exception('Точка не найдена');
       }
+      
+      // Инвалидируем кеш
+      await _invalidatePointCache(id);
+      
       return result;
     } catch (e) {
       print('Ошибка обновления точки: $e');
@@ -80,6 +131,9 @@ class PointService {
       if (result == null) {
         throw Exception('Точка не найдена');
       }
+      
+      // Инвалидируем кеш
+      await _invalidatePointCache(id);
     } catch (e) {
       print('Ошибка удаления точки: $e');
       rethrow;
@@ -111,6 +165,25 @@ class PointService {
     }
   }
 
+  Future<List<PointReview>> getPointReviews(int pointId) async {
+    try {
+      return await _pointRepository.getPointReviews(pointId);
+    } catch (e) {
+      print('Ошибка получения отзывов точки: $e');
+      rethrow;
+    }
+  }
+
+  Future<PointReview> createPointReview(Map<String, dynamic> data) async {
+    try {
+      final result = await _pointRepository.createPointReview(data);
+      return result;
+    } catch (e) {
+      print('Ошибка создания отзыва: $e');
+      rethrow;
+    }
+  }
+
   void _validatePointData(Map<String, dynamic> data) {
     if (data['name'] != null && (data['name'] as String).isEmpty) {
       throw Exception('Название точки не может быть пустым');
@@ -124,11 +197,30 @@ class PointService {
     if (data['partner_id'] != null && data['partner_id'] <= 0) {
       throw Exception('Некорректный ID партнера');
     }
-    if (data['longitude'] != null && (data['longitude'] as num) < -180 || (data['longitude'] as num) > 180) {
+    if (data['longitude'] != null && ((data['longitude'] as num) < -180 || (data['longitude'] as num) > 180)) {
       throw Exception('Некорректная долгота');
     }
-    if (data['latitude'] != null && (data['latitude'] as num) < -90 || (data['latitude'] as num) > 90) {
+    if (data['latitude'] != null && ((data['latitude'] as num) < -90 || (data['latitude'] as num) > 90)) {
       throw Exception('Некорректная широта');
+    }
+  }
+
+  /// Инвалидация кеша точек
+  Future<void> _invalidatePointCache([int? pointId]) async {
+    try {
+      if (pointId != null) {
+        // Удаляем конкретную точку
+        await _cacheService.delete(CacheKeys.point(pointId));
+      }
+      
+      // Удаляем списки точек (они могут измениться)
+      await _cacheService.delete(CacheKeys.allPoints());
+      await _cacheService.deleteByPattern('points:category:*');
+      await _cacheService.deleteByPattern('points:city:*');
+      await _cacheService.deleteByPattern('points:partner:*');
+    } catch (e) {
+      print('Ошибка инвалидации кеша точек: $e');
+      // Не пробрасываем ошибку, так как это не критично
     }
   }
 } 

@@ -1,22 +1,26 @@
+import '../../utils/SafeLoggingUtils.dart';
+
 class Partner {
   final int id;
-  String name;
-  int contactPerson;
-  String concactEmail;
-  String contactPhone;
-  String contactDocument;
-  double maxDiscount;
-  DateTime createdAt;
+  final int userId;
+  final String name;
+  final int contactPerson;
+  final String contactEmail;
+  final String contactPhone;
+  final String contactDocument;
+  final double maxDiscount;
+  final DateTime createdAt;
 
   Partner({
     required this.id,
+    required this.userId,
     required this.name,
-    required this.concactEmail,
-    required this.contactDocument,
     required this.contactPerson,
+    required this.contactEmail,
     required this.contactPhone,
-    required this.createdAt,
+    required this.contactDocument,
     this.maxDiscount = 0.0,
+    required this.createdAt,
   }) {
     _validate();
   }
@@ -25,52 +29,55 @@ class Partner {
     if (name.isEmpty) {
       throw ArgumentError('Name cannot be empty');
     }
-    if (contactPerson <= 0) {
-      throw ArgumentError('Contact person ID must be positive');
-    }
-    if (maxDiscount < 0 || maxDiscount > 100) {
-      throw ArgumentError('Max discount must be between 0 and 100');
+    if (userId <= 0) {
+      throw ArgumentError('User ID must be positive');
     }
   }
 
   factory Partner.fromJson(Map<String, dynamic> json) {
-    return Partner(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      contactPerson: json['contact_person'] as int,
-      concactEmail: json['contact_email'] as String,
-      contactPhone: json['contact_phone'] as String,
-      contactDocument: json['contact_document'] as String,
-      maxDiscount: (json['max_discount'] as num).toDouble(),
-      createdAt: DateTime.parse(json['created_at'] as String),
-    );
+    print('Преобразование JSON в Partner:');
+    final safeJson = SafeLoggingUtils.sanitizeData(json);
+    print('JSON данные: $safeJson');
+    
+    try {
+      final partner = Partner(
+        id: json['id'] as int,
+        userId: json['user_id'] as int,
+        name: json['name'] as String,
+        contactPerson: json['contact_person'] as int,
+        contactEmail: json['contact_email'] as String,
+        contactPhone: json['contact_phone'] as String,
+        contactDocument: json['contact_document'] as String,
+        maxDiscount: (json['max_discount'] is String) 
+            ? double.parse(json['max_discount'] as String)
+            : (json['max_discount'] as num).toDouble(),
+        createdAt: json['created_at'] != null 
+            ? (json['created_at'] is DateTime 
+                ? json['created_at'] as DateTime 
+                : DateTime.parse(json['created_at'] as String))
+            : DateTime.now(),
+      );
+      print('Partner успешно создан');
+      return partner;
+    } catch (e, stackTrace) {
+      print('Ошибка при создании Partner: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'user_id': userId,
       'name': name,
       'contact_person': contactPerson,
-      'contact_email': concactEmail,
+      'contact_email': contactEmail,
       'contact_phone': contactPhone,
       'contact_document': contactDocument,
       'max_discount': maxDiscount,
       'created_at': createdAt.toIso8601String(),
     };
-  }
-
-  void updateName(String newName) {
-    if (newName.isEmpty) {
-      throw ArgumentError('Name cannot be empty');
-    }
-    name = newName;
-  }
-
-  void updateMaxDiscount(double newDiscount) {
-    if (newDiscount < 0 || newDiscount > 100) {
-      throw ArgumentError('Max discount must be between 0 and 100');
-    }
-    maxDiscount = newDiscount;
   }
 
   @override
@@ -79,9 +86,9 @@ class Partner {
       other is Partner &&
           runtimeType == other.runtimeType &&
           id == other.id &&
+          userId == other.userId &&
           name == other.name &&
-          contactPerson == other.contactPerson &&
-          concactEmail == other.concactEmail &&
+          contactEmail == other.contactEmail &&
           contactPhone == other.contactPhone &&
           contactDocument == other.contactDocument &&
           maxDiscount == other.maxDiscount &&
@@ -90,9 +97,9 @@ class Partner {
   @override
   int get hashCode =>
       id.hashCode ^
+      userId.hashCode ^
       name.hashCode ^
-      contactPerson.hashCode ^
-      concactEmail.hashCode ^
+      contactEmail.hashCode ^
       contactPhone.hashCode ^
       contactDocument.hashCode ^
       maxDiscount.hashCode ^
@@ -100,8 +107,7 @@ class Partner {
 
   @override
   String toString() =>
-      'Partner(id: $id, name: $name, contactPerson: $contactPerson, '
-      'contactEmail: $concactEmail, contactPhone: $contactPhone, '
-      'contactDocument: $contactDocument, maxDiscount: $maxDiscount, '
-      'createdAt: $createdAt)';
+      'Partner(id: $id, userId: $userId, name: $name, contactEmail: $contactEmail, '
+      'contactPhone: $contactPhone, contactDocument: $contactDocument, '
+      'maxDiscount: $maxDiscount, createdAt: $createdAt)';
 }

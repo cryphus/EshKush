@@ -17,12 +17,16 @@ class PaymentTransactionsRepository {
 
   Future<List<PaymentTransactions>> findByUserId(int userId) async {
     final results = await _connection.mappedResultsQuery(
-      'SELECT * FROM payment_transactions WHERE user_id = @userId',
+      '''
+      SELECT pt.* FROM payment_transactions pt
+      JOIN orders o ON pt.order_id = o.id
+      WHERE o.user_id = @userId
+      ''',
       substitutionValues: {'userId': userId},
     );
 
     return results
-        .map((row) => PaymentTransactions.fromJson(row['payment_transactions']!))
+        .map((row) => PaymentTransactions.fromJson(row.values.first))
         .toList();
   }
 

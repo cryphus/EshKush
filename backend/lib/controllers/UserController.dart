@@ -1,15 +1,26 @@
 import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/UserService.dart';
 import '../utils/AuthUtils.dart';
+import '../utils/SafeLoggingUtils.dart';
+import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class UserController {
   final UserService _userService;
+  final Router _router = Router();
 
-  UserController(this._userService);
+  UserController(this._userService) {
+    _router.get('/profile', _getProfile);
+    _router.put('/profile', _updateProfile);
+  }
 
-  Future<Response> getProfile(Request request) async {
+  Router get router => _router;
+
+  Future<Response> _getProfile(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -21,26 +32,24 @@ class UserController {
       final payload = AuthUtils.verifyToken(token);
       final user = await _userService.getUserById(payload['id']);
 
-      return Response.ok(
-        jsonEncode({
+      final body = jsonEncode({
           'id': user.id,
           'username': user.username,
           'email': user.email,
           'number': user.number,
           'role': user.role.name.toLowerCase(),
-          'created_at': user.created_at.toIso8601String(),
-        }),
-        headers: _getCorsHeaders(),
-      );
+          'created_at': user.createdAt.toIso8601String(),
+        });
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения профиля пользователя', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> updateProfile(Request request) async {
+  Future<Response> _updateProfile(Request request) async {
     try {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
@@ -50,8 +59,13 @@ class UserController {
         );
       }
 
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final payload = AuthUtils.verifyToken(token);
-      final data = jsonDecode(await request.readAsString());
+
+      final body = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, SafeLoggingUtils.sanitizeString(body), requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(body);
+      SafeLoggingUtils.logData('Данные для обновления', data);
       
       if (!_validateUpdateData(data)) {
         return Response(400, 
@@ -68,28 +82,26 @@ class UserController {
       }
 
       final user = await _userService.updateUser(payload['id'], data);
-
-      return Response.ok(
-        jsonEncode({
+      final bodyOut = jsonEncode({
           'id': user.id,
           'username': user.username,
           'email': user.email,
           'number': user.number,
           'role': user.role.name.toLowerCase(),
-          'created_at': user.created_at.toIso8601String(),
-        }),
-        headers: _getCorsHeaders(),
-      );
+          'created_at': user.createdAt.toIso8601String(),
+        });
+      final resp = Response.ok(bodyOut, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, bodyOut, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка обновления профиля: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка обновления профиля', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка обновления профиля: $e'}), headers: _getCorsHeaders());
     }
   }
 
   Future<Response> addToFavorites(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -109,10 +121,10 @@ class UserController {
       }
 
       await _userService.addToFavorites(payload['id'], data['point_id']);
-      return Response.ok(
-        jsonEncode({'message': 'Точка добавлена в избранное'}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Точка добавлена в избранное'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка: $e'}),
@@ -123,6 +135,7 @@ class UserController {
 
   Future<Response> removeFromFavorites(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -142,10 +155,10 @@ class UserController {
       }
 
       await _userService.removeFromFavorites(payload['id'], data['point_id']);
-      return Response.ok(
-        jsonEncode({'message': 'Точка удалена из избранного'}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Точка удалена из избранного'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка: $e'}),
@@ -156,6 +169,7 @@ class UserController {
 
   Future<Response> updateBalance(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -175,10 +189,10 @@ class UserController {
       }
 
       await _userService.updateBalance(payload['id'], data['amount']);
-      return Response.ok(
-        jsonEncode({'message': 'Баланс обновлен'}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Баланс обновлен'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
       return Response(400, 
         body: jsonEncode({'error': 'Ошибка: $e'}),
@@ -200,7 +214,7 @@ class UserController {
     if (data['email'] != null && !RegExp(r'^.+@.+\..+$').hasMatch(data['email'])) {
       return false;
     }
-    if (data['number'] != null && !RegExp(r'^\+\d{11,14}').hasMatch(data['number'])) {
+    if (data['number'] != null && !RegExp(r'^\+?[0-9]{10,15}$').hasMatch(data['number'])) {
       return false;
     }
     if (data['username'] != null && (data['username'] as String).isEmpty) {

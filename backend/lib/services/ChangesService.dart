@@ -8,29 +8,28 @@ class ChangesService {
 
   ChangesService(this._repository);
 
-  Future<Changes> logChange({
-    required EntityType entityType,
+  Future<Changes> createChange({
+    required String entityType,
     required int entityId,
+    required String changeType,
     required String fieldName,
-    required String oldValue,
-    required String newValue,
-    required int changedBy,
-    ChangeType changeType = ChangeType.update,
+    String? oldValue,
+    String? newValue,
+    int? changedBy,
     String? comment,
   }) async {
     final change = Changes(
-      id: 0, // ID будет присвоен базой данных
+      id: 0,
       entityType: entityType,
       entityId: entityId,
+      changeType: changeType,
       fieldName: fieldName,
       oldValue: oldValue,
       newValue: newValue,
       changedBy: changedBy,
-      changedAt: DateTime.now(),
-      changeType: changeType,
+      createdAt: DateTime.now(),
       comment: comment,
     );
-
     return await _repository.create(change);
   }
 

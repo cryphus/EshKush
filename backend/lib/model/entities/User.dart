@@ -1,5 +1,8 @@
 import 'package:postgres/postgres.dart';
 import '../../utils/AuthUtils.dart';
+import '../../utils/SafeLoggingUtils.dart';
+import '../../utils/PasswordFilter.dart';
+import '../../utils/ValidationUtils.dart';
 import '../enums/UserRole.dart';
 import 'package:email_validator/email_validator.dart';
 
@@ -9,7 +12,8 @@ class User {
   String _password;
   String number;
   String email;
-  DateTime created_at;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
   UserRole role;
   
   User({
@@ -18,21 +22,22 @@ class User {
     required String password,
     required this.number,
     required this.email,
-    required this.created_at,
+    required this.createdAt,
+    this.updatedAt,
     this.role = UserRole.user,
   }) : _password = password {
-    if (!EmailValidator.validate(email)) {
-      throw ArgumentError('Invalid email format');
+    // Валидация данных при создании объекта
+    if (!UserValidationUtils.isValidEmail(email)) {
+      throw ArgumentError('Invalid email format: $email');
     }
-    if (!_isValidPhoneNumber(number)) {
-      throw ArgumentError('Invalid phone number format');
+    if (!UserValidationUtils.isValidPhoneNumber(number)) {
+      throw ArgumentError('Invalid phone number format: $number');
+    }
+    if (!UserValidationUtils.isValidUsername(username)) {
+      throw ArgumentError('Invalid username format: $username');
     }
   }
 
-  bool _isValidPhoneNumber(String number) {
-    final cleanNumber = number.replaceAll(RegExp(r'[^\d+]'), '');
-    return cleanNumber.startsWith('+') && cleanNumber.length >= 11 && cleanNumber.length <= 14;
-  }
 
   String get passwordHash => _password;
   
@@ -46,20 +51,38 @@ class User {
   bool get isGuest => role == UserRole.guest;
 
   factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] as int,
-      username: json['username'] as String,
-      password: json['password'] as String,
-      number: json['number'] as String,
-      email: json['email'] as String,
-      created_at: json['created_at'] is DateTime 
-          ? json['created_at'] as DateTime 
-          : DateTime.parse(json['created_at'] as String),
-      role: UserRole.values.firstWhere(
-        (e) => e.name.toLowerCase() == (json['role'] as String).toLowerCase(),
-        orElse: () => UserRole.user,
-      ),
-    );
+    print('Преобразование JSON в User:');
+    // Не логируем JSON данные для безопасности
+    
+    try {
+      final user = User(
+        id: json['id'] as int,
+        username: json['username'] as String,
+        password: json['password'] as String,
+        number: json['number'] as String,
+        email: json['email'] as String,
+        createdAt: json['created_at'] != null 
+            ? (json['created_at'] is DateTime 
+                ? json['created_at'] as DateTime 
+                : DateTime.parse(json['created_at'] as String))
+            : DateTime.now(),
+        updatedAt: json['updated_at'] != null 
+            ? (json['updated_at'] is DateTime 
+                ? json['updated_at'] as DateTime 
+                : DateTime.parse(json['updated_at'] as String))
+            : null,
+        role: UserRole.values.firstWhere(
+          (e) => e.name.toLowerCase() == (json['role'] as String).toLowerCase(),
+          orElse: () => UserRole.user,
+        ),
+      );
+      print('User успешно создан');
+      return user;
+    } catch (e, stackTrace) {
+      print('Ошибка при создании User: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -69,8 +92,40 @@ class User {
       'password': _password,
       'number': number,
       'email': email,
-      'created_at': created_at.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'role': role.name.toLowerCase(),
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is User &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          username == other.username &&
+          _password == other._password &&
+          number == other.number &&
+          email == other.email &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt &&
+          role == other.role;
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      username.hashCode ^
+      _password.hashCode ^
+      number.hashCode ^
+      email.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode ^
+      role.hashCode;
+
+  @override
+  String toString() =>
+      'User(id: $id, username: $username, number: $number, '
+      'email: $email, role: $role, createdAt: $createdAt, '
+      'updatedAt: $updatedAt)';
 }

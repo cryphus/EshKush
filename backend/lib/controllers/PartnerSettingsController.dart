@@ -1,16 +1,29 @@
 import 'package:shelf/shelf.dart';
 import 'dart:convert';
 import '../services/PartnerSettingsService.dart';
+import 'package:shelf_router/shelf_router.dart';
+import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class PartnerSettingsController {
-  final PartnerSettingsService _settingsService;
+  final PartnerSettingsService _service;
+  final Router _router = Router();
 
-  PartnerSettingsController(this._settingsService);
+  PartnerSettingsController(this._service) {
+    _router.get('/', _getAllSettings);
+    _router.post('/', _createSettings);
+    _router.get('/<id>', _getSettings);
+    _router.put('/<id>', _updateSettings);
+    _router.delete('/<id>', _deleteSettings);
+  }
 
-  Future<Response> getSettings(Request request, String id) async {
+  Router get router => _router;
+
+  Future<Response> _getSettings(Request request, String id) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final settingsId = int.parse(id);
-      final settings = await _settingsService.getSettings(settingsId);
+      final settings = await _service.getSettings(settingsId);
       
       if (settings == null) {
         return Response.notFound(
@@ -19,45 +32,35 @@ class PartnerSettingsController {
         );
       }
 
-      return Response.ok(
-        jsonEncode(settings.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(settings.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> getSettingsByPartnerId(Request request, String partnerId) async {
+  Future<Response> _getAllSettings(Request request) async {
     try {
-      final id = int.parse(partnerId);
-      final settings = await _settingsService.getSettingsByPartnerId(id);
-      
-      if (settings == null) {
-        return Response.notFound(
-          jsonEncode({'error': 'Настройки не найдены'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      return Response.ok(
-        jsonEncode(settings.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
+      final settings = await _service.getAllSettings();
+      final body = jsonEncode(settings.map((s) => s.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка получения настроек: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> createSettings(Request request) async {
+  Future<Response> _createSettings(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final raw = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, raw, requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(raw);
       
       if (data['partner_id'] == null || data['branding_color'] == null) {
         return Response(400,
@@ -66,83 +69,52 @@ class PartnerSettingsController {
         );
       }
 
-      final settings = await _settingsService.createSettings(
+      final settings = await _service.createSettings(
         data['partner_id'],
         data['branding_color'],
       );
 
-      return Response.ok(
-        jsonEncode(settings.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(settings.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка создания настроек: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка создания настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка создания настроек: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> updateSettings(Request request, String id) async {
+  Future<Response> _updateSettings(Request request, String id) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final settingsId = int.parse(id);
-      final data = jsonDecode(await request.readAsString());
+      final raw = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, raw, requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(raw);
       
-      final updatedSettings = await _settingsService.updateSettings(settingsId, data);
-      return Response.ok(
-        jsonEncode(updatedSettings.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final updatedSettings = await _service.updateSettings(settingsId, data);
+      final body = jsonEncode(updatedSettings.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка обновления настроек: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка обновления настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка обновления настроек: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> updateBrandingColor(Request request, String id) async {
+  Future<Response> _deleteSettings(Request request, String id) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final settingsId = int.parse(id);
-      final data = jsonDecode(await request.readAsString());
-      
-      if (data['branding_color'] == null) {
-        return Response(400,
-          body: jsonEncode({'error': 'Отсутствует цвет брендинга'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final updatedSettings = await _settingsService.updateBrandingColor(
-        settingsId,
-        data['branding_color'],
-      );
-      
-      return Response.ok(
-        jsonEncode(updatedSettings.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      await _service.deleteSettings(settingsId);
+      final body = jsonEncode({'message': 'Настройки успешно удалены'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка обновления цвета брендинга: $e'}),
-        headers: _getCorsHeaders(),
-      );
-    }
-  }
-
-  Future<Response> deleteSettings(Request request, String id) async {
-    try {
-      final settingsId = int.parse(id);
-      await _settingsService.deleteSettings(settingsId);
-      return Response.ok(
-        jsonEncode({'message': 'Настройки успешно удалены'}),
-        headers: _getCorsHeaders(),
-      );
-    } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': 'Ошибка удаления настроек: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка удаления настроек', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка удаления настроек: $e'}), headers: _getCorsHeaders());
     }
   }
 

@@ -30,31 +30,41 @@ class Notification {
   factory Notification.fromJson(Map<String, dynamic> json) {
     return Notification(
       id: json['id'] as int,
-      userId: json['userId'] as int,
+      userId: json['user_id'] as int,
       message: json['message'] as String,
       notificationType: NotificationType.values.firstWhere(
-        (e) => e.toString() == 'NotificationType.${json['type']}',
+        (e) => e.toString().split('.').last == json['type'],
         orElse: () => NotificationType.otherUpdate,
       ),
-      isRead: json['isRead'] as bool? ?? false,
+      isRead: json['is_read'] as bool? ?? false,
       metadata: json['metadata'] as Map<String, dynamic>? ?? {},
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      sentAt: json['sentAt'] != null ? DateTime.parse(json['sentAt'] as String) : null,
-      readAt: json['readAt'] != null ? DateTime.parse(json['readAt'] as String) : null,
+      createdAt: json['created_at'] is DateTime 
+          ? json['created_at'] as DateTime
+          : DateTime.parse(json['created_at'] as String),
+      sentAt: json['sent_at'] != null 
+          ? (json['sent_at'] is DateTime 
+              ? json['sent_at'] as DateTime
+              : DateTime.parse(json['sent_at'] as String))
+          : null,
+      readAt: json['read_at'] != null 
+          ? (json['read_at'] is DateTime 
+              ? json['read_at'] as DateTime
+              : DateTime.parse(json['read_at'] as String))
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'userId': userId,
+      'user_id': userId,
       'message': message,
       'type': notificationType.toString().split('.').last,
-      'isRead': isRead,
+      'is_read': isRead,
       'metadata': metadata,
-      'createdAt': createdAt.toIso8601String(),
-      'sentAt': sentAt?.toIso8601String(),
-      'readAt': readAt?.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+      'sent_at': sentAt?.toIso8601String(),
+      'read_at': readAt?.toIso8601String(),
     };
   }
 

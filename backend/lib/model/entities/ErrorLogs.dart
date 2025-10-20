@@ -36,37 +36,43 @@ class ErrorLogs {
   factory ErrorLogs.fromJson(Map<String, dynamic> json) {
     return ErrorLogs(
       id: json['id'] as int,
-      errorMessage: json['errorMessage'] as String,
-      errorCode: json['errorCode'] as String,
-      stackTrace: json['stackTrace'] as String,
-      time: DateTime.parse(json['time'] as String),
+      errorMessage: json['message'] as String,
+      errorCode: json['error_code'] as String,
+      stackTrace: json['stack_trace'] as String,
+      time: json['time'] is DateTime 
+          ? json['time'] as DateTime
+          : DateTime.parse(json['time'] as String),
       severity: ErrorSeverity.values.firstWhere(
-        (e) => e.toString() == 'ErrorSeverity.${json['severity']}',
+        (e) => e.toString().split('.').last == json['severity'],
         orElse: () => ErrorSeverity.medium,
       ),
       resolved: json['resolved'] as bool? ?? false,
       module: json['module'] as String?,
-      userId: json['userId'] as int?,
-      additionalInfo: json['additionalInfo'] as String?,
-      resolvedAt: json['resolvedAt'] != null ? DateTime.parse(json['resolvedAt'] as String) : null,
-      resolvedBy: json['resolvedBy'] as String?,
+      userId: json['user_id'] as int?,
+      additionalInfo: json['additional_info'] as String?,
+      resolvedAt: json['resolved_at'] != null 
+          ? (json['resolved_at'] is DateTime 
+              ? json['resolved_at'] as DateTime
+              : DateTime.parse(json['resolved_at'] as String))
+          : null,
+      resolvedBy: json['resolved_by'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'errorMessage': errorMessage,
-      'errorCode': errorCode,
-      'stackTrace': stackTrace,
+      'message': errorMessage,
+      'error_code': errorCode,
+      'stack_trace': stackTrace,
       'time': time.toIso8601String(),
       'severity': severity.toString().split('.').last,
       'resolved': resolved,
       'module': module,
-      'userId': userId,
-      'additionalInfo': additionalInfo,
-      'resolvedAt': resolvedAt?.toIso8601String(),
-      'resolvedBy': resolvedBy,
+      'user_id': userId,
+      'additional_info': additionalInfo,
+      'resolved_at': resolvedAt?.toIso8601String(),
+      'resolved_by': resolvedBy,
     };
   }
 

@@ -1,6 +1,9 @@
 import 'package:postgres/postgres.dart';
 import '../model/entities/User.dart';
 import '../utils/AuthUtils.dart';
+import '../utils/SafeLoggingUtils.dart';
+import '../utils/PasswordFilter.dart';
+import '../utils/ValidationUtils.dart';
 
 class UserRepository {
   final PostgreSQLConnection _connection;
@@ -9,9 +12,19 @@ class UserRepository {
 
   Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
     try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
+      print('Выполняем запрос: $query');
+      // Не логируем параметры для безопасности
+      
+      final results = await _connection.mappedResultsQuery(
+        query,
+        substitutionValues: params,
+        allowReuse: true,
+      );
+      
       if (results.isEmpty) return null;
-      return results.first.values.first;
+      final result = results.first;
+      // Не логируем результат для безопасности
+      return result.values.first;
     } catch (e) {
       print('Ошибка выполнения запроса: $e');
       rethrow;
@@ -31,7 +44,19 @@ class UserRepository {
   Future<User?> findById(int id) async {
     try {
       final result = await queryOne(
-        'SELECT * FROM users WHERE id = @id',
+        '''
+        SELECT 
+          id,
+          username,
+          password,
+          email,
+          number,
+          role,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
+        FROM users
+        WHERE id = @id
+        ''',
         params: {'id': id},
       );
       return result == null ? null : User.fromJson(result);
@@ -43,11 +68,18 @@ class UserRepository {
 
   Future<User?> findByUsername(String username) async {
     try {
+      print('Поиск пользователя по имени: $username');
       final result = await queryOne(
         'SELECT * FROM users WHERE username = @username',
         params: {'username': username},
       );
-      return result == null ? null : User.fromJson(result);
+      print('Результат поиска: $result');
+      if (result == null) {
+        print('Пользователь не найден');
+        return null;
+      }
+      print('Преобразование результата в User');
+      return User.fromJson(result);
     } catch (e) {
       print('Ошибка поиска пользователя по имени: $e');
       rethrow;
@@ -60,7 +92,19 @@ class UserRepository {
         '''
         INSERT INTO users (username, password, email, number, role, created_at)
         VALUES (@username, @password, @email, @number, @role::user_role, @created_at)
-        RETURNING *
+        RETURNING 
+          id,
+          username,
+          password,
+          email,
+          number,
+          role,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          CASE 
+            WHEN updated_at IS NOT NULL 
+            THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            ELSE NULL 
+          END as updated_at
         ''',
         params: {
           'username': user.username,
@@ -68,7 +112,7 @@ class UserRepository {
           'email': user.email,
           'number': user.number,
           'role': user.role.name.toLowerCase(),
-          'created_at': user.created_at,
+          'created_at': user.createdAt,
         },
       );
       if (result == null) {
@@ -81,16 +125,33 @@ class UserRepository {
     }
   }
 
-  Future<User?> authenticate(String username, String passwordHash) async {
+  Future<User?> authenticate(String username, String password) async {
     try {
       final result = await queryOne(
-        'SELECT * FROM users WHERE username = @username AND password = @password',
-        params: {
-          'username': username,
-          'password': passwordHash,
-        },
+        '''
+        SELECT 
+          id,
+          username,
+          password,
+          email,
+          number,
+          role,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
+        FROM users 
+        WHERE username = @username
+        ''',
+        params: {'username': username},
       );
-      return result == null ? null : User.fromJson(result);
+      
+      if (result == null) return null;
+      
+      final user = User.fromJson(result);
+      if (!AuthUtils.verifyPassword(password, user.passwordHash)) {
+        return null;
+      }
+      
+      return user;
     } catch (e) {
       print('Ошибка аутентификации: $e');
       rethrow;
@@ -99,27 +160,43 @@ class UserRepository {
 
   Future<User> createUser(Map<String, dynamic> data) async {
     try {
+      SafeLoggingUtils.logData('Создание пользователя с данными', data);
       _validateUserData(data);
       
       final result = await queryOne(
         '''
-        INSERT INTO users (username, password, email, number, role)
-        VALUES (@username, @password, @email, @number, @role::user_role)
-        RETURNING *
+        INSERT INTO users (username, password, email, number, role, created_at)
+        VALUES (@username, @password, @email, @number, @role::user_role, CURRENT_TIMESTAMP)
+        RETURNING 
+          id,
+          username,
+          password,
+          email,
+          number,
+          role,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          CASE 
+            WHEN updated_at IS NOT NULL 
+            THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            ELSE NULL 
+          END as updated_at
         ''',
         params: {
           'username': data['username'],
           'password': AuthUtils.hashPassword(data['password']),
           'email': data['email'],
           'number': data['number'],
-          'role': data['role'] ?? 'user',
+          'role': (data['role'] as String? ?? 'user').toLowerCase(),
         },
       );
+
+      // Не логируем результат для безопасности
 
       if (result == null) {
         throw Exception('Ошибка создания пользователя');
       }
 
+      print('Преобразование результата в User');
       return User.fromJson(result);
     } catch (e) {
       print('Ошибка создания пользователя: $e');
@@ -129,7 +206,7 @@ class UserRepository {
 
   Future<User?> findByEmail(String email) async {
     try {
-      if (!RegExp(r'^.+@.+\..+$').hasMatch(email)) {
+      if (!UserValidationUtils.isValidEmail(email)) {
         throw Exception('Некорректный email');
       }
 
@@ -145,7 +222,7 @@ class UserRepository {
 
   Future<User?> findByNumber(String number) async {
     try {
-      if (!RegExp(r'^\+\d{11,14}').hasMatch(number)) {
+      if (!UserValidationUtils.isValidPhoneNumber(number)) {
         throw Exception('Некорректный номер телефона');
       }
 
@@ -225,17 +302,97 @@ class UserRepository {
   }
 
   void _validateUserData(Map<String, dynamic> data) {
-    if (data['username'] == null || (data['username'] as String).isEmpty) {
-      throw Exception('Имя пользователя не может быть пустым');
+    // Используем централизованную валидацию
+    final validationErrors = UserValidationUtils.validateUserRegistrationData(data);
+    if (validationErrors.isNotEmpty) {
+      final errorMessages = validationErrors.values.join(', ');
+      throw Exception('Ошибки валидации: $errorMessages');
     }
-    if (data['password'] == null || (data['password'] as String).isEmpty) {
-      throw Exception('Пароль не может быть пустым');
+  }
+
+  Future<User> update(int id, Map<String, dynamic> data) async {
+    try {
+      // Строим динамический SQL-запрос
+      final updateFields = <String>[];
+      final params = <String, dynamic>{'id': id};
+
+      if (data.containsKey('username')) {
+        updateFields.add('username = COALESCE(@username, username)');
+        params['username'] = data['username'];
+      }
+      if (data.containsKey('password')) {
+        updateFields.add('password = COALESCE(@password, password)');
+        params['password'] = data['password'];
+      }
+      if (data.containsKey('email')) {
+        updateFields.add('email = COALESCE(@email, email)');
+        params['email'] = data['email'];
+      }
+      if (data.containsKey('number')) {
+        updateFields.add('number = COALESCE(@number, number)');
+        params['number'] = data['number'];
+      }
+      if (data.containsKey('role')) {
+        updateFields.add('role = COALESCE(@role::user_role, role)');
+        params['role'] = data['role'];
+      }
+
+      if (updateFields.isEmpty) {
+        throw Exception('Нет полей для обновления');
+      }
+
+      final updateQuery = '''
+        UPDATE users 
+        SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = @id
+        RETURNING 
+          id,
+          username,
+          password,
+          email,
+          number,
+          role,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
+      ''';
+
+      print('SQL запрос: $updateQuery');
+      print('Параметры: $params');
+
+      final result = await queryOne(updateQuery, params: params);
+
+      if (result == null) {
+        throw Exception('Пользователь не найден');
+      }
+
+      print('Результат обновления: $result');
+      return User.fromJson(result);
+    } catch (e) {
+      print('Ошибка обновления пользователя: $e');
+      rethrow;
     }
-    if (data['email'] == null || !RegExp(r'^.+@.+\..+$').hasMatch(data['email'])) {
-      throw Exception('Некорректный email');
-    }
-    if (data['number'] == null || !RegExp(r'^\+\d{11,14}').hasMatch(data['number'])) {
-      throw Exception('Некорректный номер телефона');
+  }
+
+  Future<List<User>> findAll() async {
+    try {
+      final results = await query(
+        '''
+        SELECT 
+          id,
+          username,
+          password,
+          email,
+          number,
+          role,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
+        FROM users
+        '''
+      );
+      return results.map((map) => User.fromJson(map)).toList();
+    } catch (e) {
+      print('Ошибка получения списка пользователей: $e');
+      rethrow;
     }
   }
 } 

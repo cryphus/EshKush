@@ -1,11 +1,25 @@
 import '../repositories/OrderRepository.dart';
 import '../model/entities/Order.dart';
 import '../model/enums/OrderStatus.dart';
+import '../utils/SafeLoggingUtils.dart';
+import '../repositories/UserRepository.dart';
+import '../repositories/PointRepository.dart';
+import '../repositories/ProductsRepository.dart';
+import '../model/enums/ActionType.dart';
+import '../model/entities/Product.dart';
 
 class OrderService {
   final OrderRepository _orderRepository;
+  final UserRepository _userRepository;
+  final PointRepository _pointRepository;
+  final ProductsRepository _productsRepository;
 
-  OrderService(this._orderRepository);
+  OrderService(
+    this._orderRepository,
+    this._userRepository,
+    this._pointRepository,
+    this._productsRepository,
+  );
 
   Future<Order> getOrderById(int id) async {
     try {
@@ -52,10 +66,40 @@ class OrderService {
 
   Future<Order> createOrder(Map<String, dynamic> data) async {
     try {
-      _validateOrderData(data);
+      SafeLoggingUtils.logData('Входящие данные', data);
       
-      final result = await _orderRepository.createOrder(data);
-      return result;
+      // Преобразуем данные в правильные типы
+      final orderData = {
+        'user_id': data['user_id'],
+        'point_id': data['point_id'],
+        'products_id': data['products_id'],
+        'total_price': data['total_price'] is String 
+            ? double.parse(data['total_price']) 
+            : (data['total_price'] as num).toDouble(),
+        'partner_id': data['partner_id'],
+        'date': data['date'] ?? DateTime.now().toIso8601String(),
+      };
+
+      print('Преобразованные данные: $orderData');
+
+      await _validateOrderData(orderData);
+      
+      // Начинаем транзакцию
+      await _orderRepository.beginTransaction();
+      
+      try {
+        // Создаем заказ
+        final order = await _orderRepository.createOrder(orderData);
+        
+        // Подтверждаем транзакцию
+        await _orderRepository.commitTransaction();
+        
+        return order;
+      } catch (e) {
+        // Откатываем транзакцию в случае ошибки
+        await _orderRepository.rollbackTransaction();
+        rethrow;
+      }
     } catch (e) {
       print('Ошибка создания заказа: $e');
       rethrow;
@@ -87,18 +131,57 @@ class OrderService {
     }
   }
 
-  void _validateOrderData(Map<String, dynamic> data) {
-    if (data['user_id'] == null || data['user_id'] <= 0) {
+  Future<void> _validateOrderData(Map<String, dynamic> data) async {
+    // Проверка обязательных полей
+    if (data['user_id'] == null) {
       throw Exception('Некорректный ID пользователя');
     }
-    if (data['point_id'] == null || data['point_id'] <= 0) {
+    if (data['point_id'] == null) {
       throw Exception('Некорректный ID точки');
     }
     if (data['products_id'] == null || (data['products_id'] as List).isEmpty) {
       throw Exception('Список товаров не может быть пустым');
     }
-    if (data['total_price'] == null || (data['total_price'] as num) <= 0) {
+    if (data['total_price'] == null) {
       throw Exception('Некорректная сумма заказа');
+    }
+
+    // Проверка существования пользователя
+    final user = await _userRepository.findById(data['user_id']);
+    if (user == null) {
+      throw Exception('Пользователь не найден');
+    }
+
+    // Проверка существования точки
+    final point = await _pointRepository.findById(data['point_id']);
+    if (point == null) {
+      throw Exception('Точка не найдена');
+    }
+
+    // Преобразуем список в List<int>
+    final List<int> productsId = List<int>.from(data['products_id']);
+
+    // Проверка существования продуктов и подсчет общей суммы
+    final productsData = await _productsRepository.findByIds(productsId);
+    if (productsData.length != productsId.length) {
+      throw Exception('Некоторые товары не найдены');
+    }
+
+    final products = productsData.map((p) => Product.fromJson(p)).toList();
+
+    // Проверка соответствия суммы заказа
+    final calculatedTotal = products.fold<double>(
+      0,
+      (sum, product) => sum + product.price,
+    );
+    
+    // Преобразуем total_price в double
+    final totalPrice = data['total_price'] is String 
+        ? double.parse(data['total_price']) 
+        : (data['total_price'] as num).toDouble();
+    
+    if ((calculatedTotal - totalPrice).abs() > 0.01) {
+      throw Exception('Сумма заказа не соответствует сумме товаров');
     }
   }
 } 

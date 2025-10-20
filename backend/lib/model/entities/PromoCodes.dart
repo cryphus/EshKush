@@ -6,14 +6,14 @@ class PromoCodes {
   String description;
   DateTime startDate;
   DateTime endDate;
-  final double minOrderSum;
+  double minOrderSum;
   DiscountType discountType;
   double discountValue;
   bool isActive;
   int? usageLimit;
   int currentUsage;
-  final List<int>? applicableProducts;
-  final List<int>? applicablePoints;
+  List<int>? applicableProducts;
+  List<int>? applicablePoints;
 
   PromoCodes({
     required this.id,
@@ -40,24 +40,24 @@ class PromoCodes {
   factory PromoCodes.fromJson(Map<String, dynamic> json) {
     return PromoCodes(
       id: json['id'] as int,
-      code: json['code'] as String,
-      description: json['description'] as String,
-      startDate: DateTime.parse(json['startDate'] as String),
-      endDate: DateTime.parse(json['endDate'] as String),
-      minOrderSum: (json['minOrderSum'] as num).toDouble(),
+      code: json['code'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      startDate: DateTime.parse(json['start_date'] as String? ?? DateTime.now().toIso8601String()),
+      endDate: DateTime.parse(json['end_date'] as String? ?? DateTime.now().add(Duration(days: 30)).toIso8601String()),
+      minOrderSum: double.tryParse(json['min_order_sum']?.toString() ?? '0') ?? 0.0,
       discountType: DiscountType.values.firstWhere(
-        (e) => e.toString() == 'DiscountType.${json['discountType']}',
+        (e) => e.toString() == 'DiscountType.${json['discount_type']}',
         orElse: () => DiscountType.percentage,
       ),
-      discountValue: (json['discountValue'] as num).toDouble(),
-      isActive: json['isActive'] as bool? ?? true,
-      usageLimit: json['usageLimit'] as int?,
-      currentUsage: json['currentUsage'] as int? ?? 0,
-      applicableProducts: json['applicableProducts'] != null 
-          ? (json['applicableProducts'] as List).map((e) => e as int).toList()
+      discountValue: double.tryParse(json['discount_value']?.toString() ?? '0') ?? 0.0,
+      isActive: json['is_active'] as bool? ?? true,
+      usageLimit: json['usage_limit'] as int?,
+      currentUsage: json['current_usage'] as int? ?? 0,
+      applicableProducts: json['applicable_products'] != null 
+          ? (json['applicable_products'] as List).map((e) => e as int).toList()
           : null,
-      applicablePoints: json['applicablePoints'] != null
-          ? (json['applicablePoints'] as List).map((e) => e as int).toList()
+      applicablePoints: json['applicable_points'] != null
+          ? (json['applicable_points'] as List).map((e) => e as int).toList()
           : null,
     );
   }
@@ -67,16 +67,16 @@ class PromoCodes {
       'id': id,
       'code': code,
       'description': description,
-      'startDate': startDate.toIso8601String(),
-      'endDate': endDate.toIso8601String(),
-      'minOrderSum': minOrderSum,
-      'discountType': discountType.toString().split('.').last,
-      'discountValue': discountValue,
-      'isActive': isActive,
-      'usageLimit': usageLimit,
-      'currentUsage': currentUsage,
-      'applicableProducts': applicableProducts,
-      'applicablePoints': applicablePoints,
+      'start_date': startDate.toIso8601String(),
+      'end_date': endDate.toIso8601String(),
+      'min_order_sum': minOrderSum,
+      'discount_type': discountType.toString().split('.').last,
+      'discount_value': discountValue,
+      'is_active': isActive,
+      'usage_limit': usageLimit,
+      'current_usage': currentUsage,
+      'applicable_products': applicableProducts,
+      'applicable_points': applicablePoints,
     };
   }
 

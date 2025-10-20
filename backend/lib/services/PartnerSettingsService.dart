@@ -6,6 +6,10 @@ class PartnerSettingsService {
 
   PartnerSettingsService(this._repository);
 
+  Future<List<PartnerSettings>> getAllSettings() async {
+    return await _repository.findAll();
+  }
+
   Future<PartnerSettings?> getSettings(int id) async {
     return await _repository.findById(id);
   }

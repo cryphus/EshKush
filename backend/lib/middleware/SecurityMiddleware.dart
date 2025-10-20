@@ -1,6 +1,5 @@
 import 'package:shelf/shelf.dart';
-import '../utils/AuthUtils.dart';
-import 'dart:async';
+import '../utils/AuthUtilsWithCache.dart' as AuthCache;
 
 class SecurityMiddleware {
   static final Map<String, List<DateTime>> _requests = {};
@@ -15,10 +14,10 @@ class SecurityMiddleware {
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'DENY',
           'X-XSS-Protection': '1; mode=block',
-          'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-          'Content-Security-Policy': "default-src 'self'",
-          'Referrer-Policy': 'strict-origin-when-cross-origin',
-          'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
+          'Content-Type': 'application/json',
         });
       };
     };
@@ -40,7 +39,11 @@ class SecurityMiddleware {
     return (Handler innerHandler) {
       return (Request request) async {
         if (request.method == 'OPTIONS') {
-          return innerHandler(request);
+          return Response.ok('', headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
+          });
         }
 
         final token = request.headers['authorization']?.replaceAll('Bearer ', '');
@@ -49,7 +52,23 @@ class SecurityMiddleware {
         }
 
         try {
-          final payload = AuthUtils.verifyToken(token);
+          // Проверяем, не заблокирован ли токен
+          if (await AuthCache.AuthUtils.isTokenBlacklisted(token)) {
+            return Response.unauthorized('Токен заблокирован');
+          }
+
+          // Проверяем токен с кешированием
+          final payload = await AuthCache.AuthUtils.verifyTokenWithCache(token);
+          if (payload == null) {
+            return Response.unauthorized('Недействительный токен');
+          }
+
+          // Проверяем, не заблокирован ли пользователь
+          final userId = payload['id'] as int;
+          if (await AuthCache.AuthUtils.isUserBlacklisted(userId)) {
+            return Response.unauthorized('Пользователь заблокирован');
+          }
+
           final modifiedRequest = request.change(context: {
             'user': payload,
           });

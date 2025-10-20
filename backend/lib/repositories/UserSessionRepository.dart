@@ -59,14 +59,10 @@ class UserSessionRepository {
       final result = await queryOne(
         '''
         INSERT INTO user_sessions (
-          user_id, created_at, expires_at, last_active, 
-          user_agent, ip_address, status, device_id, 
-          location, token, is_active
+          user_id, token, device_info, ip_address, status, expires_at, created_at
         )
         VALUES (
-          @userId, @createdAt, @expiresAt, @lastActive,
-          @userAgent, @ipAddress, @status::session_status, @deviceId,
-          @location, @token, @isActive
+          @userId, @token, @deviceInfo, @ipAddress, @status::session_status, @expiresAt, @createdAt
         )
         RETURNING *
         ''',
@@ -74,14 +70,12 @@ class UserSessionRepository {
           'userId': session.userId,
           'createdAt': session.createdAt,
           'expiresAt': session.expiresAt,
-          'lastActive': session.lastActive,
-          'userAgent': session.userAgent,
+          'deviceInfo': session.userAgent.isNotEmpty ? session.userAgent : (session.deviceId ?? ''),
           'ipAddress': session.ipAddress,
           'status': session.status.toString().split('.').last,
-          'deviceId': session.deviceId,
-          'location': session.location,
-          'token': session.token,
-          'isActive': session.isActive,
+          'token': (session.token != null && session.token!.length > 255)
+              ? session.token!.substring(0, 255)
+              : session.token,
         },
       );
       if (result == null) {
@@ -101,18 +95,14 @@ class UserSessionRepository {
         UPDATE user_sessions 
         SET 
           expires_at = @expiresAt,
-          last_active = @lastActive,
-          status = @status::session_status,
-          is_active = @isActive
+          status = @status::session_status
         WHERE id = @id
         RETURNING *
         ''',
         params: {
           'id': session.id,
           'expiresAt': session.expiresAt,
-          'lastActive': session.lastActive,
           'status': session.status.toString().split('.').last,
-          'isActive': session.isActive,
         },
       );
       if (result == null) {
@@ -157,8 +147,8 @@ class UserSessionRepository {
       await queryOne(
         '''
         UPDATE user_sessions 
-        SET status = 'terminated'::session_status, is_active = false
-        WHERE user_id = @userId AND is_active = true
+        SET status = 'revoked'::session_status
+        WHERE user_id = @userId AND status = 'active'
         ''',
         params: {'userId': userId},
       );

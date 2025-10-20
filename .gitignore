@@ -14,6 +14,14 @@ build/
 **/ios/Flutter/.last_build_id
 app.*.symbols
 app.*.map.json
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/ios/build/
+**/macos/build/
+**/linux/build/
+**/windows/build/
+**/web/build/
 
 # IDE
 .idea/
@@ -21,38 +29,55 @@ app.*.map.json
 *.iml
 *.iws
 *.ipr
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+.factorypath
 
 # Environment
 .env
 .env.*
 !.env.example
+config.local.*
+secrets.*
 
 # Docker
 .docker/
 docker-compose.override.yml
+.dockerignore
 
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
 # System
 .DS_Store
 Thumbs.db
 desktop.ini
+*.lnk
+*.url
+*.stackdump
 
 # Coverage
 coverage/
 *.lcov
+test_coverage/
+.coverage
+htmlcov/
 
 # Temporary files
-*.swp
-*.swo
-*~
 *.tmp
 *.temp
 *.pyc
+*.pyo
+*.pyd
 .atom/
 .build/
 .buildlog/
@@ -60,11 +85,17 @@ coverage/
 .svn/
 .swiftpm/
 migrate_working_dir/
+.cache/
+.temp/
+.tmp/
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Python
 __pycache__/
@@ -74,3 +105,120 @@ __pycache__/
 venv/
 ENV/
 env/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Backend specific
+backend/.dart_tool/
+backend/build/
+backend/.packages
+backend/pubspec.lock
+backend/.flutter-plugins
+backend/.flutter-plugins-dependencies
+
+# Frontend specific  
+frontend/.dart_tool/
+frontend/build/
+frontend/.packages
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+
+# Swagger/API docs
+swagger/
+*.html
+
+# Telegram bot
+telegramAuth/__pycache__/
+telegramAuth/.env
+telegramAuth/venv/
+telegramAuth/*.log
+
+# Nginx
+nginx/logs/
+nginx/temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Editor files
+*.sublime-project
+*.sublime-workspace
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+
+# Archive files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Media files (if not needed in repo)
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.webm
+*.mp3
+*.wav
+*.flac
+*.aac
+
+# Large files
+*.exe
+*.msi
+*.dmg
+*.pkg
+*.deb
+*.rpm
+
+# Project specific
+flutter/
+temp.json
+Swagger.html
+SwaggerServer.dart
+backend/bin/flutter

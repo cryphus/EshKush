@@ -35,12 +35,12 @@ class ChangesRepository {
         '''
         INSERT INTO changes (
           entity_type, entity_id, field_name, old_value, new_value,
-          changed_by, changed_at, change_type, comment, is_reverted,
+          changed_by, created_at, change_type, comment, is_reverted,
           reverted_at, reverted_by
         )
         VALUES (
           @entityType::entity_type, @entityId, @fieldName, @oldValue,
-          @newValue, @changedBy, @changedAt, @changeType::change_type,
+          @newValue, @changedBy, @createdAt, @changeType::change_type,
           @comment, @isReverted, @revertedAt, @revertedBy
         )
         RETURNING *
@@ -52,7 +52,7 @@ class ChangesRepository {
           'oldValue': change.oldValue,
           'newValue': change.newValue,
           'changedBy': change.changedBy,
-          'changedAt': change.changedAt,
+          'createdAt': change.createdAt,
           'changeType': change.changeType.toString().split('.').last,
           'comment': change.comment,
           'isReverted': change.isReverted,
@@ -79,7 +79,7 @@ class ChangesRepository {
         SELECT * FROM changes 
         WHERE entity_type = @entityType::entity_type 
         AND entity_id = @entityId 
-        ORDER BY changed_at DESC
+        ORDER BY created_at DESC
         ''',
         params: {
           'entityType': entityType.toString().split('.').last,
@@ -96,7 +96,21 @@ class ChangesRepository {
   Future<List<Changes>> findByUser(int userId) async {
     try {
       final results = await query(
-        'SELECT * FROM changes WHERE changed_by = @userId ORDER BY changed_at DESC',
+        '''
+        SELECT 
+          id,
+          entity_type,
+          entity_id,
+          change_type,
+          field_name,
+          old_value,
+          new_value,
+          changed_by,
+          created_at
+        FROM changes 
+        WHERE changed_by = @userId 
+        ORDER BY created_at DESC
+        ''',
         params: {'userId': userId},
       );
       return results.map((map) => Changes.fromJson(map)).toList();
@@ -109,7 +123,7 @@ class ChangesRepository {
   Future<List<Changes>> findByChangeType(ChangeType changeType) async {
     try {
       final results = await query(
-        'SELECT * FROM changes WHERE change_type = @changeType::change_type ORDER BY changed_at DESC',
+        'SELECT * FROM changes WHERE change_type = @changeType::change_type ORDER BY created_at DESC',
         params: {'changeType': changeType.toString().split('.').last},
       );
       return results.map((map) => Changes.fromJson(map)).toList();
@@ -122,7 +136,7 @@ class ChangesRepository {
   Future<List<Changes>> findRecent({int limit = 100}) async {
     try {
       final results = await query(
-        'SELECT * FROM changes ORDER BY changed_at DESC LIMIT @limit',
+        'SELECT * FROM changes ORDER BY created_at DESC LIMIT @limit',
         params: {'limit': limit},
       );
       return results.map((map) => Changes.fromJson(map)).toList();

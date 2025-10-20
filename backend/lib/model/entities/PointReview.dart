@@ -1,25 +1,28 @@
+import '../../utils/ValidationUtils.dart';
+
 class PointReview {
   final int id;
   final int pointId;
   final int userId;
   double rating;
   String? comment;
-  final DateTime reviewDate;
+  final DateTime createdAt;
 
   PointReview({
     required this.id,
     required this.pointId,
     required this.userId,
-    required this.reviewDate,
+    required this.createdAt,
     this.rating = 0.0,
     this.comment,
   }) {
-    _validate();
+     _sanitize();
+     _validate();
   }
 
   void _validate() {
-    if (id <= 0) {
-      throw ArgumentError('ID отзыва должен быть положительным числом');
+    if (id < 0) {
+      throw ArgumentError('ID отзыва должен быть неотрицательным числом');
     }
     if (pointId <= 0) {
       throw ArgumentError('ID точки должен быть положительным числом');
@@ -27,30 +30,66 @@ class PointReview {
     if (userId <= 0) {
       throw ArgumentError('ID пользователя должен быть положительным числом');
     }
-    if (rating < 0 || rating > 5) {
+    if (!rating.isFinite || rating < 0 || rating > 5) {
       throw ArgumentError('Рейтинг должен быть от 0 до 5');
+    }
+    // Разрешаем небольшой временной дрейф (5 минут), но защищаемся от явного будущего времени
+    if (createdAt.isAfter(DateTime.now().add(const Duration(minutes: 5)))) {
+      throw ArgumentError('Дата создания не может быть в будущем');
+    }
+    if (comment != null && comment!.length > ValidationUtils.maxDescriptionLength) {
+      throw ArgumentError('Комментарий не должен превышать 1000 символов');
+    }
+  }
+
+  void _sanitize() {
+    if (comment != null) {
+      final sanitized = ValidationUtils.sanitizeString(comment!);
+      comment = sanitized.isEmpty ? null : sanitized;
     }
   }
 
   void updateRating(double newRating) {
-    if (newRating < 0 || newRating > 5) {
+    if (!newRating.isFinite || newRating < 0 || newRating > 5) {
       throw ArgumentError('Рейтинг должен быть от 0 до 5');
     }
     rating = newRating;
   }
 
   void updateComment(String? newComment) {
-    comment = newComment;
+    if (newComment == null) {
+      comment = null;
+      return;
+    }
+    final sanitized = ValidationUtils.sanitizeString(newComment);
+    if (sanitized.isEmpty) {
+      comment = null;
+      return;
+    }
+    if (sanitized.length > ValidationUtils.maxDescriptionLength) {
+      throw ArgumentError('Комментарий не должен превышать 1000 символов');
+    }
+    comment = sanitized;
   }
 
   factory PointReview.fromJson(Map<String, dynamic> json) {
+    final rawComment = json['comment'];
+    String? sanitizedComment;
+    if (rawComment != null) {
+      final s = ValidationUtils.sanitizeString(rawComment.toString());
+      sanitizedComment = s.isEmpty ? null : s;
+    }
     return PointReview(
-      id: json['id'] as int,
-      pointId: json['point_id'] as int,
-      userId: json['user_id'] as int,
-      rating: (json['rating'] as num).toDouble(),
-      comment: json['comment'] as String?,
-      reviewDate: DateTime.parse(json['review_date'] as String),
+      id: int.parse(json['id'].toString()),
+      pointId: int.parse(json['point_id'].toString()),
+      userId: int.parse(json['user_id'].toString()),
+      rating: double.parse(json['rating'].toString()),
+      comment: sanitizedComment,
+      createdAt: json['created_at'] == null 
+          ? DateTime.now()
+          : json['created_at'] is DateTime 
+              ? json['created_at'] as DateTime 
+              : DateTime.parse(json['created_at'].toString()),
     );
   }
 
@@ -61,7 +100,7 @@ class PointReview {
       'user_id': userId,
       'rating': rating,
       'comment': comment,
-      'review_date': reviewDate.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
     };
   }
 
@@ -71,7 +110,7 @@ class PointReview {
     int? userId,
     double? rating,
     String? comment,
-    DateTime? reviewDate,
+    DateTime? createdAt,
   }) {
     return PointReview(
       id: id ?? this.id,
@@ -79,7 +118,7 @@ class PointReview {
       userId: userId ?? this.userId,
       rating: rating ?? this.rating,
       comment: comment ?? this.comment,
-      reviewDate: reviewDate ?? this.reviewDate,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -93,7 +132,7 @@ class PointReview {
           userId == other.userId &&
           rating == other.rating &&
           comment == other.comment &&
-          reviewDate == other.reviewDate;
+          createdAt == other.createdAt;
 
   @override
   int get hashCode =>
@@ -102,9 +141,10 @@ class PointReview {
       userId.hashCode ^
       rating.hashCode ^
       comment.hashCode ^
-      reviewDate.hashCode;
+      createdAt.hashCode;
 
   @override
   String toString() =>
-      'PointReview(id: $id, pointId: $pointId, userId: $userId, ';
+      'PointReview(id: $id, pointId: $pointId, userId: $userId, rating: $rating, '
+      'comment: $comment, createdAt: $createdAt)';
 }

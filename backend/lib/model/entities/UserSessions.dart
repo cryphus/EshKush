@@ -37,22 +37,29 @@ class UserSessions {
   }
 
   factory UserSessions.fromJson(Map<String, dynamic> json) {
+    final createdRaw = json['createdAt'] ?? json['created_at'];
+    final expiresRaw = json['expiresAt'] ?? json['expires_at'];
+    final lastRaw = json['lastActive'] ?? json['last_active'] ?? createdRaw;
+    final ua = json['userAgent'] ?? json['device_info'] ?? '';
+    final ip = json['ipAddress'] ?? json['ip_address'] ?? '';
+    final statusStr = (json['status'] ?? 'active').toString();
+    final statusEnum = SessionStatus.values.firstWhere(
+      (e) => e.toString().split('.').last == statusStr,
+      orElse: () => SessionStatus.active,
+    );
     return UserSessions(
-      id: json['id'] as int,
-      userId: json['userId'] as int,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      expiresAt: DateTime.parse(json['expiresAt'] as String),
-      lastActive: DateTime.parse(json['lastActive'] as String),
-      userAgent: json['userAgent'] as String,
-      ipAddress: json['ipAddress'] as String,
-      status: SessionStatus.values.firstWhere(
-        (e) => e.toString() == 'SessionStatus.${json['status']}',
-        orElse: () => SessionStatus.active,
-      ),
-      deviceId: json['deviceId'] as String?,
+      id: int.parse(json['id'].toString()),
+      userId: int.parse((json['userId'] ?? json['user_id']).toString()),
+      createdAt: DateTime.parse(createdRaw.toString()),
+      expiresAt: DateTime.parse(expiresRaw.toString()),
+      lastActive: DateTime.parse(lastRaw.toString()),
+      userAgent: ua.toString(),
+      ipAddress: ip.toString(),
+      status: statusEnum,
+      deviceId: (json['deviceId'] ?? json['device_id']) as String?,
       location: json['location'] as String?,
       token: json['token'] as String?,
-      isActive: json['isActive'] as bool? ?? true,
+      isActive: (json['isActive'] as bool?) ?? (statusStr == 'active'),
     );
   }
 
@@ -82,7 +89,7 @@ class UserSessions {
   }
 
   void terminate() {
-    status = SessionStatus.terminated;
+    status = SessionStatus.revoked;
     isActive = false;
     expiresAt = DateTime.now();
   }

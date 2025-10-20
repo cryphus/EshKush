@@ -1,24 +1,45 @@
 class City {
-  final int id;
+  final int? id;
   final String name;
+  final DateTime? createdAt;
 
   City({
-    required this.id,
+    this.id,
     required this.name,
+    this.createdAt,
   });
 
   factory City.fromJson(Map<String, dynamic> json) {
+    print('City.fromJson получил: $json');
+    
+    DateTime? parseDateTime(dynamic value) {
+      if (value == null) return null;
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return null;
+    }
+    
     return City(
-      id: json['id'] as int,
-      name: json['name'] as String,
+      id: json['id'] != null ? int.parse(json['id'].toString()) : null,
+      name: json['name'].toString(),
+      createdAt: parseDateTime(json['created_at']),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'name': name,
     };
+    
+    if (id != null) {
+      map['id'] = id;
+    }
+    
+    if (createdAt != null) {
+      map['created_at'] = createdAt!.toIso8601String();
+    }
+    
+    return map;
   }
 
   @override
@@ -27,11 +48,12 @@ class City {
       other is City &&
           runtimeType == other.runtimeType &&
           id == other.id &&
-          name == other.name;
+          name == other.name &&
+          createdAt == other.createdAt;
 
   @override
-  int get hashCode => id.hashCode ^ name.hashCode;
+  int get hashCode => id.hashCode ^ name.hashCode ^ createdAt.hashCode;
 
   @override
-  String toString() => 'City(id: $id, name: $name)';
+  String toString() => 'City(id: $id, name: $name, createdAt: $createdAt)';
 }

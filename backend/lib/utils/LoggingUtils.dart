@@ -1,178 +1,105 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:path/path.dart' as path;
+import 'SafeLoggingUtils.dart';
+import '../config/AppConfig.dart';
 
 class LoggingUtils {
-  static final _sensitiveFields = {
-    'password',
-    'token',
-    'secret',
-    'key',
-    'authorization',
-    'credit_card',
-    'card_number',
-    'cvv',
-    'ssn',
-    'social_security',
-  };
+  static Future<void> logRequest(String method, String path, Map<String, String> headers, String? body, {String? requestId}) async {
+    final payload = {
+      'ts': DateTime.now().toIso8601String(),
+      'level': 'info',
+      'event': 'request',
+      'requestId': requestId,
+      'method': method,
+      'path': path,
+      'headers': _maskHeaders(headers),
+      if (body != null) 'body': SafeLoggingUtils.sanitizeString(body),
+    };
+    _print(payload);
+  }
 
-  static final _logFile = File(path.join(
-    Directory.current.path,
-    'logs',
-    'app_${DateTime.now().toString().split(' ')[0]}.log',
-  ));
+  static Future<void> logResponse(int statusCode, Map<String, String> headers, String body, {String? requestId}) async {
+    final payload = {
+      'ts': DateTime.now().toIso8601String(),
+      'level': 'info',
+      'event': 'response',
+      'requestId': requestId,
+      'status': statusCode,
+      'headers': _maskHeaders(headers),
+      'body': SafeLoggingUtils.sanitizeString(body),
+    };
+    _print(payload);
+  }
 
-  static Future<void> init() async {
-    final logsDir = Directory(path.join(Directory.current.path, 'logs'));
-    if (!await logsDir.exists()) {
-      await logsDir.create(recursive: true);
+  static Future<void> logError(String message, dynamic error, {String? requestId}) async {
+    final payload = {
+      'ts': DateTime.now().toIso8601String(),
+      'level': 'error',
+      'event': 'error',
+      'requestId': requestId,
+      'message': message,
+      'error': error.toString(),
+      'stack': StackTrace.current.toString(),
+    };
+    _print(payload);
+  }
+
+  static Future<void> logInfo(String message, {Map<String, dynamic>? context, String? requestId}) async {
+    final payload = {
+      'ts': DateTime.now().toIso8601String(),
+      'level': 'info',
+      'event': 'info',
+      'requestId': requestId,
+      'message': message,
+      if (context != null) 'context': SafeLoggingUtils.sanitizeData(context),
+    };
+    _print(payload);
+  }
+
+  static Future<void> logOrderOperation(String operation, int orderHistoryId, Map<String, dynamic> payload, {String? requestId}) async {
+    final entry = {
+      'ts': DateTime.now().toIso8601String(),
+      'level': 'info',
+      'event': 'order_history',
+      'requestId': requestId,
+      'operation': operation,
+      'orderHistoryId': orderHistoryId,
+      'payload': SafeLoggingUtils.sanitizeData(payload),
+    };
+    _print(entry);
+  }
+
+  static void _print(Map<String, dynamic> entry) {
+    final cfg = AppConfig();
+    final logJson = cfg.logJson;
+    final level = (entry['level'] as String?) ?? 'info';
+    final configuredLevel = cfg.logLevel;
+    if (!_shouldLog(level, configuredLevel)) return;
+    if (logJson) {
+      try {
+        print(jsonEncode(entry));
+        return;
+      } catch (_) {}
     }
-    await _log('INFO', 'Logging system initialized', null);
+    print(entry.toString());
   }
 
-  static Future<void> logInfo(String message, {Map<String, dynamic>? context}) async {
-    await _log('INFO', message, context);
+  static bool _shouldLog(String level, String configuredLevel) {
+    const order = {'debug': 10, 'info': 20, 'warn': 30, 'error': 40};
+    final l = order[level] ?? 20;
+    final c = order[configuredLevel] ?? 20;
+    return l >= c;
   }
 
-  static Future<void> logError(String message, dynamic error, {Map<String, dynamic>? context}) async {
-    await _log('ERROR', message, context, error: error);
-  }
-
-  static Future<void> logWarning(String message, {Map<String, dynamic>? context}) async {
-    await _log('WARNING', message, context);
-  }
-
-  static Future<void> logDebug(String message, {Map<String, dynamic>? context}) async {
-    await _log('DEBUG', message, context);
-  }
-
-  static Future<void> _log(
-    String level,
-    String message,
-    Map<String, dynamic>? context, {
-    dynamic error,
-  }) async {
-    try {
-      final timestamp = DateTime.now().toIso8601String();
-      final logEntry = {
-        'timestamp': timestamp,
-        'level': level,
-        'message': message,
-        if (context != null) 'context': _sanitizeContext(context),
-        if (error != null) 'error': _sanitizeError(error),
-      };
-
-      final logLine = jsonEncode(logEntry);
-      await _logFile.writeAsString('$logLine\n', mode: FileMode.append);
-      
-      // Также выводим в консоль для разработки
-      print('$timestamp [$level] $message');
-      if (context != null) {
-        print('Context: ${jsonEncode(_sanitizeContext(context))}');
-      }
-      if (error != null) {
-        print('Error: ${_sanitizeError(error)}');
-      }
-    } catch (e) {
-      print('Ошибка логирования: $e');
-    }
-  }
-
-  static Map<String, dynamic> _sanitizeContext(Map<String, dynamic> context) {
-    final sanitized = <String, dynamic>{};
-    
-    context.forEach((key, value) {
-      if (_sensitiveFields.any((field) => key.toLowerCase().contains(field))) {
-        sanitized[key] = '***REDACTED***';
-      } else if (value is Map) {
-        sanitized[key] = _sanitizeContext(Map<String, dynamic>.from(value));
-      } else if (value is List) {
-        sanitized[key] = value.map((item) {
-          if (item is Map) {
-            return _sanitizeContext(Map<String, dynamic>.from(item));
-          }
-          return item;
-        }).toList();
+  static Map<String, String> _maskHeaders(Map<String, String> headers) {
+    final masked = <String, String>{};
+    for (final entry in headers.entries) {
+      final keyLower = entry.key.toLowerCase();
+      if (keyLower == 'authorization' || keyLower == 'cookie' || keyLower == 'set-cookie' || keyLower == 'x-api-key') {
+        masked[entry.key] = '[REDACTED]';
       } else {
-        sanitized[key] = value;
+        masked[entry.key] = entry.value;
       }
-    });
-    
-    return sanitized;
-  }
-
-  static String _sanitizeError(dynamic error) {
-    if (error is Map) {
-      return jsonEncode(_sanitizeContext(Map<String, dynamic>.from(error)));
     }
-    return error.toString();
+    return masked;
   }
-
-  // Методы для логирования HTTP-запросов
-  static Future<void> logRequest(
-    String method,
-    String path,
-    Map<String, String> headers,
-    String? body,
-  ) async {
-    final sanitizedHeaders = _sanitizeContext(
-      headers.map((key, value) => MapEntry(key, value)),
-    );
-    
-    await logInfo(
-      'HTTP Request: $method $path',
-      context: {
-        'headers': sanitizedHeaders,
-        if (body != null) 'body': body,
-      },
-    );
-  }
-
-  static Future<void> logResponse(
-    int statusCode,
-    Map<String, String> headers,
-    String? body,
-  ) async {
-    final sanitizedHeaders = _sanitizeContext(
-      headers.map((key, value) => MapEntry(key, value)),
-    );
-    
-    await logInfo(
-      'HTTP Response: $statusCode',
-      context: {
-        'headers': sanitizedHeaders,
-        if (body != null) 'body': body,
-      },
-    );
-  }
-
-  // Методы для логирования операций с заказами
-  static Future<void> logOrderOperation(
-    String operation,
-    int orderId,
-    Map<String, dynamic>? data,
-  ) async {
-    await logInfo(
-      'Order Operation: $operation',
-      context: {
-        'orderId': orderId,
-        if (data != null) 'data': data,
-      },
-    );
-  }
-
-  // Методы для логирования операций с действиями
-  static Future<void> logActionOperation(
-    String operation,
-    int actionId,
-    Map<String, dynamic>? data,
-  ) async {
-    await logInfo(
-      'Action Operation: $operation',
-      context: {
-        'actionId': actionId,
-        if (data != null) 'data': data,
-      },
-    );
-  }
-} 
+}

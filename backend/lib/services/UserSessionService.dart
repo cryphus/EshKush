@@ -29,6 +29,18 @@ class UserSessionService {
     }
   }
 
+  Future<UserSessions?> getCurrentActiveSessionForUser(int userId) async {
+    try {
+      final sessions = await getUserSessions(userId);
+      if (sessions.isEmpty) return null;
+      sessions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return sessions.first;
+    } catch (e) {
+      print('Ошибка получения текущей сессии пользователя: $e');
+      rethrow;
+    }
+  }
+
   Future<UserSessions> createSession({
     required int userId,
     required String userAgent,

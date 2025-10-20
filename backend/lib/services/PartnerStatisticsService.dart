@@ -53,10 +53,10 @@ class PartnerStatisticsService {
         id: 0, // ID будет присвоен базой данных
         partnerId: data['partner_id'],
         pointId: data['point_id'],
-        totalOrders: data['total_orders'] ?? 0,
-        totalRevenue: data['total_revenue'] ?? 0.0,
-        totalCancel: data['total_cancel'] ?? 0,
-        averageRating: data['average_rating'] ?? 0.0,
+        totalOrders: (data['total_orders'] as num?)?.toInt() ?? 0,
+        totalRevenue: (data['total_revenue'] as num?)?.toDouble() ?? 0.0,
+        totalCancel: (data['total_cancel'] as num?)?.toInt() ?? 0,
+        averageRating: (data['average_rating'] as num?)?.toDouble() ?? 0.0,
         totalReviews: data['total_reviews'] ?? 0,
         createdAt: DateTime.now(),
       );
@@ -75,14 +75,14 @@ class PartnerStatisticsService {
         throw Exception('Статистика не найдена');
       }
 
-      _validateStatisticsData(data);
+      _validateUpdateData(data);
 
       final updatedStatistics = currentStatistics.copyWith(
-        totalOrders: data['total_orders'],
-        totalRevenue: data['total_revenue'],
-        totalCancel: data['total_cancel'],
-        averageRating: data['average_rating'],
-        totalReviews: data['total_reviews'],
+        totalOrders: (data['total_orders'] as num?)?.toInt(),
+        totalRevenue: (data['total_revenue'] as num?)?.toDouble(),
+        totalCancel: (data['total_cancel'] as num?)?.toInt(),
+        averageRating: (data['average_rating'] as num?)?.toDouble(),
+        totalReviews: (data['total_reviews'] as num?)?.toInt(),
       );
 
       return await _repository.update(updatedStatistics);
@@ -162,6 +162,24 @@ class PartnerStatisticsService {
     if (data['point_id'] == null || data['point_id'] <= 0) {
       throw Exception('Некорректный ID точки');
     }
+    if (data['total_orders'] != null && data['total_orders'] < 0) {
+      throw Exception('Количество заказов не может быть отрицательным');
+    }
+    if (data['total_revenue'] != null && data['total_revenue'] < 0) {
+      throw Exception('Выручка не может быть отрицательной');
+    }
+    if (data['total_cancel'] != null && data['total_cancel'] < 0) {
+      throw Exception('Количество отмен не может быть отрицательным');
+    }
+    if (data['average_rating'] != null && (data['average_rating'] < 0 || data['average_rating'] > 5)) {
+      throw Exception('Рейтинг должен быть от 0 до 5');
+    }
+    if (data['total_reviews'] != null && data['total_reviews'] < 0) {
+      throw Exception('Количество отзывов не может быть отрицательным');
+    }
+  }
+
+  void _validateUpdateData(Map<String, dynamic> data) {
     if (data['total_orders'] != null && data['total_orders'] < 0) {
       throw Exception('Количество заказов не может быть отрицательным');
     }

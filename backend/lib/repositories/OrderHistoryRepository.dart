@@ -89,7 +89,7 @@ class OrderHistoryRepository {
           'userId': orderHistory.userId,
           'orderDate': orderHistory.orderDate,
           'completionDate': orderHistory.completionDate,
-          'totalSum': orderHistory.totalSum,
+          'totalSum': orderHistory.totalSum.toString(),
           'status': orderHistory.status.toString().split('.').last,
           'receiptLink': orderHistory.receiptLink,
           'discountApplied': orderHistory.discountApplied,
@@ -131,7 +131,7 @@ class OrderHistoryRepository {
         params: {
           'id': orderHistory.id,
           'completionDate': orderHistory.completionDate,
-          'totalSum': orderHistory.totalSum,
+          'totalSum': orderHistory.totalSum.toString(),
           'status': orderHistory.status.toString().split('.').last,
           'receiptLink': orderHistory.receiptLink,
           'discountApplied': orderHistory.discountApplied,

@@ -1,16 +1,31 @@
 import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PromoCodesService.dart';
 import '../model/enums/DiscountType.dart';
 import '../utils/AuthUtils.dart';
+import '../utils/ValidationUtils.dart';
+import '../utils/LoggingUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class PromoCodesController {
   final PromoCodesService _promoCodesService;
+  final Router _router = Router();
 
-  PromoCodesController(this._promoCodesService);
+  PromoCodesController(this._promoCodesService) {
+    _router.get('/active', _getActivePromoCodes);
+    _router.get('/<id>', _getPromoCode);
+    _router.post('/', _createPromoCode);
+    _router.put('/', _updatePromoCode);
+    _router.delete('/<id>', _deletePromoCode);
+    _router.post('/calculate', _calculateDiscount);
+  }
 
-  Future<Response> getPromoCode(Request request) async {
+  Router get router => _router;
+
+  Future<Response> _getPromoCode(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -27,7 +42,7 @@ class PromoCodesController {
         );
       }
 
-      final id = int.tryParse(request.url.queryParameters['id'] ?? '');
+      final id = int.tryParse(request.params['id'] ?? '');
       if (id == null) {
         return Response(400, 
           body: jsonEncode({'error': 'Неверный ID промокода'}),
@@ -36,35 +51,33 @@ class PromoCodesController {
       }
 
       final promoCode = await _promoCodesService.getPromoCodeById(id);
-      return Response.ok(
-        jsonEncode(promoCode.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(promoCode.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения промокода', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> getActivePromoCodes(Request request) async {
+  Future<Response> _getActivePromoCodes(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final promoCodes = await _promoCodesService.getActivePromoCodes();
-      return Response.ok(
-        jsonEncode(promoCodes.map((p) => p.toJson()).toList()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(promoCodes.map((p) => p.toJson()).toList());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка получения активных промокодов', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> createPromoCode(Request request) async {
+  Future<Response> _createPromoCode(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -81,50 +94,45 @@ class PromoCodesController {
         );
       }
 
-      final data = jsonDecode(await request.readAsString());
-      
-      if (!_validatePromoCodeData(data)) {
-        return Response(400, 
-          body: jsonEncode({'error': 'Некорректные данные'}),
-          headers: _getCorsHeaders(),
-        );
-      }
+      final raw = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, raw, requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(raw);
+      final sanitized = ValidationUtils.validateAndSanitizePromoCodeData(data);
 
       final promoCode = await _promoCodesService.createPromoCode(
-        code: data['code'],
-        description: data['description'],
-        startDate: DateTime.parse(data['startDate']),
-        endDate: DateTime.parse(data['endDate']),
-        minOrderSum: (data['minOrderSum'] as num).toDouble(),
+        code: sanitized['code'] as String,
+        description: sanitized['description'] as String,
+        startDate: DateTime.parse(sanitized['startDate'] as String),
+        endDate: DateTime.parse(sanitized['endDate'] as String),
+        minOrderSum: sanitized['minOrderSum'] as double,
         discountType: DiscountType.values.firstWhere(
-          (e) => e.toString() == 'DiscountType.${data['discountType']}',
+          (e) => e.toString() == 'DiscountType.${sanitized['discountType']}',
           orElse: () => DiscountType.percentage,
         ),
-        discountValue: (data['discountValue'] as num).toDouble(),
-        isActive: data['isActive'] ?? true,
-        usageLimit: data['usageLimit'],
-        applicableProducts: data['applicableProducts'] != null 
-            ? List<int>.from(data['applicableProducts'])
+        discountValue: sanitized['discountValue'] as double,
+        isActive: sanitized['isActive'] as bool? ?? true,
+        usageLimit: sanitized['usageLimit'] as int?,
+        applicableProducts: sanitized['applicableProducts'] != null 
+            ? List<int>.from(sanitized['applicableProducts'])
             : null,
-        applicablePoints: data['applicablePoints'] != null
-            ? List<int>.from(data['applicablePoints'])
+        applicablePoints: sanitized['applicablePoints'] != null
+            ? List<int>.from(sanitized['applicablePoints'])
             : null,
       );
 
-      return Response.ok(
-        jsonEncode(promoCode.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(promoCode.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка создания промокода', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> updatePromoCode(Request request) async {
+  Future<Response> _updatePromoCode(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -141,7 +149,10 @@ class PromoCodesController {
         );
       }
 
-      final data = jsonDecode(await request.readAsString());
+      final raw = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, raw, requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(raw);
+      final sanitized = ValidationUtils.validateAndSanitizePromoCodeData(data);
       
       if (data['id'] == null) {
         return Response(400, 
@@ -150,47 +161,42 @@ class PromoCodesController {
         );
       }
 
-      final promoCode = await _promoCodesService.getPromoCodeById(data['id']);
+      final promoCode = await _promoCodesService.getPromoCodeById(sanitized['id']);
       
-      final updatedPromoCode = await _promoCodesService.createPromoCode(
-        code: promoCode.code,
-        description: data['description'] ?? promoCode.description,
-        startDate: promoCode.startDate,
-        endDate: data['endDate'] != null ? DateTime.parse(data['endDate']) : promoCode.endDate,
-        minOrderSum: data['minOrderSum'] != null ? (data['minOrderSum'] as num).toDouble() : promoCode.minOrderSum,
-        discountType: data['discountType'] != null 
-            ? DiscountType.values.firstWhere(
-                (e) => e.toString() == 'DiscountType.${data['discountType']}',
-                orElse: () => DiscountType.percentage,
-              )
-            : promoCode.discountType,
-        discountValue: data['discountValue'] != null ? (data['discountValue'] as num).toDouble() : promoCode.discountValue,
-        isActive: data['isActive'] ?? promoCode.isActive,
-        usageLimit: data['usageLimit'] ?? promoCode.usageLimit,
-        applicableProducts: data['applicableProducts'] != null 
-            ? List<int>.from(data['applicableProducts'])
-            : promoCode.applicableProducts,
-        applicablePoints: data['applicablePoints'] != null
-            ? List<int>.from(data['applicablePoints'])
-            : promoCode.applicablePoints,
-      );
+      promoCode.description = sanitized['description'] ?? promoCode.description;
+      promoCode.endDate = sanitized['endDate'] != null ? DateTime.parse(sanitized['endDate']) : promoCode.endDate;
+      promoCode.minOrderSum = sanitized['minOrderSum'] != null ? (sanitized['minOrderSum'] as num).toDouble() : promoCode.minOrderSum;
+      promoCode.discountType = sanitized['discountType'] != null 
+          ? DiscountType.values.firstWhere(
+              (e) => e.toString() == 'DiscountType.${sanitized['discountType']}',
+              orElse: () => DiscountType.percentage,
+            )
+          : promoCode.discountType;
+      promoCode.discountValue = sanitized['discountValue'] != null ? (sanitized['discountValue'] as num).toDouble() : promoCode.discountValue;
+      promoCode.isActive = sanitized['isActive'] ?? promoCode.isActive;
+      promoCode.usageLimit = sanitized['usageLimit'] ?? promoCode.usageLimit;
+      promoCode.applicableProducts = sanitized['applicableProducts'] != null 
+          ? List<int>.from(sanitized['applicableProducts'])
+          : promoCode.applicableProducts;
+      promoCode.applicablePoints = sanitized['applicablePoints'] != null
+          ? List<int>.from(sanitized['applicablePoints'])
+          : promoCode.applicablePoints;
 
-      await _promoCodesService.deletePromoCode(promoCode.id);
+      final updatedPromoCode = await _promoCodesService.updatePromoCode(promoCode);
 
-      return Response.ok(
-        jsonEncode(updatedPromoCode.toJson()),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode(updatedPromoCode.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка обновления промокода', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> deletePromoCode(Request request) async {
+  Future<Response> _deletePromoCode(Request request) async {
     try {
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
@@ -207,7 +213,7 @@ class PromoCodesController {
         );
       }
 
-      final id = int.tryParse(request.url.queryParameters['id'] ?? '');
+      final id = int.tryParse(request.params['id'] ?? '');
       if (id == null) {
         return Response(400, 
           body: jsonEncode({'error': 'Неверный ID промокода'}),
@@ -216,21 +222,21 @@ class PromoCodesController {
       }
 
       await _promoCodesService.deletePromoCode(id);
-      return Response.ok(
-        jsonEncode({'message': 'Промокод удален'}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'message': 'Промокод удален'});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка удаления промокода', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
-  Future<Response> calculateDiscount(Request request) async {
+  Future<Response> _calculateDiscount(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final raw = await request.readAsString();
+      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, raw, requestId: RequestContextUtils.getRequestId(request));
+      final data = jsonDecode(raw);
       
       if (data['code'] == null || data['orderSum'] == null) {
         return Response(400, 
@@ -246,15 +252,13 @@ class PromoCodesController {
         data['pointId'],
       );
 
-      return Response.ok(
-        jsonEncode({'discount': discount}),
-        headers: _getCorsHeaders(),
-      );
+      final body = jsonEncode({'discount': discount});
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
+      return resp;
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка расчёта скидки', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -262,27 +266,7 @@ class PromoCodesController {
     return payload['role'] == 'admin';
   }
 
-  bool _validatePromoCodeData(Map<String, dynamic> data) {
-    if (data['code'] == null || (data['code'] as String).isEmpty) {
-      return false;
-    }
-    if (data['description'] == null || (data['description'] as String).isEmpty) {
-      return false;
-    }
-    if (data['startDate'] == null || data['endDate'] == null) {
-      return false;
-    }
-    if (data['minOrderSum'] == null || (data['minOrderSum'] as num) < 0) {
-      return false;
-    }
-    if (data['discountType'] == null || data['discountValue'] == null) {
-      return false;
-    }
-    if ((data['discountValue'] as num) <= 0) {
-      return false;
-    }
-    return true;
-  }
+  
 
   Map<String, String> _getCorsHeaders() {
     return {

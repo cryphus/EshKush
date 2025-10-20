@@ -28,16 +28,16 @@ class PaymentTransactionsService {
     _validateTransactionData(data);
     final now = DateTime.now();
     final transaction = PaymentTransactions(
-      id: 0, // будет установлен базой
+      id: 0, // временный ID, будет заменён базой
       orderId: data['order_id'] as int,
       providerTransactionId: data['provider_transaction_id'] as int,
-      orderPrice: (data['order_price'] as num).toDouble(),
+      orderPrice: double.parse(data['order_price'].toString()),
       paymentMethod: PaymentMethod.values.firstWhere(
-        (e) => e.toString() == 'PaymentMethod.${data['payment_method']}',
+        (e) => e.toString().split('.').last == data['payment_method'],
         orElse: () => PaymentMethod.other,
       ),
       status: PaymentTransactionStatus.values.firstWhere(
-        (e) => e.toString() == 'PaymentTransactionStatus.${data['status']}',
+        (e) => e.toString().split('.').last == data['status'],
         orElse: () => PaymentTransactionStatus.completed,
       ),
       transactionDate: DateTime.parse(data['transaction_date'] as String),
@@ -52,21 +52,21 @@ class PaymentTransactionsService {
     int id,
     Map<String, dynamic> data,
   ) async {
-    _validateTransactionData(data);
+    // Для обновления не требуем все поля
     final existingTransaction = await getTransactionById(id);
     final updatedTransaction = existingTransaction.copyWith(
       orderId: data['order_id'] as int?,
       providerTransactionId: data['provider_transaction_id'] as int?,
-      orderPrice: data['order_price'] != null ? (data['order_price'] as num).toDouble() : null,
+      orderPrice: data['order_price'] != null ? double.parse(data['order_price'].toString()) : null,
       paymentMethod: data['payment_method'] != null
         ? PaymentMethod.values.firstWhere(
-            (e) => e.toString() == 'PaymentMethod.${data['payment_method']}',
+            (e) => e.toString().split('.').last == data['payment_method'],
             orElse: () => PaymentMethod.other,
           )
         : null,
       status: data['status'] != null
         ? PaymentTransactionStatus.values.firstWhere(
-            (e) => e.toString() == 'PaymentTransactionStatus.${data['status']}',
+            (e) => e.toString().split('.').last == data['status'],
             orElse: () => PaymentTransactionStatus.completed,
           )
         : null,

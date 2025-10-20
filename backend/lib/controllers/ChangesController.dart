@@ -1,100 +1,123 @@
 import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
+import 'dart:convert';
 import '../services/ChangesService.dart';
 import '../model/enums/EntityType.dart';
 import '../model/enums/ChangeType.dart';
 
 class ChangesController {
   final ChangesService _service;
+  final Router _router = Router();
 
-  ChangesController(this._service);
+  ChangesController(this._service) {
+    _router.get('/entity/<entityType>/<entityId>', _getEntityChanges);
+    _router.get('/user/<userId>', _getUserChanges);
+    _router.get('/type/<changeType>', _getChangeTypeChanges);
+    _router.get('/recent', _getRecentChanges);
+    _router.post('/<changeId>/revert', _revertChange);
+  }
 
-  Future<Response> getEntityChanges(Request request) async {
+  Router get router => _router;
+
+  Future<Response> _getEntityChanges(Request request, String entityType, String entityId) async {
     try {
-      final entityType = EntityType.values.firstWhere(
-        (e) => e.toString().split('.').last == request.url.queryParameters['entityType'],
+      final type = EntityType.values.firstWhere(
+        (e) => e.toString().split('.').last == entityType,
         orElse: () => EntityType.other,
       );
-      final entityId = int.parse(request.url.queryParameters['entityId'] ?? '');
+      final id = int.parse(entityId);
       
-      final changes = await _service.getEntityChanges(entityType, entityId);
+      final changes = await _service.getEntityChanges(type, id);
       return Response.ok(
-        changes.map((change) => change.toJson()).toList().toString(),
+        jsonEncode(changes.map((change) => change.toJson()).toList()),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
       return Response.internalServerError(
-        body: {'error': 'Ошибка получения изменений сущности: $e'},
+        body: jsonEncode({'error': 'Ошибка получения изменений сущности: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }
   }
 
-  Future<Response> getUserChanges(Request request) async {
+  Future<Response> _getUserChanges(Request request, String userId) async {
     try {
-      final userId = int.parse(request.url.queryParameters['userId'] ?? '');
-      final changes = await _service.getUserChanges(userId);
+      print('Получен запрос на получение изменений пользователя:');
+      print('User ID: $userId');
+      print('Headers: ${request.headers}');
+      print('Method: ${request.method}');
+      print('URL: ${request.url}');
+      
+      final id = int.parse(userId);
+      final changes = await _service.getUserChanges(id);
+      
+      print('Найдено изменений: ${changes.length}');
+      
       return Response.ok(
-        changes.map((change) => change.toJson()).toList().toString(),
+        jsonEncode(changes.map((change) => change.toJson()).toList()),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
+      print('Ошибка получения изменений пользователя: $e');
       return Response.internalServerError(
-        body: {'error': 'Ошибка получения изменений пользователя: $e'},
+        body: jsonEncode({'error': 'Ошибка получения изменений пользователя: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }
   }
 
-  Future<Response> getChangeTypeChanges(Request request) async {
+  Future<Response> _getChangeTypeChanges(Request request, String changeType) async {
     try {
-      final changeType = ChangeType.values.firstWhere(
-        (e) => e.toString().split('.').last == request.url.queryParameters['changeType'],
+      final type = ChangeType.values.firstWhere(
+        (e) => e.toString().split('.').last == changeType,
         orElse: () => ChangeType.update,
       );
       
-      final changes = await _service.getChangeTypeChanges(changeType);
+      final changes = await _service.getChangeTypeChanges(type);
       return Response.ok(
-        changes.map((change) => change.toJson()).toList().toString(),
+        jsonEncode(changes.map((change) => change.toJson()).toList()),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
       return Response.internalServerError(
-        body: {'error': 'Ошибка получения изменений по типу: $e'},
+        body: jsonEncode({'error': 'Ошибка получения изменений по типу: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }
   }
 
-  Future<Response> getRecentChanges(Request request) async {
+  Future<Response> _getRecentChanges(Request request) async {
     try {
       final limit = int.tryParse(request.url.queryParameters['limit'] ?? '100') ?? 100;
       final changes = await _service.getRecentChanges(limit: limit);
       return Response.ok(
-        changes.map((change) => change.toJson()).toList().toString(),
+        jsonEncode(changes.map((change) => change.toJson()).toList()),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
       return Response.internalServerError(
-        body: {'error': 'Ошибка получения последних изменений: $e'},
+        body: jsonEncode({'error': 'Ошибка получения последних изменений: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }
   }
 
-  Future<Response> revertChange(Request request) async {
+  Future<Response> _revertChange(Request request, String changeId) async {
     try {
-      final changeId = int.parse(request.url.queryParameters['changeId'] ?? '');
-      final revertedBy = int.parse(request.url.queryParameters['revertedBy'] ?? '');
-      final comment = request.url.queryParameters['comment'];
+      final id = int.parse(changeId);
+      final body = await request.readAsString();
+      final data = jsonDecode(body);
+      final revertedBy = int.parse(request.headers['user-id'] ?? '0');
+      final comment = data['comment'] as String?;
       
-      await _service.revertChange(changeId, revertedBy, comment: comment);
+      await _service.revertChange(id, revertedBy, comment: comment);
       return Response.ok(
-        {'message': 'Изменение успешно отменено'},
+        jsonEncode({'message': 'Изменение успешно отменено'}),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
       return Response.internalServerError(
-        body: {'error': 'Ошибка отмены изменения: $e'},
+        body: jsonEncode({'error': 'Ошибка отмены изменения: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }

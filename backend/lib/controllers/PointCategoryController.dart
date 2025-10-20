@@ -1,65 +1,129 @@
 import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
+import 'dart:convert';
 import '../services/PointCategoryService.dart';
 import '../model/entities/PointCategory.dart';
+import '../utils/ValidationUtils.dart';
 
 class PointCategoryController {
-  final PointCategoryService _service;
+  final PointCategoryService _categoryService;
+  final Router _router = Router();
 
-  PointCategoryController(this._service);
+  PointCategoryController(this._categoryService) {
+    _router.get('/', _getAllCategories);
+    _router.post('/', _createCategory);
+    _router.get('/<id>', _getCategory);
+    _router.put('/<id>', _updateCategory);
+    _router.delete('/<id>', _deleteCategory);
+  }
 
-  Future<Response> getById(Request request) async {
+  Router get router => _router;
+
+  Future<Response> _getCategory(Request request, String id) async {
     try {
-      final id = int.parse(request.url.queryParameters['id']!);
-      final category = await _service.getById(id);
+      final categoryId = int.parse(id);
+      final category = await _categoryService.getCategory(categoryId);
+      
       if (category == null) {
-        return Response.notFound('Категория не найдена');
+        return Response.notFound(
+          jsonEncode({'error': 'Категория не найдена'}),
+          headers: _getCorsHeaders(),
+        );
       }
-      return Response.ok(category.toJson().toString());
+
+      return Response.ok(
+        jsonEncode(category.toJson()),
+        headers: _getCorsHeaders(),
+      );
     } catch (e) {
-      return Response.internalServerError(body: 'Ошибка получения категории: $e');
+      return Response(400,
+        body: jsonEncode({'error': 'Ошибка: $e'}),
+        headers: _getCorsHeaders(),
+      );
     }
   }
 
-  Future<Response> getAll(Request request) async {
+  Future<Response> _getAllCategories(Request request) async {
     try {
-      final categories = await _service.getAll();
-      return Response.ok(categories.map((c) => c.toJson()).toList().toString());
+      final categories = await _categoryService.getAllCategories();
+      return Response.ok(
+        jsonEncode(categories.map((c) => c.toJson()).toList()),
+        headers: _getCorsHeaders(),
+      );
     } catch (e) {
-      return Response.internalServerError(body: 'Ошибка получения категорий: $e');
+      return Response(400,
+        body: jsonEncode({'error': 'Ошибка: $e'}),
+        headers: _getCorsHeaders(),
+      );
     }
   }
 
-  Future<Response> create(Request request) async {
+  Future<Response> _createCategory(Request request) async {
     try {
-      final body = await request.readAsString();
-      final json = Map<String, dynamic>.from(body as Map);
-      final category = PointCategory.fromJson(json);
-      final created = await _service.create(category);
-      return Response.ok(created.toJson().toString());
+      final data = jsonDecode(await request.readAsString());
+      final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
+
+      final category = PointCategory(
+        id: 0,
+        name: sanitized['name'] as String,
+        description: sanitized['description'] as String?,
+        createdAt: DateTime.now(),
+      );
+
+      final createdCategory = await _categoryService.createCategory(category);
+      return Response.ok(
+        jsonEncode(createdCategory.toJson()),
+        headers: _getCorsHeaders(),
+      );
     } catch (e) {
-      return Response.internalServerError(body: 'Ошибка создания категории: $e');
+      return Response(400,
+        body: jsonEncode({'error': 'Ошибка создания категории: $e'}),
+        headers: _getCorsHeaders(),
+      );
     }
   }
 
-  Future<Response> update(Request request) async {
+  Future<Response> _updateCategory(Request request, String id) async {
     try {
-      final body = await request.readAsString();
-      final json = Map<String, dynamic>.from(body as Map);
-      final category = PointCategory.fromJson(json);
-      final updated = await _service.update(category);
-      return Response.ok(updated.toJson().toString());
+      final categoryId = int.parse(id);
+      final data = jsonDecode(await request.readAsString());
+      final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
+      
+      final updatedCategory = await _categoryService.updateCategory(categoryId, sanitized);
+      return Response.ok(
+        jsonEncode(updatedCategory.toJson()),
+        headers: _getCorsHeaders(),
+      );
     } catch (e) {
-      return Response.internalServerError(body: 'Ошибка обновления категории: $e');
+      return Response(400,
+        body: jsonEncode({'error': 'Ошибка обновления категории: $e'}),
+        headers: _getCorsHeaders(),
+      );
     }
   }
 
-  Future<Response> delete(Request request) async {
+  Future<Response> _deleteCategory(Request request, String id) async {
     try {
-      final id = int.parse(request.url.queryParameters['id']!);
-      await _service.delete(id);
-      return Response.ok('Категория успешно удалена');
+      final categoryId = int.parse(id);
+      await _categoryService.deleteCategory(categoryId);
+      return Response.ok(
+        jsonEncode({'message': 'Категория успешно удалена'}),
+        headers: _getCorsHeaders(),
+      );
     } catch (e) {
-      return Response.internalServerError(body: 'Ошибка удаления категории: $e');
+      return Response(400,
+        body: jsonEncode({'error': 'Ошибка удаления категории: $e'}),
+        headers: _getCorsHeaders(),
+      );
     }
+  }
+
+  Map<String, String> _getCorsHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
+    };
   }
 } 

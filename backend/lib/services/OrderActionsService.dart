@@ -46,11 +46,10 @@ class OrderActionsService {
   }) async {
     try {
       final action = OrderActions(
-        id: 0, // ID будет присвоен базой данных
+        id: 0,
         orderId: orderId,
-        partnerId: partnerId,
-        actionDescription: actionDescription,
-        actionTimestamp: DateTime.now(),
+        description: actionDescription,
+        createdAt: DateTime.now(),
         actionType: actionType,
       );
       return await _orderActionsRepository.create(action);
@@ -94,7 +93,8 @@ class OrderActionsService {
   Future<OrderActions> deactivateAction(int id) async {
     try {
       final action = await getActionById(id);
-      action.deactivate();
+      // В текущей схеме нет поля активности; интерпретируем как смену типа
+      action.updateActionType(ActionType.delete);
       return await _orderActionsRepository.update(action);
     } catch (e) {
       print('Ошибка деактивации действия: $e');
@@ -105,7 +105,8 @@ class OrderActionsService {
   Future<OrderActions> activateAction(int id) async {
     try {
       final action = await getActionById(id);
-      action.activate();
+      // Возвращаем к типу create как аналог "активации"
+      action.updateActionType(ActionType.create);
       return await _orderActionsRepository.update(action);
     } catch (e) {
       print('Ошибка активации действия: $e');

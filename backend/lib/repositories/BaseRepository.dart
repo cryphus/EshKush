@@ -11,7 +11,13 @@ abstract class BaseRepository {
         sql,
         substitutionValues: params,
       );
-      return results.map((row) => row.values.first).toList();
+      return results.map((row) {
+        final merged = <String, dynamic>{};
+        for (final part in row.values) {
+          merged.addAll(part);
+        }
+        return merged;
+      }).toList();
     } catch (e) {
       print('Ошибка выполнения запроса: $e');
       rethrow;
@@ -22,7 +28,12 @@ abstract class BaseRepository {
     try {
       final results = await connection.mappedResultsQuery(sql, substitutionValues: params);
       if (results.isEmpty) return null;
-      return results.first.values.first;
+      final row = results.first;
+      final merged = <String, dynamic>{};
+      for (final part in row.values) {
+        merged.addAll(part);
+      }
+      return merged;
     } catch (e) {
       print('Ошибка выполнения запроса: $e');
       rethrow;

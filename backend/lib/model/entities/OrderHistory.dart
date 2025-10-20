@@ -44,49 +44,58 @@ class OrderHistory {
   }
 
   factory OrderHistory.fromJson(Map<String, dynamic> json) {
+    int _parseInt(dynamic v) => v == null ? 0 : int.parse(v.toString());
+    double _parseDouble(dynamic v) => v == null ? 0.0 : (v is num ? v.toDouble() : double.parse(v.toString()));
+    DateTime _parseDate(dynamic v) => v is DateTime ? v : DateTime.parse(v.toString());
+
+    final statusStr = (json['status'] ?? 'pending').toString();
+    final status = HistoryStatus.values.firstWhere(
+      (e) => e.toString().split('.').last == statusStr,
+      orElse: () => HistoryStatus.pending,
+    );
+
     return OrderHistory(
-      id: json['id'] as int,
-      orderId: json['orderId'] as int,
-      pointId: json['pointId'] as int,
-      userId: json['userId'] as int,
-      orderDate: DateTime.parse(json['orderDate'] as String),
-      completionDate: json['completionDate'] != null 
-          ? DateTime.parse(json['completionDate'] as String) 
-          : null,
-      totalSum: (json['totalSum'] as num).toDouble(),
-      status: HistoryStatus.values.firstWhere(
-        (e) => e.toString() == 'HistoryStatus.${json['status']}',
-        orElse: () => HistoryStatus.pending,
-      ),
-      receiptLink: json['receiptLink'] as String?,
-      discountApplied: json['discountApplied'] != null 
-          ? (json['discountApplied'] as num).toDouble() 
-          : null,
-      promoCodeUsed: json['promoCodeUsed'] as String?,
-      co2Saved: json['co2Saved'] as int?,
-      notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      id: _parseInt(json['id']),
+      orderId: _parseInt(json['order_id'] ?? json['orderId']),
+      pointId: _parseInt(json['point_id'] ?? json['pointId']),
+      userId: _parseInt(json['user_id'] ?? json['userId']),
+      orderDate: _parseDate(json['order_date'] ?? json['orderDate']),
+      completionDate: json['completion_date'] != null
+          ? _parseDate(json['completion_date'])
+          : (json['completionDate'] != null ? _parseDate(json['completionDate']) : null),
+      totalSum: _parseDouble(json['total_sum'] ?? json['totalSum']),
+      status: status,
+      receiptLink: (json['receipt_link'] ?? json['receiptLink'])?.toString(),
+      discountApplied: json['discount_applied'] != null
+          ? _parseDouble(json['discount_applied'])
+          : (json['discountApplied'] != null ? _parseDouble(json['discountApplied']) : null),
+      promoCodeUsed: (json['promo_code_used'] ?? json['promoCodeUsed'])?.toString(),
+      co2Saved: json['co2_saved'] != null
+          ? _parseInt(json['co2_saved'])
+          : (json['co2Saved'] != null ? _parseInt(json['co2Saved']) : null),
+      notes: (json['notes'])?.toString(),
+      createdAt: _parseDate(json['created_at'] ?? json['createdAt'] ?? DateTime.now().toIso8601String()),
+      updatedAt: _parseDate(json['updated_at'] ?? json['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'orderId': orderId,
-      'pointId': pointId,
-      'userId': userId,
-      'orderDate': orderDate.toIso8601String(),
-      'completionDate': completionDate?.toIso8601String(),
-      'totalSum': totalSum,
+      'order_id': orderId,
+      'point_id': pointId,
+      'user_id': userId,
+      'order_date': orderDate.toIso8601String(),
+      'completion_date': completionDate?.toIso8601String(),
+      'total_sum': totalSum,
       'status': status.toString().split('.').last,
-      'receiptLink': receiptLink,
-      'discountApplied': discountApplied,
-      'promoCodeUsed': promoCodeUsed,
-      'co2Saved': co2Saved,
+      'receipt_link': receiptLink,
+      'discount_applied': discountApplied,
+      'promo_code_used': promoCodeUsed,
+      'co2_saved': co2Saved,
       'notes': notes,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
