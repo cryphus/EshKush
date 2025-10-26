@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/CacheService.dart';
@@ -55,7 +55,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка получения статистики кеша: $e',
+          'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё РєРµС€Р°: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -68,7 +68,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': success,
-          'message': success ? 'Кеш очищен' : 'Ошибка очистки кеша',
+          'message': success ? 'РљРµС€ РѕС‡РёС‰РµРЅ' : 'РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РєРµС€Р°',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -76,7 +76,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка очистки кеша: $e',
+          'error': 'РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РєРµС€Р°: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -89,7 +89,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': true,
-          'message': 'Удалено $count ключей по паттерну $pattern',
+          'message': 'РЈРґР°Р»РµРЅРѕ $count РєР»СЋС‡РµР№ РїРѕ РїР°С‚С‚РµСЂРЅСѓ $pattern',
           'count': count,
         }),
         headers: {'Content-Type': 'application/json'},
@@ -98,7 +98,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка очистки кеша по паттерну: $e',
+          'error': 'РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РєРµС€Р° РїРѕ РїР°С‚С‚РµСЂРЅСѓ: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -121,7 +121,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка получения значения: $e',
+          'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р·РЅР°С‡РµРЅРёСЏ: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -141,7 +141,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': success,
-          'message': success ? 'Значение установлено' : 'Ошибка установки значения',
+          'message': success ? 'Р—РЅР°С‡РµРЅРёРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅРѕ' : 'РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё Р·РЅР°С‡РµРЅРёСЏ',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -149,7 +149,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка установки значения: $e',
+          'error': 'РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё Р·РЅР°С‡РµРЅРёСЏ: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -162,7 +162,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': success,
-          'message': success ? 'Значение удалено' : 'Ключ не найден',
+          'message': success ? 'Р—РЅР°С‡РµРЅРёРµ СѓРґР°Р»РµРЅРѕ' : 'РљР»СЋС‡ РЅРµ РЅР°Р№РґРµРЅ',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -170,7 +170,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка удаления значения: $e',
+          'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ Р·РЅР°С‡РµРЅРёСЏ: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -192,7 +192,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка проверки существования ключа: $e',
+          'error': 'РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёСЏ РєР»СЋС‡Р°: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -207,7 +207,7 @@ class CacheController {
           'success': true,
           'key': key,
           'ttl': ttl,
-          'message': ttl == -1 ? 'Ключ не существует или не имеет TTL' : 'TTL в секундах',
+          'message': ttl == -1 ? 'РљР»СЋС‡ РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚ РёР»Рё РЅРµ РёРјРµРµС‚ TTL' : 'TTL РІ СЃРµРєСѓРЅРґР°С…',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -215,7 +215,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка получения TTL: $e',
+          'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ TTL: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -232,7 +232,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': success,
-          'message': success ? 'TTL установлен' : 'Ключ не найден',
+          'message': success ? 'TTL СѓСЃС‚Р°РЅРѕРІР»РµРЅ' : 'РљР»СЋС‡ РЅРµ РЅР°Р№РґРµРЅ',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -240,7 +240,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка установки TTL: $e',
+          'error': 'РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё TTL: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -261,7 +261,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка получения статистики токенов: $e',
+          'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё С‚РѕРєРµРЅРѕРІ: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -279,7 +279,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': true,
-          'message': 'Токен инвалидирован',
+          'message': 'РўРѕРєРµРЅ РёРЅРІР°Р»РёРґРёСЂРѕРІР°РЅ',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -287,7 +287,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка инвалидации токена: $e',
+          'error': 'РћС€РёР±РєР° РёРЅРІР°Р»РёРґР°С†РёРё С‚РѕРєРµРЅР°: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -304,7 +304,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': true,
-          'message': 'Все токены пользователя инвалидированы',
+          'message': 'Р’СЃРµ С‚РѕРєРµРЅС‹ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёРЅРІР°Р»РёРґРёСЂРѕРІР°РЅС‹',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -312,7 +312,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка инвалидации токенов пользователя: $e',
+          'error': 'РћС€РёР±РєР° РёРЅРІР°Р»РёРґР°С†РёРё С‚РѕРєРµРЅРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -326,7 +326,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': true,
-          'message': 'Истекшие токены очищены',
+          'message': 'РСЃС‚РµРєС€РёРµ С‚РѕРєРµРЅС‹ РѕС‡РёС‰РµРЅС‹',
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -334,7 +334,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'Ошибка очистки истекших токенов: $e',
+          'error': 'РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РёСЃС‚РµРєС€РёС… С‚РѕРєРµРЅРѕРІ: $e',
         }),
         headers: {'Content-Type': 'application/json'},
       );

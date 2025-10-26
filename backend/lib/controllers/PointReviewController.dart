@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PointReviewService.dart';
@@ -38,12 +38,12 @@ class PointReviewController {
 
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'Некорректный ID отзыва');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС‚Р·С‹РІР°');
       }
 
       final review = await _service.getById(id);
       if (review == null) {
-        return _createErrorResponse(404, 'Отзыв не найден');
+        return _createErrorResponse(404, 'РћС‚Р·С‹РІ РЅРµ РЅР°Р№РґРµРЅ');
       }
 
       final reviewJson = jsonEncode(review.toJson());
@@ -61,8 +61,8 @@ class PointReviewController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения отзыва', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕС‚Р·С‹РІР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -77,7 +77,7 @@ class PointReviewController {
 
       final pointId = int.tryParse(request.params['pointId']!);
       if (pointId == null) {
-        return _createErrorResponse(400, 'Некорректный ID точки');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
       }
 
       final reviews = await _service.getByPointId(pointId);
@@ -96,8 +96,8 @@ class PointReviewController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения отзывов точки', e);
-      return _createErrorResponse(500, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕС‚Р·С‹РІРѕРІ С‚РѕС‡РєРё', e);
+      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -112,7 +112,7 @@ class PointReviewController {
 
       final userId = int.tryParse(request.params['userId']!);
       if (userId == null) {
-        return _createErrorResponse(400, 'Некорректный ID пользователя');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ');
       }
 
       final reviews = await _service.getByUserId(userId);
@@ -131,8 +131,8 @@ class PointReviewController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения отзывов пользователя', e);
-      return _createErrorResponse(500, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕС‚Р·С‹РІРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e);
+      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -150,7 +150,7 @@ class PointReviewController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
@@ -160,7 +160,7 @@ class PointReviewController {
       try {
         final sanitizedData = ValidationUtils.validateAndSanitizeReviewData(data);
         final review = PointReview(
-          id: 0, // Временный ID, будет заменен при создании в БД
+          id: 0, // Р’СЂРµРјРµРЅРЅС‹Р№ ID, Р±СѓРґРµС‚ Р·Р°РјРµРЅРµРЅ РїСЂРё СЃРѕР·РґР°РЅРёРё РІ Р‘Р”
           pointId: sanitizedData['point_id'] as int,
           userId: sanitizedData['user_id'] as int,
           rating: sanitizedData['rating'] as double,
@@ -170,7 +170,7 @@ class PointReviewController {
         final created = await _service.create(review);
 
         await LoggingUtils.logInfo(
-          'Создан новый отзыв',
+          'РЎРѕР·РґР°РЅ РЅРѕРІС‹Р№ РѕС‚Р·С‹РІ',
           context: {
             'reviewId': created.id,
             'pointId': created.pointId,
@@ -194,8 +194,8 @@ class PointReviewController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания отзыва', e);
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РѕС‚Р·С‹РІР°', e);
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -213,22 +213,22 @@ class PointReviewController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'Некорректный ID отзыва');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС‚Р·С‹РІР°');
       }
 
       final existingReview = await _service.getById(id);
       if (existingReview == null) {
-        return _createErrorResponse(404, 'Отзыв не найден');
+        return _createErrorResponse(404, 'РћС‚Р·С‹РІ РЅРµ РЅР°Р№РґРµРЅ');
       }
 
       if (existingReview.userId != payload['id'] && payload['role'] != 'admin') {
-        return _createErrorResponse(403, 'Нет прав на редактирование отзыва');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РЅР° СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РѕС‚Р·С‹РІР°');
       }
 
       try {
@@ -244,7 +244,7 @@ class PointReviewController {
         final updated = await _service.update(review);
 
         await LoggingUtils.logInfo(
-          'Обновлен отзыв',
+          'РћР±РЅРѕРІР»РµРЅ РѕС‚Р·С‹РІ',
           context: {
             'reviewId': updated.id,
             'pointId': updated.pointId,
@@ -268,8 +268,8 @@ class PointReviewController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления отзыва', e);
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РѕС‚Р·С‹РІР°', e);
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -284,32 +284,32 @@ class PointReviewController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'Некорректный ID отзыва');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС‚Р·С‹РІР°');
       }
 
       final existingReview = await _service.getById(id);
       if (existingReview == null) {
-        return _createErrorResponse(404, 'Отзыв не найден');
+        return _createErrorResponse(404, 'РћС‚Р·С‹РІ РЅРµ РЅР°Р№РґРµРЅ');
       }
 
       if (existingReview.userId != payload['id'] && payload['role'] != 'admin') {
-        return _createErrorResponse(403, 'Нет прав на удаление отзыва');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РЅР° СѓРґР°Р»РµРЅРёРµ РѕС‚Р·С‹РІР°');
       }
 
       await _service.delete(id);
 
       await LoggingUtils.logInfo(
-        'Удален отзыв',
+        'РЈРґР°Р»РµРЅ РѕС‚Р·С‹РІ',
         context: {'reviewId': id},
       );
 
-      final responseJson = jsonEncode({'message': 'Отзыв успешно удален'});
+      final responseJson = jsonEncode({'message': 'РћС‚Р·С‹РІ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'});
       final response = Response.ok(
         responseJson,
         headers: _getCorsHeaders(),
@@ -323,8 +323,8 @@ class PointReviewController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка удаления отзыва', e);
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РѕС‚Р·С‹РІР°', e);
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 

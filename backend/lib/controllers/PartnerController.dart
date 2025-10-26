@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PartnerService.dart';
@@ -7,6 +7,8 @@ import '../utils/SafeLoggingUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
 import '../utils/ValidationUtils.dart';
+import '../model/dto/responses/PartnerResponseDto.dart';
+import '../utils/AuthUtils.dart';
 
 class PartnerController {
   final PartnerService _partnerService;
@@ -30,18 +32,20 @@ class PartnerController {
       
       if (partner == null) {
         return Response.notFound(
-          jsonEncode({'error': 'Партнер не найден'}),
+          jsonEncode({'error': 'РџР°СЂС‚РЅРµСЂ РЅРµ РЅР°Р№РґРµРЅ'}),
           headers: _getCorsHeaders(),
         );
       }
 
-      final body = jsonEncode(partner.toJson());
+      // Р”Р»СЏ Р°РґРјРёРЅРѕРІ РёСЃРїРѕР»СЊР·СѓР№С‚Рµ РѕС‚РґРµР»СЊРЅС‹Р№ endpoint СЃ PartnerAdminDto
+      final partnerDto = PartnerResponseDto.fromEntity(partner);
+      final body = jsonEncode(partnerDto.toJson());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения партнера', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїР°СЂС‚РЅРµСЂР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -49,13 +53,13 @@ class PartnerController {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final partners = await _partnerService.getAllPartners();
-      final body = jsonEncode(partners.map((p) => p.toJson()).toList());
+      final body = jsonEncode(partners.map((p) => PartnerResponseDto.fromEntity(p).toJson()).toList());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'Ошибка: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -66,7 +70,7 @@ class PartnerController {
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
       final data = jsonDecode(body);
-      SafeLoggingUtils.logData('Полученные данные', data);
+      SafeLoggingUtils.logData('РџРѕР»СѓС‡РµРЅРЅС‹Рµ РґР°РЅРЅС‹Рµ', data);
       final sanitized = ValidationUtils.validateAndSanitizePartnerData(data);
 
       final partner = Partner(
@@ -82,13 +86,14 @@ class PartnerController {
       );
 
       final createdPartner = await _partnerService.createPartner(partner);
-      final out = jsonEncode(createdPartner.toJson());
+      final partnerDto = PartnerResponseDto.fromEntity(createdPartner);
+      final out = jsonEncode(partnerDto.toJson());
       final resp = Response.ok(out, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания партнера', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка создания партнера: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїР°СЂС‚РЅРµСЂР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїР°СЂС‚РЅРµСЂР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -102,13 +107,14 @@ class PartnerController {
       final sanitized = ValidationUtils.validateAndSanitizePartnerData(data);
       
       final updatedPartner = await _partnerService.updatePartner(partnerId, sanitized);
-      final out = jsonEncode(updatedPartner.toJson());
+      final partnerDto = PartnerResponseDto.fromEntity(updatedPartner);
+      final out = jsonEncode(partnerDto.toJson());
       final resp = Response.ok(out, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'Ошибка обновления партнера: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїР°СЂС‚РЅРµСЂР°: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -119,13 +125,13 @@ class PartnerController {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final partnerId = int.parse(id);
       await _partnerService.deletePartner(partnerId);
-      final body = jsonEncode({'message': 'Партнер успешно удален'});
+      final body = jsonEncode({'message': 'РџР°СЂС‚РЅРµСЂ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'Ошибка удаления партнера: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїР°СЂС‚РЅРµСЂР°: $e'}),
         headers: _getCorsHeaders(),
       );
     }

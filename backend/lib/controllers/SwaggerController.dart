@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -33,31 +33,31 @@ class SwaggerController {
           },
         );
       } else {
-        // Если файл не найден, возвращаем базовую спецификацию
+        // Р•СЃР»Рё С„Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ, РІРѕР·РІСЂР°С‰Р°РµРј Р±Р°Р·РѕРІСѓСЋ СЃРїРµС†РёС„РёРєР°С†РёСЋ
         final swaggerJson = {
           'openapi': '3.0.0',
           'info': {
             'title': 'EshKush API',
             'version': '1.0.0',
-            'description': 'API документация для EshKush'
+            'description': 'API РґРѕРєСѓРјРµРЅС‚Р°С†РёСЏ РґР»СЏ EshKush'
           },
           'paths': {
             '/auth/google': {
               'post': {
-                'summary': 'Аутентификация через Google',
+                'summary': 'РђСѓС‚РµРЅС‚РёС„РёРєР°С†РёСЏ С‡РµСЂРµР· Google',
                 'responses': {
                   '200': {
-                    'description': 'Успешная аутентификация'
+                    'description': 'РЈСЃРїРµС€РЅР°СЏ Р°СѓС‚РµРЅС‚РёС„РёРєР°С†РёСЏ'
                   }
                 }
               }
             },
             '/auth/register': {
               'post': {
-                'summary': 'Регистрация пользователя',
+                'summary': 'Р РµРіРёСЃС‚СЂР°С†РёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ',
                 'responses': {
                   '200': {
-                    'description': 'Успешная регистрация'
+                    'description': 'РЈСЃРїРµС€РЅР°СЏ СЂРµРіРёСЃС‚СЂР°С†РёСЏ'
                   }
                 }
               }
@@ -76,15 +76,15 @@ class SwaggerController {
         );
       }
     } catch (e) {
-      print('Ошибка при получении swagger.json: $e');
+      print('РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё swagger.json: $e');
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Ошибка при получении документации API'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё РґРѕРєСѓРјРµРЅС‚Р°С†РёРё API'}),
       );
     }
   }
 
   Future<Response> _getSwaggerUI(Request request) async {
-    print('=== Отправляем Swagger UI ===');
+    print('=== РћС‚РїСЂР°РІР»СЏРµРј Swagger UI ===');
     
     const swaggerUI = '''
 <!DOCTYPE html>
@@ -99,7 +99,7 @@ class SwaggerController {
     <div id="swagger-ui"></div>
     <script>
         window.onload = function() {
-            console.log('Swagger UI загружается...');
+            console.log('Swagger UI Р·Р°РіСЂСѓР¶Р°РµС‚СЃСЏ...');
             SwaggerUIBundle({
                 url: "/swagger/swagger.json",
                 dom_id: '#swagger-ui',

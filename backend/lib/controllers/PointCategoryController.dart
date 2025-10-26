@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PointCategoryService.dart';
@@ -26,7 +26,7 @@ class PointCategoryController {
       
       if (category == null) {
         return Response.notFound(
-          jsonEncode({'error': 'Категория не найдена'}),
+          jsonEncode({'error': 'РљР°С‚РµРіРѕСЂРёСЏ РЅРµ РЅР°Р№РґРµРЅР°'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -37,7 +37,7 @@ class PointCategoryController {
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'Ошибка: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -52,7 +52,7 @@ class PointCategoryController {
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'Ошибка: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -77,7 +77,7 @@ class PointCategoryController {
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'Ошибка создания категории: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РєР°С‚РµРіРѕСЂРёРё: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -96,7 +96,7 @@ class PointCategoryController {
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'Ошибка обновления категории: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёРё: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -107,12 +107,12 @@ class PointCategoryController {
       final categoryId = int.parse(id);
       await _categoryService.deleteCategory(categoryId);
       return Response.ok(
-        jsonEncode({'message': 'Категория успешно удалена'}),
+        jsonEncode({'message': 'РљР°С‚РµРіРѕСЂРёСЏ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅР°'}),
         headers: _getCorsHeaders(),
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'Ошибка удаления категории: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёРё: $e'}),
         headers: _getCorsHeaders(),
       );
     }

@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ProfileService.dart';
@@ -8,6 +8,8 @@ import '../utils/SafeLoggingUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../model/dto/responses/ProfileResponseDto.dart';
+import '../model/dto/requests/CreateProfileDto.dart';
 
 class ProfileController {
   final ProfileService _profileService;
@@ -36,7 +38,7 @@ class ProfileController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -46,12 +48,13 @@ class ProfileController {
 
       if (profile == null) {
         return Response(404, 
-          body: jsonEncode({'error': 'Профиль не найден'}),
+          body: jsonEncode({'error': 'РџСЂРѕС„РёР»СЊ РЅРµ РЅР°Р№РґРµРЅ'}),
           headers: _getCorsHeaders(),
         );
       }
 
-      final responseBody = jsonEncode(profile.toJson());
+      final profileDto = ProfileResponseDto.fromEntity(profile);
+      final responseBody = jsonEncode(profileDto.toJson());
       final response = Response.ok(
         responseBody,
         headers: {
@@ -69,9 +72,9 @@ class ProfileController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения профиля', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -88,26 +91,27 @@ class ProfileController {
       );
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      await LoggingUtils.logInfo('Проверка токена в _getProfileById', context: {'hasToken': token != null}, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logInfo('РџСЂРѕРІРµСЂРєР° С‚РѕРєРµРЅР° РІ _getProfileById', context: {'hasToken': token != null}, requestId: RequestContextUtils.getRequestId(request));
       
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
 
       final profile = await _profileService.getProfileById(int.parse(id));
-      await LoggingUtils.logInfo('Результат поиска профиля', context: {'found': profile != null}, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logInfo('Р РµР·СѓР»СЊС‚Р°С‚ РїРѕРёСЃРєР° РїСЂРѕС„РёР»СЏ', context: {'found': profile != null}, requestId: RequestContextUtils.getRequestId(request));
 
       if (profile == null) {
         return Response(404, 
-          body: jsonEncode({'error': 'Профиль не найден'}),
+          body: jsonEncode({'error': 'РџСЂРѕС„РёР»СЊ РЅРµ РЅР°Р№РґРµРЅ'}),
           headers: _getCorsHeaders(),
         );
       }
 
-      final responseBody = jsonEncode(profile.toJson());
+      final profileDto = ProfileResponseDto.fromEntity(profile);
+      final responseBody = jsonEncode(profileDto.toJson());
       final response = Response.ok(
         responseBody,
         headers: {
@@ -125,9 +129,9 @@ class ProfileController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения профиля по ID', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕС„РёР»СЏ РїРѕ ID', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -147,7 +151,7 @@ class ProfileController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -155,25 +159,29 @@ class ProfileController {
       final payload = AuthUtils.verifyToken(token);
       final data = jsonDecode(body);
       
-      SafeLoggingUtils.logData('Данные для создания профиля', data);
+      SafeLoggingUtils.logData('Р”Р°РЅРЅС‹Рµ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ РїСЂРѕС„РёР»СЏ', data);
+      
+      final createDto = CreateProfileDto.fromJson(data);
       
       final now = DateTime.now();
       final profile = Profile(
         id: 0,
         userId: payload['id'],
-        firstName: data['first_name']?.toString() ?? '',
-        lastName: data['last_name']?.toString() ?? '',
-        avatarUrl: data['avatar_url']?.toString(),
-        bio: data['bio']?.toString(),
-        sumCO2: data['sum_co2'] is String ? int.parse(data['sum_co2']) : (data['sum_co2'] as num?)?.toInt() ?? 0,
-        savedMoney: data['saved_money'] is String ? double.parse(data['saved_money']) : (data['saved_money'] as num?)?.toDouble() ?? 0.0,
-        countBuy: data['count_buy'] is String ? int.parse(data['count_buy']) : (data['count_buy'] as num?)?.toInt() ?? 0,
+        firstName: createDto.firstName,
+        lastName: createDto.lastName,
+        avatarUrl: createDto.avatarUrl,
+        bio: createDto.bio,
+        sumCO2: 0,
+        savedMoney: 0.0,
+        countBuy: 0,
         createdAt: now,
         updatedAt: now,
       );
 
       final createdProfile = await _profileService.createProfile(profile);
-      final responseBody = jsonEncode(createdProfile.toJson());
+      
+      final profileDto = ProfileResponseDto.fromEntity(createdProfile);
+      final responseBody = jsonEncode(profileDto.toJson());
 
         final response = Response.ok(
         responseBody,
@@ -189,9 +197,9 @@ class ProfileController {
 
         return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания профиля', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка создания профиля: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРѕС„РёР»СЏ: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -203,7 +211,7 @@ class ProfileController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -219,9 +227,9 @@ class ProfileController {
         lastName: sanitizedData['last_name'] ?? '',
         avatarUrl: sanitizedData['avatar_url'],
         bio: sanitizedData['bio'],
-        sumCO2: 0, // Значение по умолчанию
-        savedMoney: 0.0, // Значение по умолчанию
-        countBuy: 0, // Значение по умолчанию
+        sumCO2: 0, // Р—РЅР°С‡РµРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
+        savedMoney: 0.0, // Р—РЅР°С‡РµРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
+        countBuy: 0, // Р—РЅР°С‡РµРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -236,7 +244,7 @@ class ProfileController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка обновления профиля: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -255,7 +263,7 @@ class ProfileController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -264,28 +272,28 @@ class ProfileController {
       await _profileService.deleteProfile(payload['id']);
 
       await LoggingUtils.logInfo(
-        'Удален профиль',
+        'РЈРґР°Р»РµРЅ РїСЂРѕС„РёР»СЊ',
         context: {'userId': payload['id']},
         requestId: RequestContextUtils.getRequestId(request),
       );
 
       final response = Response.ok(
-        jsonEncode({'message': 'Профиль успешно удален'}),
+        jsonEncode({'message': 'РџСЂРѕС„РёР»СЊ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'}),
         headers: _getCorsHeaders(),
       );
 
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        jsonEncode({'message': 'Профиль успешно удален'}),
+        jsonEncode({'message': 'РџСЂРѕС„РёР»СЊ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'}),
         requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка удаления профиля', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка удаления профиля: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ: $e'}),
       headers: _getCorsHeaders(),
     );
     }

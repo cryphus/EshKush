@@ -1,10 +1,11 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PaymentTransactionsService.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../model/dto/responses/PaymentTransactionDto.dart';
 
 class PaymentTransactionsController {
   final PaymentTransactionsService _transactionsService;
@@ -32,7 +33,7 @@ class PaymentTransactionsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -42,19 +43,20 @@ class PaymentTransactionsController {
       
       if (id == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID'}),
           headers: _getCorsHeaders(),
         );
       }
 
       final transaction = await _transactionsService.getTransactionById(id);
-      final body = jsonEncode(transaction.toJson());
+      final transactionDto = PaymentTransactionDto.fromEntity(transaction);
+      final body = jsonEncode(transactionDto.toJson());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения транзакции', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка получения транзакции: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёРё: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -64,7 +66,7 @@ class PaymentTransactionsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -74,19 +76,19 @@ class PaymentTransactionsController {
       
       if (userId == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID пользователя'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ'}),
           headers: _getCorsHeaders(),
         );
       }
 
       final transactions = await _transactionsService.getTransactionsByUserId(userId);
-      final body = jsonEncode(transactions.map((t) => t.toJson()).toList());
+      final body = jsonEncode(transactions.map((t) => PaymentTransactionDto.fromEntity(t).toJson()).toList());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения транзакций пользователя', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка получения транзакций пользователя: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -96,7 +98,7 @@ class PaymentTransactionsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -106,19 +108,19 @@ class PaymentTransactionsController {
       
       if (orderId == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID заказа'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID Р·Р°РєР°Р·Р°'}),
           headers: _getCorsHeaders(),
         );
       }
 
       final transactions = await _transactionsService.getTransactionsByOrderId(orderId);
-      final body = jsonEncode(transactions.map((t) => t.toJson()).toList());
+      final body = jsonEncode(transactions.map((t) => PaymentTransactionDto.fromEntity(t).toJson()).toList());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения транзакций заказа', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка получения транзакций заказа: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ Р·Р°РєР°Р·Р°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -128,7 +130,7 @@ class PaymentTransactionsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -144,8 +146,8 @@ class PaymentTransactionsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания транзакции', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка создания транзакции: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёРё: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -155,7 +157,7 @@ class PaymentTransactionsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -165,7 +167,7 @@ class PaymentTransactionsController {
       
       if (id == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -175,13 +177,14 @@ class PaymentTransactionsController {
       final data = jsonDecode(raw);
       final transaction = await _transactionsService.updateTransaction(id, data);
       
-      final body = jsonEncode(transaction.toJson());
+      final transactionDto = PaymentTransactionDto.fromEntity(transaction);
+      final body = jsonEncode(transactionDto.toJson());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления транзакции', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка обновления транзакции: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёРё: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -191,7 +194,7 @@ class PaymentTransactionsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -205,13 +208,13 @@ class PaymentTransactionsController {
         endDate,
       );
       
-      final body = jsonEncode(transactions.map((t) => t.toJson()).toList());
+      final body = jsonEncode(transactions.map((t) => PaymentTransactionDto.fromEntity(t).toJson()).toList());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения транзакций по датам', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка получения транзакций по датам: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕ РґР°С‚Р°Рј', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕ РґР°С‚Р°Рј: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -221,7 +224,7 @@ class PaymentTransactionsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -231,19 +234,19 @@ class PaymentTransactionsController {
       
       if (status == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Статус не указан'}),
+          body: jsonEncode({'error': 'РЎС‚Р°С‚СѓСЃ РЅРµ СѓРєР°Р·Р°РЅ'}),
           headers: _getCorsHeaders(),
         );
       }
 
       final transactions = await _transactionsService.getTransactionsByStatus(status);
-      final body = jsonEncode(transactions.map((t) => t.toJson()).toList());
+      final body = jsonEncode(transactions.map((t) => PaymentTransactionDto.fromEntity(t).toJson()).toList());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения транзакций по статусу', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка получения транзакций по статусу: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕ СЃС‚Р°С‚СѓСЃСѓ', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕ СЃС‚Р°С‚СѓСЃСѓ: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -253,7 +256,7 @@ class PaymentTransactionsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -263,7 +266,7 @@ class PaymentTransactionsController {
       
       if (paymentMethod == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Метод оплаты не указан'}),
+          body: jsonEncode({'error': 'РњРµС‚РѕРґ РѕРїР»Р°С‚С‹ РЅРµ СѓРєР°Р·Р°РЅ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -271,13 +274,13 @@ class PaymentTransactionsController {
       final transactions = await _transactionsService.getTransactionsByPaymentMethod(
         paymentMethod,
       );
-      final body = jsonEncode(transactions.map((t) => t.toJson()).toList());
+      final body = jsonEncode(transactions.map((t) => PaymentTransactionDto.fromEntity(t).toJson()).toList());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения транзакций по методу оплаты', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка получения транзакций по методу оплаты: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕ РјРµС‚РѕРґСѓ РѕРїР»Р°С‚С‹', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕ РјРµС‚РѕРґСѓ РѕРїР»Р°С‚С‹: $e'}), headers: _getCorsHeaders());
     }
   }
 

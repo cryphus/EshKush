@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PromoCodesService.dart';
@@ -7,6 +7,8 @@ import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../model/dto/responses/PromoCodeResponseDto.dart';
+import '../model/dto/requests/CreatePromoCodeDto.dart';
 
 class PromoCodesController {
   final PromoCodesService _promoCodesService;
@@ -29,7 +31,7 @@ class PromoCodesController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -37,7 +39,7 @@ class PromoCodesController {
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
         return Response(403, 
-          body: jsonEncode({'error': 'Нет прав доступа'}),
+          body: jsonEncode({'error': 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -45,19 +47,20 @@ class PromoCodesController {
       final id = int.tryParse(request.params['id'] ?? '');
       if (id == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Неверный ID промокода'}),
+          body: jsonEncode({'error': 'РќРµРІРµСЂРЅС‹Р№ ID РїСЂРѕРјРѕРєРѕРґР°'}),
           headers: _getCorsHeaders(),
         );
       }
 
       final promoCode = await _promoCodesService.getPromoCodeById(id);
-      final body = jsonEncode(promoCode.toJson());
+      final promoCodeDto = PromoCodeResponseDto.fromEntity(promoCode);
+      final body = jsonEncode(promoCodeDto.toJson());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения промокода', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРјРѕРєРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -65,13 +68,13 @@ class PromoCodesController {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final promoCodes = await _promoCodesService.getActivePromoCodes();
-      final body = jsonEncode(promoCodes.map((p) => p.toJson()).toList());
+      final body = jsonEncode(promoCodes.map((p) => PromoCodeResponseDto.fromEntity(p).toJson()).toList());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения активных промокодов', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р°РєС‚РёРІРЅС‹С… РїСЂРѕРјРѕРєРѕРґРѕРІ', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -81,7 +84,7 @@ class PromoCodesController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -89,7 +92,7 @@ class PromoCodesController {
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
         return Response(403, 
-          body: jsonEncode({'error': 'Нет прав доступа'}),
+          body: jsonEncode({'error': 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -97,36 +100,34 @@ class PromoCodesController {
       final raw = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, raw, requestId: RequestContextUtils.getRequestId(request));
       final data = jsonDecode(raw);
-      final sanitized = ValidationUtils.validateAndSanitizePromoCodeData(data);
+      
+      final createDto = CreatePromoCodeDto.fromJson(data);
 
       final promoCode = await _promoCodesService.createPromoCode(
-        code: sanitized['code'] as String,
-        description: sanitized['description'] as String,
-        startDate: DateTime.parse(sanitized['startDate'] as String),
-        endDate: DateTime.parse(sanitized['endDate'] as String),
-        minOrderSum: sanitized['minOrderSum'] as double,
+        code: createDto.code,
+        description: createDto.description,
+        startDate: createDto.startDate,
+        endDate: createDto.endDate,
+        minOrderSum: createDto.minOrderSum,
         discountType: DiscountType.values.firstWhere(
-          (e) => e.toString() == 'DiscountType.${sanitized['discountType']}',
+          (e) => e.name.toLowerCase() == createDto.discountType.toLowerCase(),
           orElse: () => DiscountType.percentage,
         ),
-        discountValue: sanitized['discountValue'] as double,
-        isActive: sanitized['isActive'] as bool? ?? true,
-        usageLimit: sanitized['usageLimit'] as int?,
-        applicableProducts: sanitized['applicableProducts'] != null 
-            ? List<int>.from(sanitized['applicableProducts'])
-            : null,
-        applicablePoints: sanitized['applicablePoints'] != null
-            ? List<int>.from(sanitized['applicablePoints'])
-            : null,
+        discountValue: createDto.discountValue,
+        isActive: true,
+        usageLimit: createDto.usageLimit,
+        applicableProducts: createDto.applicableProducts,
+        applicablePoints: createDto.applicablePoints,
       );
 
-      final body = jsonEncode(promoCode.toJson());
+      final promoCodeDto = PromoCodeResponseDto.fromEntity(promoCode);
+      final body = jsonEncode(promoCodeDto.toJson());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания промокода', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРѕРјРѕРєРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -136,7 +137,7 @@ class PromoCodesController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -144,7 +145,7 @@ class PromoCodesController {
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
         return Response(403, 
-          body: jsonEncode({'error': 'Нет прав доступа'}),
+          body: jsonEncode({'error': 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -156,7 +157,7 @@ class PromoCodesController {
       
       if (data['id'] == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Не указан ID промокода'}),
+          body: jsonEncode({'error': 'РќРµ СѓРєР°Р·Р°РЅ ID РїСЂРѕРјРѕРєРѕРґР°'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -189,8 +190,8 @@ class PromoCodesController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления промокода', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕРјРѕРєРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -200,7 +201,7 @@ class PromoCodesController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -208,7 +209,7 @@ class PromoCodesController {
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
         return Response(403, 
-          body: jsonEncode({'error': 'Нет прав доступа'}),
+          body: jsonEncode({'error': 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -216,19 +217,19 @@ class PromoCodesController {
       final id = int.tryParse(request.params['id'] ?? '');
       if (id == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Неверный ID промокода'}),
+          body: jsonEncode({'error': 'РќРµРІРµСЂРЅС‹Р№ ID РїСЂРѕРјРѕРєРѕРґР°'}),
           headers: _getCorsHeaders(),
         );
       }
 
       await _promoCodesService.deletePromoCode(id);
-      final body = jsonEncode({'message': 'Промокод удален'});
+      final body = jsonEncode({'message': 'РџСЂРѕРјРѕРєРѕРґ СѓРґР°Р»РµРЅ'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка удаления промокода', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕРјРѕРєРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -240,7 +241,7 @@ class PromoCodesController {
       
       if (data['code'] == null || data['orderSum'] == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Не указан код или сумма заказа'}),
+          body: jsonEncode({'error': 'РќРµ СѓРєР°Р·Р°РЅ РєРѕРґ РёР»Рё СЃСѓРјРјР° Р·Р°РєР°Р·Р°'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -257,8 +258,8 @@ class PromoCodesController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка расчёта скидки', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° СЂР°СЃС‡С‘С‚Р° СЃРєРёРґРєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 

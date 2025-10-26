@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ChangesService.dart';
@@ -34,7 +34,7 @@ class ChangesController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Ошибка получения изменений сущности: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№ СЃСѓС‰РЅРѕСЃС‚Рё: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -42,7 +42,7 @@ class ChangesController {
 
   Future<Response> _getUserChanges(Request request, String userId) async {
     try {
-      print('Получен запрос на получение изменений пользователя:');
+      print('РџРѕР»СѓС‡РµРЅ Р·Р°РїСЂРѕСЃ РЅР° РїРѕР»СѓС‡РµРЅРёРµ РёР·РјРµРЅРµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ:');
       print('User ID: $userId');
       print('Headers: ${request.headers}');
       print('Method: ${request.method}');
@@ -51,16 +51,16 @@ class ChangesController {
       final id = int.parse(userId);
       final changes = await _service.getUserChanges(id);
       
-      print('Найдено изменений: ${changes.length}');
+      print('РќР°Р№РґРµРЅРѕ РёР·РјРµРЅРµРЅРёР№: ${changes.length}');
       
       return Response.ok(
         jsonEncode(changes.map((change) => change.toJson()).toList()),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      print('Ошибка получения изменений пользователя: $e');
+      print('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e');
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Ошибка получения изменений пользователя: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -80,7 +80,7 @@ class ChangesController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Ошибка получения изменений по типу: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№ РїРѕ С‚РёРїСѓ: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -96,7 +96,7 @@ class ChangesController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Ошибка получения последних изменений: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕСЃР»РµРґРЅРёС… РёР·РјРµРЅРµРЅРёР№: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -112,12 +112,12 @@ class ChangesController {
       
       await _service.revertChange(id, revertedBy, comment: comment);
       return Response.ok(
-        jsonEncode({'message': 'Изменение успешно отменено'}),
+        jsonEncode({'message': 'РР·РјРµРЅРµРЅРёРµ СѓСЃРїРµС€РЅРѕ РѕС‚РјРµРЅРµРЅРѕ'}),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Ошибка отмены изменения: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РѕС‚РјРµРЅС‹ РёР·РјРµРЅРµРЅРёСЏ: $e'}),
         headers: {'content-type': 'application/json'},
       );
     }

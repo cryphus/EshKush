@@ -1,9 +1,12 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/AuthService.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../model/dto/requests/CreateUserDto.dart';
+import '../model/dto/requests/LoginDto.dart';
+import '../utils/ValidationUtils.dart';
 
 class AuthController {
   final AuthService _authService;
@@ -31,24 +34,35 @@ class AuthController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final data = jsonDecode(body);
-      final result = await _authService.register(data);
+      try {
+        final data = jsonDecode(body);
+        
+        final createDto = CreateUserDto.fromJson(data);
+        
+        final result = await _authService.register(createDto.toEntityData());
 
-      final response = Response.ok(
-        jsonEncode(result),
-        headers: _getCorsHeaders(),
-      );
+        final response = Response.ok(
+          jsonEncode(result),
+          headers: _getCorsHeaders(),
+        );
 
-      await LoggingUtils.logResponse(
-        response.statusCode,
-        response.headers,
-        jsonEncode(result),
-        requestId: RequestContextUtils.getRequestId(request),
-      );
+        await LoggingUtils.logResponse(
+          response.statusCode,
+          response.headers,
+          jsonEncode(result),
+          requestId: RequestContextUtils.getRequestId(request),
+        );
 
-      return response;
+        return response;
+      } on ValidationException catch (e) {
+        return Response(
+          400,
+          body: jsonEncode({'error': e.message}),
+          headers: _getCorsHeaders(),
+        );
+      }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка регистрации', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('РћС€РёР±РєР° СЂРµРіРёСЃС‚СЂР°С†РёРё', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(
         400,
         body: jsonEncode({'error': e.toString()}),
@@ -68,27 +82,38 @@ class AuthController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final data = jsonDecode(body);
-      final result = await _authService.login(
-        data['username'] as String,
-        data['password'] as String,
-      );
+      try {
+        final data = jsonDecode(body);
+        
+        final loginDto = LoginDto.fromJson(data);
+        
+        final result = await _authService.login(
+          loginDto.username,
+          loginDto.password,
+        );
 
-      final response = Response.ok(
-        jsonEncode(result),
-        headers: _getCorsHeaders(),
-      );
+        final response = Response.ok(
+          jsonEncode(result),
+          headers: _getCorsHeaders(),
+        );
 
-      await LoggingUtils.logResponse(
-        response.statusCode,
-        response.headers,
-        jsonEncode(result),
-        requestId: RequestContextUtils.getRequestId(request),
-      );
+        await LoggingUtils.logResponse(
+          response.statusCode,
+          response.headers,
+          jsonEncode(result),
+          requestId: RequestContextUtils.getRequestId(request),
+        );
 
-      return response;
+        return response;
+      } on ValidationException catch (e) {
+        return Response(
+          400,
+          body: jsonEncode({'error': e.message}),
+          headers: _getCorsHeaders(),
+        );
+      }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка входа', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('РћС€РёР±РєР° РІС…РѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(
         400,
         body: jsonEncode({'error': e.toString()}),
@@ -125,7 +150,7 @@ class AuthController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления токена', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚РѕРєРµРЅР°', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(
         400,
         body: jsonEncode({'error': e.toString()}),

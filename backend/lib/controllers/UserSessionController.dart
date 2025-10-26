@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/UserSessionService.dart';
@@ -26,7 +26,7 @@ class UserSessionController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -34,7 +34,7 @@ class UserSessionController {
       final payload = AuthUtils.verifyToken(token);
       final session = await _sessionService.getCurrentActiveSessionForUser(payload['id']);
       if (session == null) {
-        return Response(404, body: jsonEncode({'error': 'Активная сессия не найдена'}), headers: _getCorsHeaders());
+        return Response(404, body: jsonEncode({'error': 'РђРєС‚РёРІРЅР°СЏ СЃРµСЃСЃРёСЏ РЅРµ РЅР°Р№РґРµРЅР°'}), headers: _getCorsHeaders());
       }
 
       final body = jsonEncode(session.toJson());
@@ -42,8 +42,8 @@ class UserSessionController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения текущей сессии', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚РµРєСѓС‰РµР№ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -53,7 +53,7 @@ class UserSessionController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -66,8 +66,8 @@ class UserSessionController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения списка сессий', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃРїРёСЃРєР° СЃРµСЃСЃРёР№', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -77,7 +77,7 @@ class UserSessionController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -101,8 +101,8 @@ class UserSessionController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания сессии', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -112,7 +112,7 @@ class UserSessionController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -120,17 +120,17 @@ class UserSessionController {
       final payload = AuthUtils.verifyToken(token);
       final session = await _sessionService.getCurrentActiveSessionForUser(payload['id']);
       if (session == null) {
-        return Response(404, body: jsonEncode({'error': 'Активная сессия не найдена'}), headers: _getCorsHeaders());
+        return Response(404, body: jsonEncode({'error': 'РђРєС‚РёРІРЅР°СЏ СЃРµСЃСЃРёСЏ РЅРµ РЅР°Р№РґРµРЅР°'}), headers: _getCorsHeaders());
       }
       await _sessionService.terminateSession(session);
 
-      final body = jsonEncode({'message': 'Сессия завершена'});
+      final body = jsonEncode({'message': 'РЎРµСЃСЃРёСЏ Р·Р°РІРµСЂС€РµРЅР°'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка завершения сессии', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -140,7 +140,7 @@ class UserSessionController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -148,13 +148,13 @@ class UserSessionController {
       final payload = AuthUtils.verifyToken(token);
       await _sessionService.terminateAllUserSessions(payload['id']);
 
-      final body = jsonEncode({'message': 'Все сессии завершены'});
+      final body = jsonEncode({'message': 'Р’СЃРµ СЃРµСЃСЃРёРё Р·Р°РІРµСЂС€РµРЅС‹'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка завершения всех сессий', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ РІСЃРµС… СЃРµСЃСЃРёР№', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -164,7 +164,7 @@ class UserSessionController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -176,24 +176,24 @@ class UserSessionController {
       
       if (data['duration'] == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Не указана длительность продления'}),
+          body: jsonEncode({'error': 'РќРµ СѓРєР°Р·Р°РЅР° РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ РїСЂРѕРґР»РµРЅРёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
 
       final session = await _sessionService.getCurrentActiveSessionForUser(payload['id']);
       if (session == null) {
-        return Response(404, body: jsonEncode({'error': 'Активная сессия не найдена'}), headers: _getCorsHeaders());
+        return Response(404, body: jsonEncode({'error': 'РђРєС‚РёРІРЅР°СЏ СЃРµСЃСЃРёСЏ РЅРµ РЅР°Р№РґРµРЅР°'}), headers: _getCorsHeaders());
       }
       await _sessionService.extendSession(session, Duration(days: data['duration'] as int));
 
-      final out = jsonEncode({'message': 'Сессия продлена'});
+      final out = jsonEncode({'message': 'РЎРµСЃСЃРёСЏ РїСЂРѕРґР»РµРЅР°'});
       final resp = Response.ok(out, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка продления сессии', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїСЂРѕРґР»РµРЅРёСЏ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
     }
   }
 

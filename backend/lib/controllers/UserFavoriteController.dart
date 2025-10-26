@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import '../services/UserFavoriteService.dart';
 import '../model/entities/UserFavorite.dart';
@@ -22,7 +22,7 @@ class UserFavoriteController {
     try {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return Response(401, body: jsonEncode({'error': 'Требуется авторизация'}), headers: {'content-type': 'application/json'});
+        return Response(401, body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}), headers: {'content-type': 'application/json'});
       }
       final payload = AuthUtils.verifyToken(token);
       final favorites = await _service.getByUserId(payload['id'] as int);
@@ -42,12 +42,12 @@ class UserFavoriteController {
     try {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return Response(401, body: jsonEncode({'error': 'Требуется авторизация'}), headers: {'content-type': 'application/json'});
+        return Response(401, body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}), headers: {'content-type': 'application/json'});
       }
       final payload = AuthUtils.verifyToken(token);
       final pid = int.tryParse(pointId) ?? 0;
       if (pid <= 0) {
-        return Response(400, body: jsonEncode({'error': 'Некорректный идентификатор точки'}), headers: {'content-type': 'application/json'});
+        return Response(400, body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ С‚РѕС‡РєРё'}), headers: {'content-type': 'application/json'});
       }
       final result = await _service.isFavorite(payload['id'] as int, pid);
       return Response.ok(jsonEncode({'isFavorite': result}), headers: {'content-type': 'application/json'});
@@ -63,14 +63,14 @@ class UserFavoriteController {
     try {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return Response(401, body: jsonEncode({'error': 'Требуется авторизация'}), headers: {'content-type': 'application/json'});
+        return Response(401, body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}), headers: {'content-type': 'application/json'});
       }
       final payload = AuthUtils.verifyToken(token);
       final body = await request.readAsString();
       final data = jsonDecode(body) as Map<String, dynamic>;
       final pointId = int.tryParse(data['point_id']?.toString() ?? '') ?? 0;
       if (pointId <= 0) {
-        return Response(400, body: jsonEncode({'error': 'Некорректный идентификатор точки'}), headers: {'content-type': 'application/json'});
+        return Response(400, body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ С‚РѕС‡РєРё'}), headers: {'content-type': 'application/json'});
       }
       final favorite = UserFavorite(userId: payload['id'] as int, pointId: pointId, createdAt: DateTime.now());
       final result = await _service.addToFavorites(favorite);
@@ -87,15 +87,15 @@ class UserFavoriteController {
     try {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return Response(401, body: jsonEncode({'error': 'Требуется авторизация'}), headers: {'content-type': 'application/json'});
+        return Response(401, body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}), headers: {'content-type': 'application/json'});
       }
       final payload = AuthUtils.verifyToken(token);
       final pid = int.tryParse(pointId) ?? 0;
       if (pid <= 0) {
-        return Response(400, body: jsonEncode({'error': 'Некорректный идентификатор точки'}), headers: {'content-type': 'application/json'});
+        return Response(400, body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ С‚РѕС‡РєРё'}), headers: {'content-type': 'application/json'});
       }
       await _service.removeFromFavorites(payload['id'] as int, pid);
-      return Response.ok(jsonEncode({'message': 'Место успешно удалено из избранного'}), headers: {'content-type': 'application/json'});
+      return Response.ok(jsonEncode({'message': 'РњРµСЃС‚Рѕ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅРѕ РёР· РёР·Р±СЂР°РЅРЅРѕРіРѕ'}), headers: {'content-type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(
         body: jsonEncode({'error': e.toString()}),
@@ -125,7 +125,7 @@ class UserFavoriteController {
       final pid = int.tryParse(pointId) ?? 0;
       if (pid <= 0) {
         return Response(400,
-            body: jsonEncode({'error': 'Некорректный идентификатор точки'}),
+            body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ С‚РѕС‡РєРё'}),
             headers: {'content-type': 'application/json'});
       }
       final favorites = await _service.getByPointId(pid);
@@ -165,7 +165,7 @@ class UserFavoriteController {
       final pointId = int.parse(request.url.queryParameters['pointId']!);
       await _service.removeFromFavorites(userId, pointId);
       return Response.ok(
-        {'message': 'Место успешно удалено из избранного'}.toString(),
+        {'message': 'РњРµСЃС‚Рѕ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅРѕ РёР· РёР·Р±СЂР°РЅРЅРѕРіРѕ'}.toString(),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {

@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PartnerStatisticsService.dart';
@@ -30,7 +30,7 @@ class PartnerStatisticsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -40,7 +40,7 @@ class PartnerStatisticsController {
       
       if (id == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -51,8 +51,8 @@ class PartnerStatisticsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения статистики', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка получения статистики: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -62,7 +62,7 @@ class PartnerStatisticsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -72,7 +72,7 @@ class PartnerStatisticsController {
       
       if (partnerId == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID партнера'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїР°СЂС‚РЅРµСЂР°'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -83,8 +83,8 @@ class PartnerStatisticsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения статистики партнера', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка получения статистики партнера: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё РїР°СЂС‚РЅРµСЂР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё РїР°СЂС‚РЅРµСЂР°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -94,7 +94,7 @@ class PartnerStatisticsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -104,7 +104,7 @@ class PartnerStatisticsController {
       
       if (pointId == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID точки'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -115,8 +115,8 @@ class PartnerStatisticsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения статистики точки', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка получения статистики точки: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё С‚РѕС‡РєРё: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -126,7 +126,7 @@ class PartnerStatisticsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -142,8 +142,8 @@ class PartnerStatisticsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания статистики', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка создания статистики: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -153,7 +153,7 @@ class PartnerStatisticsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -163,7 +163,7 @@ class PartnerStatisticsController {
       
       if (id == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -178,8 +178,8 @@ class PartnerStatisticsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления статистики', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка обновления статистики: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -189,7 +189,7 @@ class PartnerStatisticsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -201,19 +201,19 @@ class PartnerStatisticsController {
       
       if (data['id'] == null || data['revenue'] == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Отсутствуют обязательные поля'}),
+          body: jsonEncode({'error': 'РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ'}),
           headers: _getCorsHeaders(),
         );
       }
 
       await _statisticsService.addOrder(data['id'], data['revenue'].toDouble());
-      final body = jsonEncode({'message': 'Заказ добавлен в статистику'});
+      final body = jsonEncode({'message': 'Р—Р°РєР°Р· РґРѕР±Р°РІР»РµРЅ РІ СЃС‚Р°С‚РёСЃС‚РёРєСѓ'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка добавления заказа', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка добавления заказа: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ Р·Р°РєР°Р·Р°: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -223,7 +223,7 @@ class PartnerStatisticsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -235,19 +235,19 @@ class PartnerStatisticsController {
       
       if (data['id'] == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Отсутствует ID статистики'}),
+          body: jsonEncode({'error': 'РћС‚СЃСѓС‚СЃС‚РІСѓРµС‚ ID СЃС‚Р°С‚РёСЃС‚РёРєРё'}),
           headers: _getCorsHeaders(),
         );
       }
 
       await _statisticsService.addCancel(data['id']);
-      final body = jsonEncode({'message': 'Отмена добавлена в статистику'});
+      final body = jsonEncode({'message': 'РћС‚РјРµРЅР° РґРѕР±Р°РІР»РµРЅР° РІ СЃС‚Р°С‚РёСЃС‚РёРєСѓ'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка добавления отмены', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка добавления отмены: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РѕС‚РјРµРЅС‹', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РѕС‚РјРµРЅС‹: $e'}), headers: _getCorsHeaders());
     }
   }
 
@@ -257,7 +257,7 @@ class PartnerStatisticsController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -269,19 +269,19 @@ class PartnerStatisticsController {
       
       if (data['id'] == null || data['rating'] == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Отсутствуют обязательные поля'}),
+          body: jsonEncode({'error': 'РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ'}),
           headers: _getCorsHeaders(),
         );
       }
 
       await _statisticsService.updateRating(data['id'], data['rating'].toDouble());
-      final body = jsonEncode({'message': 'Рейтинг обновлен'});
+      final body = jsonEncode({'message': 'Р РµР№С‚РёРЅРі РѕР±РЅРѕРІР»РµРЅ'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления рейтинга', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'Ошибка обновления рейтинга: $e'}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ СЂРµР№С‚РёРЅРіР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ СЂРµР№С‚РёРЅРіР°: $e'}), headers: _getCorsHeaders());
     }
   }
 

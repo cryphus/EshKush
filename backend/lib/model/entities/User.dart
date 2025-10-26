@@ -89,7 +89,7 @@ class User {
     return {
       'id': id,
       'username': username,
-      'password': _password,
+      // Пароль НЕ включается в JSON для безопасности
       'number': number,
       'email': email,
       'createdAt': createdAt.toIso8601String(),

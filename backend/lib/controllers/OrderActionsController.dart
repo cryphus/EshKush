@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/OrderActionsService.dart';
@@ -31,13 +31,13 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       AuthUtils.verifyToken(token);
       final id = int.tryParse(request.url.queryParameters['id'] ?? '');
       if (id == null) {
-        return _createErrorResponse(400, 'Неверный ID действия');
+        return _createErrorResponse(400, 'РќРµРІРµСЂРЅС‹Р№ ID РґРµР№СЃС‚РІРёСЏ');
       }
 
       final action = await _orderActionsService.getActionById(id);
@@ -46,8 +46,8 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения действия', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -57,13 +57,13 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       AuthUtils.verifyToken(token);
       final orderId = int.tryParse(request.url.queryParameters['orderId'] ?? '');
       if (orderId == null) {
-        return _createErrorResponse(400, 'Неверный ID заказа');
+        return _createErrorResponse(400, 'РќРµРІРµСЂРЅС‹Р№ ID Р·Р°РєР°Р·Р°');
       }
 
       final actions = await _orderActionsService.getOrderActions(orderId);
@@ -72,8 +72,8 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения действий заказа', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -83,17 +83,17 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
       final partnerId = int.tryParse(request.url.queryParameters['partnerId'] ?? '');
       if (partnerId == null) {
-        return _createErrorResponse(400, 'Неверный ID партнера');
+        return _createErrorResponse(400, 'РќРµРІРµСЂРЅС‹Р№ ID РїР°СЂС‚РЅРµСЂР°');
       }
 
       final actions = await _orderActionsService.getPartnerActions(partnerId);
@@ -102,8 +102,8 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения действий партнера', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ РїР°СЂС‚РЅРµСЂР°', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -114,7 +114,7 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       AuthUtils.verifyToken(token);
@@ -144,8 +144,8 @@ class OrderActionsController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания действия', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -156,17 +156,17 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
       final data = jsonDecode(body);
       if (data['id'] == null || data['actionType'] == null) {
-        return _createErrorResponse(400, 'Не указаны обязательные параметры');
+        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅС‹ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹');
       }
 
       final action = await _orderActionsService.updateActionType(
@@ -184,8 +184,8 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления типа действия', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚РёРїР° РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -196,18 +196,18 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       AuthUtils.verifyToken(token);
       final data = jsonDecode(body);
       
       if (data['id'] == null || data['description'] == null) {
-        return _createErrorResponse(400, 'Не указаны обязательные параметры');
+        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅС‹ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹');
       }
 
       if (!ValidationUtils.isValidDescription(data['description'])) {
-        return _createErrorResponse(400, 'Некорректное описание');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅРѕРµ РѕРїРёСЃР°РЅРёРµ');
       }
 
       final action = await _orderActionsService.updateActionDescription(
@@ -222,8 +222,8 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления описания действия', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РѕРїРёСЃР°РЅРёСЏ РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -234,17 +234,17 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
       final data = jsonDecode(body);
       if (data['id'] == null) {
-        return _createErrorResponse(400, 'Не указан ID действия');
+        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅ ID РґРµР№СЃС‚РІРёСЏ');
       }
 
       final action = await _orderActionsService.deactivateAction(data['id']);
@@ -256,8 +256,8 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('Ошибка деактивации действия', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РґРµР°РєС‚РёРІР°С†РёРё РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -268,17 +268,17 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
       final data = jsonDecode(body);
       if (data['id'] == null) {
-        return _createErrorResponse(400, 'Не указан ID действия');
+        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅ ID РґРµР№СЃС‚РІРёСЏ');
       }
 
       final action = await _orderActionsService.activateAction(data['id']);
@@ -290,8 +290,8 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('Ошибка активации действия', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° Р°РєС‚РёРІР°С†РёРё РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -301,17 +301,17 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
       final type = request.url.queryParameters['type'];
       if (type == null) {
-        return _createErrorResponse(400, 'Не указан тип действия');
+        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅ С‚РёРї РґРµР№СЃС‚РІРёСЏ');
       }
 
       final actions = await _orderActionsService.getActionsByType(
@@ -326,8 +326,8 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения действий по типу', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ РїРѕ С‚РёРїСѓ', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -343,12 +343,12 @@ class OrderActionsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
       final actions = await _orderActionsService.getActiveActions();
@@ -357,8 +357,8 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения активных действий', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р°РєС‚РёРІРЅС‹С… РґРµР№СЃС‚РІРёР№', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
     }
   }
 

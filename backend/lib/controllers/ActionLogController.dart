@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ActionLogService.dart';
@@ -26,7 +26,7 @@ class ActionLogController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -36,7 +36,7 @@ class ActionLogController {
       
       if (userId == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID пользователя'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -48,7 +48,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка получения логов пользователя: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РѕРіРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -59,7 +59,7 @@ class ActionLogController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -73,7 +73,7 @@ class ActionLogController {
       
       if (entityId == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Некорректный ID сущности'}),
+          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID СЃСѓС‰РЅРѕСЃС‚Рё'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -85,7 +85,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка получения логов сущности: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РѕРіРѕРІ СЃСѓС‰РЅРѕСЃС‚Рё: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -96,7 +96,7 @@ class ActionLogController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -114,7 +114,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка получения логов по типу действия: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РѕРіРѕРІ РїРѕ С‚РёРїСѓ РґРµР№СЃС‚РІРёСЏ: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -125,7 +125,7 @@ class ActionLogController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -139,7 +139,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка получения последних логов: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕСЃР»РµРґРЅРёС… Р»РѕРіРѕРІ: $e'}),
         headers: _getCorsHeaders(),
       );
     }
@@ -150,7 +150,7 @@ class ActionLogController {
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
         return Response(401, 
-          body: jsonEncode({'error': 'Требуется авторизация'}),
+          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -162,7 +162,7 @@ class ActionLogController {
           data['targetEntity'] == null || data['targetId'] == null ||
           data['details'] == null || data['ipAddress'] == null) {
         return Response(400, 
-          body: jsonEncode({'error': 'Отсутствуют обязательные поля'}),
+          body: jsonEncode({'error': 'РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ'}),
           headers: _getCorsHeaders(),
         );
       }
@@ -195,7 +195,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'Ошибка создания лога действия: $e'}),
+        body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ Р»РѕРіР° РґРµР№СЃС‚РІРёСЏ: $e'}),
         headers: _getCorsHeaders(),
       );
     }

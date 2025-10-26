@@ -1,4 +1,4 @@
-import 'package:shelf/shelf.dart';
+﻿import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ProductsService.dart';
@@ -7,6 +7,9 @@ import '../utils/ValidationUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../model/dto/responses/ProductResponseDto.dart';
+import '../model/dto/requests/CreateProductDto.dart';
+import '../model/dto/requests/UpdateProductDto.dart';
 
 class ProductsController {
   final ProductsService _productsService;
@@ -40,7 +43,7 @@ class ProductsController {
       );
 
       final products = await _productsService.getAllProducts();
-      final responseBody = jsonEncode(products.map((p) => p.toJson()).toList());
+      final responseBody = jsonEncode(products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList());
       
       final response = Response.ok(
         responseBody,
@@ -56,8 +59,8 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения списка продуктов', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃРїРёСЃРєР° РїСЂРѕРґСѓРєС‚РѕРІ', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -73,11 +76,12 @@ class ProductsController {
 
       final productId = int.tryParse(id);
       if (productId == null) {
-        return _createErrorResponse(400, 'Некорректный ID продукта');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїСЂРѕРґСѓРєС‚Р°');
       }
 
       final product = await _productsService.getProductById(productId);
-      final responseBody = jsonEncode(product.toJson());
+      final productDto = ProductResponseDto.fromEntity(product);
+      final responseBody = jsonEncode(productDto.toJson());
       
       final response = Response.ok(
         responseBody,
@@ -93,8 +97,8 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения продукта', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(404, 'Продукт не найден');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(404, 'РџСЂРѕРґСѓРєС‚ РЅРµ РЅР°Р№РґРµРЅ');
     }
   }
 
@@ -111,36 +115,36 @@ class ProductsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
-      final data = jsonDecode(body);
-      SafeLoggingUtils.logData('Полученные данные', data);
-      
-      try {
-        final sanitizedData = ValidationUtils.validateAndSanitizeProductData(data);
-        SafeLoggingUtils.logData('Очищенные данные', sanitizedData);
-        
-        final product = await _productsService.createProduct(sanitizedData);
+             final data = jsonDecode(body);
+       SafeLoggingUtils.logData('РџРѕР»СѓС‡РµРЅРЅС‹Рµ РґР°РЅРЅС‹Рµ', data);
+       
+       try {
+         final createDto = CreateProductDto.fromJson(data);
+         
+         final product = await _productsService.createProduct(createDto.toEntityData());
         await LoggingUtils.logInfo(
-          'Создан новый продукт',
+          'РЎРѕР·РґР°РЅ РЅРѕРІС‹Р№ РїСЂРѕРґСѓРєС‚',
           context: {
             'productId': product.id,
             'name': product.name,
           },
-          requestId: RequestContextUtils.getRequestId(request),
-        );
+                     requestId: RequestContextUtils.getRequestId(request),
+         );
 
-        final responseBody = jsonEncode(product.toJson());
-        final response = Response(201,
-          body: responseBody,
-          headers: _getCorsHeaders(),
-        );
+         final productDto = ProductResponseDto.fromEntity(product);
+         final responseBody = jsonEncode(productDto.toJson());
+         final response = Response(201,
+           body: responseBody,
+           headers: _getCorsHeaders(),
+         );
 
         await LoggingUtils.logResponse(
           response.statusCode,
@@ -154,8 +158,8 @@ class ProductsController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания продукта', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка создания: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ: $e');
     }
   }
 
@@ -172,39 +176,40 @@ class ProductsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
       final productId = int.tryParse(id);
       if (productId == null) {
-        return _createErrorResponse(400, 'Некорректный ID продукта');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїСЂРѕРґСѓРєС‚Р°');
       }
 
-      final data = jsonDecode(body);
-      
-      try {
-        final sanitizedData = ValidationUtils.validateAndSanitizeProductDataForUpdate(data);
-        final product = await _productsService.updateProduct(productId, sanitizedData);
+             final data = jsonDecode(body);
+       
+       try {
+         final updateDto = UpdateProductDto.fromJson(data);
+         final product = await _productsService.updateProduct(productId, updateDto.toEntityData());
         
         await LoggingUtils.logInfo(
-          'Обновлен продукт',
+          'РћР±РЅРѕРІР»РµРЅ РїСЂРѕРґСѓРєС‚',
           context: {
             'productId': product.id,
             'name': product.name,
           },
-          requestId: RequestContextUtils.getRequestId(request),
-        );
+                     requestId: RequestContextUtils.getRequestId(request),
+         );
 
-        final responseBody = jsonEncode(product.toJson());
-        final response = Response.ok(
-          responseBody,
-          headers: _getCorsHeaders(),
-        );
+         final productDto = ProductResponseDto.fromEntity(product);
+         final responseBody = jsonEncode(productDto.toJson());
+         final response = Response.ok(
+           responseBody,
+           headers: _getCorsHeaders(),
+         );
 
         await LoggingUtils.logResponse(
           response.statusCode,
@@ -218,8 +223,8 @@ class ProductsController {
         return _createErrorResponse(400, e.toString());
       }
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления продукта', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'Ошибка обновления: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(400, 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ: $e');
     }
   }
 
@@ -235,28 +240,28 @@ class ProductsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
       final productId = int.tryParse(id);
       if (productId == null) {
-        return _createErrorResponse(400, 'Некорректный ID продукта');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїСЂРѕРґСѓРєС‚Р°');
       }
 
       await _productsService.deleteProduct(productId);
       
       await LoggingUtils.logInfo(
-        'Удален продукт',
+        'РЈРґР°Р»РµРЅ РїСЂРѕРґСѓРєС‚',
         context: {'productId': productId},
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final responseBody = jsonEncode({'message': 'Продукт успешно удален'});
+      final responseBody = jsonEncode({'message': 'РџСЂРѕРґСѓРєС‚ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'});
       final response = Response.ok(
         responseBody,
         headers: _getCorsHeaders(),
@@ -271,8 +276,8 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка удаления продукта', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'Ошибка удаления: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(500, 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ: $e');
     }
   }
 
@@ -288,11 +293,11 @@ class ProductsController {
 
       final categoryIdInt = int.tryParse(categoryId);
       if (categoryIdInt == null) {
-        return _createErrorResponse(400, 'Некорректный ID категории');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РєР°С‚РµРіРѕСЂРёРё');
       }
 
       final products = await _productsService.getProductsByCategory(categoryIdInt);
-      final responseBody = jsonEncode(products.map((p) => p.toJson()).toList());
+      final responseBody = jsonEncode(products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList());
       
       final response = Response.ok(
         responseBody,
@@ -308,8 +313,8 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения продуктов по категории', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРґСѓРєС‚РѕРІ РїРѕ РєР°С‚РµРіРѕСЂРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -331,8 +336,8 @@ class ProductsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения категорий продукта', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёР№ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -348,12 +353,12 @@ class ProductsController {
 
       final token = request.headers['authorization']?.replaceAll('Bearer ', '');
       if (token == null) {
-        return _createErrorResponse(401, 'Требуется авторизация');
+        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
       final payload = AuthUtils.verifyToken(token);
       if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'Нет прав доступа');
+        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
       }
 
       final productId = int.parse(id);
@@ -368,8 +373,8 @@ class ProductsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      await LoggingUtils.logError('Ошибка обновления категорий продукта', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёР№ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
     }
   }
 
@@ -385,11 +390,11 @@ class ProductsController {
 
       final pointIdInt = int.tryParse(pointId);
       if (pointIdInt == null) {
-        return _createErrorResponse(400, 'Некорректный ID точки');
+        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
       }
 
       final products = await _productsService.getProductsByPointId(pointIdInt);
-      final responseBody = jsonEncode(products.map((p) => p.toJson()).toList());
+      final responseBody = jsonEncode(products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList());
       
       final response = Response.ok(
         responseBody,
@@ -405,8 +410,8 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения продуктов по ID точки', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'Ошибка: $e');
+      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРґСѓРєС‚РѕРІ РїРѕ ID С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
     }
   }
 
