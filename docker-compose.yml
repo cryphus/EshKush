@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -11,31 +11,18 @@ services:
       - "5433:5432"
     volumes:
       - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"] 
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    networks:
-      - app-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   backend:
-    build: 
-      context: ./backend
+    build:
+      context: ./server/backend
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -63,19 +50,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  frontend:
-    build: 
-      context: .
-      dockerfile: frontend/Dockerfile
-    ports:
-      - "3000:80"
-    volumes:
-      - ./backend:/app/backend
-    depends_on:
-      - backend
-    networks:
-      - app-network
-
   nginx:
     image: nginx:latest
     ports:
@@ -98,17 +72,27 @@ services:
     volumes:
       - redis_data:/data
 
-  swagger:
+  expo:
     build:
-      context: ./backend
-      dockerfile: swagger/Dockerfile
+      context: ./client
+      dockerfile: /Dockerfile
+    container_name: expo_app
+    command: npm run start
     ports:
-      - "8081:8080"
+      - "19000:19000"
+      - "19001:19001"
+      - "19002:19002"
+      - "19006:19006"
+    environment:
+      EXPO_DEVTOOLS_LISTEN_ADDRESS: "0.0.0.0"
+      REACT_NATIVE_PACKAGER_HOSTNAME: "0.0.0.0"
     volumes:
-      - ./backend/lib/config/swagger.json:/usr/share/nginx/html/swagger.json:ro
-      - ./backend/swagger/swagger-ui-master/Swagger.html:/usr/share/nginx/html/index.html:ro
+      - ./client:/app
+      - /app/node_modules
     networks:
       - app-network
+    stdin_open: true
+    tty: true
     restart: unless-stopped
 
 networks:
