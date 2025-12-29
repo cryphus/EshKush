@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:16-alpine
     environment:
       - POSTGRES_DB=flutter_auth
       - POSTGRES_USER=postgres
@@ -22,8 +20,8 @@ services:
 
   backend:
     build:
-      context: ./server/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./backend/Dockerfile
     ports:
       - "8080:8080"
     expose:
@@ -71,29 +69,6 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-
-  expo:
-    build:
-      context: ./client
-      dockerfile: /Dockerfile
-    container_name: expo_app
-    command: npm run start
-    ports:
-      - "19000:19000"
-      - "19001:19001"
-      - "19002:19002"
-      - "19006:19006"
-    environment:
-      EXPO_DEVTOOLS_LISTEN_ADDRESS: "0.0.0.0"
-      REACT_NATIVE_PACKAGER_HOSTNAME: "0.0.0.0"
-    volumes:
-      - ./client:/app
-      - /app/node_modules
-    networks:
-      - app-network
-    stdin_open: true
-    tty: true
-    restart: unless-stopped
 
 networks:
   app-network:
