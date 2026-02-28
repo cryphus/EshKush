@@ -1,11 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:eshkush/screens/MainScreen.dart';
 import 'package:eshkush/screens/ProductPage.dart';
+import 'package:eshkush/screens/PhoneAuthScreen.dart';
+import 'package:eshkush/screens/partner/PartnerScreen.dart';
 import 'package:eshkush/theme/colors.dart';
-import 'package:flutter/material.dart';
+import 'package:eshkush/state/app_state.dart';
 import 'screens/AuthScreen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppState().initialize();
   runApp(const EshKush());
 }
 
@@ -14,8 +18,11 @@ class EshKush extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final initialRoute = AppState().accessToken != null ? '/main' : '/auth';
+
     return MaterialApp(
       title: 'EshKush',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.green,
         fontFamily: 'stolzl',
@@ -39,18 +46,19 @@ class EshKush extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: '/auth',
+      initialRoute: initialRoute,
       routes: {
         '/auth': (context) => const AuthScreen(),
         '/main': (context) => const MainScreen(),
-        // '/registration': (context) => const RegistrationScreen(),
+        '/phone_auth': (context) => const PhoneAuthScreen(),
+        '/partner': (context) => const PartnerScreen(),
         '/product': (context) => ProductPage(
               data: ModalRoute.of(context)?.settings.arguments
                   as Map<String, dynamic>,
             ),
       },
       onGenerateRoute: (settings) {
-        if (settings.name?.startsWith('tg://eshkush/auth/telegram') ?? false) {
+        if (settings.name?.startsWith('eshkush://auth/telegram') ?? false) {
           return MaterialPageRoute(
             builder: (context) => const AuthScreen(),
             settings: settings,

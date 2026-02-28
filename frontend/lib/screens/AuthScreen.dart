@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/FrontendAuthService.dart';
 import '../services/TelegramAuthService.dart';
+import '../state/app_state.dart';
 import 'RegistrationScreen.dart';
 import 'dart:async';
 import '../widgets/buttons/auth_button.dart';
@@ -46,13 +46,12 @@ class _AuthScreenState extends State<AuthScreen> {
         await _telegramAuthService.handleDeepLink(context, uri.toString());
       }
     } catch (e) {
-      print('Deep link check error: $e');
+      // Ignore deep link errors silently
     }
   }
 
   bool _isValidTelegramDeepLink(Uri uri) {
-    return uri.scheme == 'eshkush' &&
-        uri.host == 'auth' &&
+    return uri.host == 'auth' &&
         uri.pathSegments.isNotEmpty &&
         uri.pathSegments[0] == 'telegram';
   }
@@ -72,7 +71,16 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         );
       } else {
-        Navigator.of(context).pushReplacementNamed('/home');
+        // Сохраняем данные пользователя в AppState
+        await AppState().loginWithData(
+          name: result['username'] ?? result['displayName'] ?? 'Пользователь',
+          email: result['email'],
+          role: result['role'] ?? 'user',
+          token: result['access_token'] ?? '',
+        );
+        if (context.mounted) {
+          Navigator.of(context).pushReplacementNamed('/main');
+        }
       }
     } catch (e) {
       _showErrorSnackbar(e.toString());
@@ -87,10 +95,22 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  void _handlePhoneAuth() {
+    Navigator.of(context).pushNamed('/phone_auth');
+  }
+
+  void _handleVKAuth() {
+    // VK OAuth — показываем заглушку
+    _showErrorSnackbar('Вход через VK скоро будет доступен');
+  }
+
   void _showErrorSnackbar(String message) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: $message')),
+        SnackBar(
+          content: Text('Ошибка: $message'),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
     }
   }
@@ -105,7 +125,7 @@ class _AuthScreenState extends State<AuthScreen> {
           child: Column(
             children: [
               const _AuthTitle(),
-              const _NetworkImageWidget(
+              const _HeroImage(
                 imageUrl: 'http://91.186.217.192/images/img_start.png',
               ),
               const Spacer(),
@@ -130,11 +150,11 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         AuthButton(
           iconPath: 'icons/vk.svg',
-          onPressed: () {},
+          onPressed: _handleVKAuth,
         ),
         AuthButton(
           iconPath: 'icons/phone.svg',
-          onPressed: () {},
+          onPressed: _handlePhoneAuth,
         ),
         AuthButton(
           iconPath: 'icons/telegram.svg',
@@ -151,8 +171,24 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
       child: SizedBox(
         width: double.infinity,
-        child: _GuestButton(
+        child: ElevatedButton(
           onPressed: () => Navigator.of(context).pushReplacementNamed('/main'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF6D9C65),
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+          child: const Text(
+            'Войти как гость',
+            style: TextStyle(
+              fontFamily: 'stolzl',
+              fontWeight: FontWeight.w500,
+              fontSize: 24,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
     );
@@ -184,52 +220,21 @@ class _AuthTitle extends StatelessWidget {
   }
 }
 
-class _NetworkImageWidget extends StatelessWidget {
+class _HeroImage extends StatelessWidget {
   final String imageUrl;
-  final double widthPercentage;
 
-  const _NetworkImageWidget({
-    required this.imageUrl,
-    this.widthPercentage = 0.8,
-  });
+  const _HeroImage({required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: MediaQuery.of(context).size.width * widthPercentage,
+      width: MediaQuery.of(context).size.width * 0.8,
       child: Image.network(
         imageUrl,
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
-      ),
-    );
-  }
-}
-
-class _GuestButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _GuestButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF6D9C65),
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        minimumSize: const Size(0, 30),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
-      ),
-      child: const Text(
-        'Войти как гость',
-        style: TextStyle(
-          fontFamily: 'stolzl',
-          fontWeight: FontWeight.w500,
-          fontSize: 24,
-          color: Colors.white,
+        errorBuilder: (context, error, stackTrace) => Padding(
+          padding: const EdgeInsets.all(32),
+          child: Icon(Icons.fastfood, size: 120, color: Colors.green.shade300),
         ),
       ),
     );

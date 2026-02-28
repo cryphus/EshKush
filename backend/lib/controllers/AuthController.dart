@@ -37,9 +37,9 @@ class AuthController {
 
       try {
         final data = jsonDecode(body);
-        
+
         final createDto = CreateUserDto.fromJson(data);
-        
+
         final result = await _authService.register(
           createDto.toEntityData(),
           userAgent: request.headers['user-agent'] ?? 'unknown',
@@ -81,9 +81,9 @@ class AuthController {
 
       try {
         final data = jsonDecode(body);
-        
+
         final loginDto = LoginDto.fromJson(data);
-        
+
         final result = await _authService.login(
           loginDto.username,
           loginDto.password,
@@ -154,4 +154,4 @@ class AuthController {
       'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
     };
   }
-} 
+}

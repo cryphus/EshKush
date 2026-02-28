@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
-from config import TELEGRAM_BOT_TOKEN, BOT_USERNAME, WEBHOOK_HOST, WEBHOOK_SSL_CERT
+from config import TELEGRAM_BOT_TOKEN, BOT_USERNAME, WEBHOOK_HOST, WEBHOOK_SSL_CERT, BACKEND_URL, FLASK_PORT
 from app.database import (
     init_db, create_auth_session, get_active_session,
     deactivate_session, create_user, update_user_phone,
@@ -65,13 +65,13 @@ def check_user():
     try:
         data = request.get_json()
         phone_number = data.get('phoneNumber')
-        
+
         if not phone_number:
             return jsonify({'error': 'Phone number is required'}), 400
-            
-        # Отправляем запрос в основное приложение для проверки пользователя
+
+        # Отправляем запрос в основной бекенд для проверки пользователя
         response = requests.post(
-            'http://localhost:5000/api/auth/check_user',
+            f'{BACKEND_URL}/auth/check_user',
             json={'phoneNumber': phone_number},
             timeout=5
         )
@@ -163,9 +163,9 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Проверяем существование пользователя в базе данных приложения
         try:
             # Отправляем запрос на проверку пользователя в приложении
-            logger.info("Отправка запроса на проверку пользователя")
+            logger.info("Отправка запроса на проверку пользователя в бекенд")
             response = requests.post(
-                'http://localhost:5000/api/auth/telegram/check_user',
+                f'{BACKEND_URL}/auth/check_user',
                 json={
                     'phoneNumber': phone_number,
                     'firstName': first_name,
@@ -192,8 +192,9 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # Кодируем данные в base64 для передачи через deep link
                 encoded_data = base64.b64encode(json.dumps(app_data).encode()).decode()
                 
-                # Формируем deep link
-                deep_link = f"http://localhost:5000/auth/telegram?data={encoded_data}"
+                # Формируем deep link в приложение (используем APP_URL из конфига)
+                from config import APP_URL
+                deep_link = f"{APP_URL}/auth/telegram?data={encoded_data}"
                 
                 logger.info(f"Создан deep link: {deep_link}")
                 
@@ -266,7 +267,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 'phoneNumber': user['phone_number']
             }
             
-            deep_link = f"http://localhost/#/auth/telegram?data={json.dumps(app_data)}"
+            from config import APP_URL
+            deep_link = f"{APP_URL}/#/auth/telegram?data={json.dumps(app_data)}"
             
             # Отправляем сообщение с deep link
             await query.message.reply_text(
@@ -295,7 +297,7 @@ def main():
         
         # Запуск API в отдельном потоке
         import threading
-        api_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000))
+        api_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=FLASK_PORT))
         api_thread.daemon = True
         api_thread.start()
         

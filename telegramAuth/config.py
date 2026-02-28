@@ -1,20 +1,35 @@
 import os
 from dotenv import load_dotenv
 
-# Загрузка переменных окружения из .env файла
+# python-dotenv читает .env из текущей директории.
+# Для разработки: cp .env.test .env
+# Для продакшна:  cp .env.production .env
 load_dotenv()
 
-# Telegram Bot Configuration
-TELEGRAM_BOT_TOKEN = "8194426358:AAGdJv_U8XkWgI9VAMcqNZ7MIwH1sTj5b90"
-BOT_USERNAME = "eshkush_bot"
+# ── Telegram Bot ──────────────────────────────────────────────────────────────
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+BOT_USERNAME = os.getenv('BOT_USERNAME', 'eshkush_bot')
 
-# Настройки для локальной разработки
-WEBHOOK_HOST = "localhost"
-WEBHOOK_SSL_CERT = None  # Для локальной разработки SSL не требуется
+# ── Webhook (только для продакшна) ────────────────────────────────────────────
+WEBHOOK_HOST = os.getenv('WEBHOOK_HOST', '')
+WEBHOOK_SSL_CERT = os.getenv('WEBHOOK_SSL_CERT') or None
 
-# Настройки базы данных
-DATABASE_PATH = "app/database.db"
+# ── База данных бота (SQLite) ─────────────────────────────────────────────────
+DATABASE_PATH = os.getenv('DATABASE_PATH', 'app/database.db')
 
-# Application Configuration
-APP_URL = os.getenv('APP_URL', 'http://localhost:5000')
-TOKEN_EXPIRATION_MINUTES = 10  # Время жизни токена авторизации в минутах
+# ── Сервисы ───────────────────────────────────────────────────────────────────
+# URL frontend-приложения для формирования deep link
+APP_URL = os.getenv('APP_URL', 'http://localhost:3000')
+# URL основного Dart Shelf backend
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8080')
+
+# ── Прочее ────────────────────────────────────────────────────────────────────
+TOKEN_EXPIRATION_MINUTES = int(os.getenv('TOKEN_EXPIRATION_MINUTES', '10'))
+FLASK_PORT = int(os.getenv('FLASK_PORT', '5000'))
+
+# ── Валидация ─────────────────────────────────────────────────────────────────
+if not TELEGRAM_BOT_TOKEN:
+    raise RuntimeError(
+        'TELEGRAM_BOT_TOKEN не задан. '
+        'Скопируй telegramAuth/.env.example в telegramAuth/.env и заполни.'
+    )
