@@ -1,5 +1,6 @@
 import 'package:shelf/shelf.dart';
-import '../utils/AuthUtilsWithCache.dart' as AuthCache;
+import '../utils/AuthUtils.dart';
+import '../repositories/UserSessionRepository.dart';
 
 class SecurityMiddleware {
   static final Map<String, List<DateTime>> _requests = {};
@@ -35,7 +36,7 @@ class SecurityMiddleware {
     };
   }
 
-  static Middleware checkJWT() {
+  static Middleware checkJWT(UserSessionRepository sessionRepository, {List<String> openPaths = const []}) {
     return (Handler innerHandler) {
       return (Request request) async {
         if (request.method == 'OPTIONS') {
@@ -46,28 +47,31 @@ class SecurityMiddleware {
           });
         }
 
+        final path = request.url.path;
+        if (path.isEmpty || openPaths.any((p) => path.startsWith(p))) {
+          return innerHandler(request);
+        }
+
         final token = request.headers['authorization']?.replaceAll('Bearer ', '');
         if (token == null) {
           return Response.unauthorized('Требуется авторизация');
         }
 
         try {
-          // Проверяем, не заблокирован ли токен
-          if (await AuthCache.AuthUtils.isTokenBlacklisted(token)) {
-            return Response.unauthorized('Токен заблокирован');
-          }
-
-          // Проверяем токен с кешированием
-          final payload = await AuthCache.AuthUtils.verifyTokenWithCache(token);
-          if (payload == null) {
-            return Response.unauthorized('Недействительный токен');
-          }
-
-          // Проверяем, не заблокирован ли пользователь
+          final payload = AuthUtils.verifyToken(token);
           final userId = payload['id'] as int;
-          if (await AuthCache.AuthUtils.isUserBlacklisted(userId)) {
-            return Response.unauthorized('Пользователь заблокирован');
+          final refreshJti = payload['rtj']?.toString() ?? '';
+          if (refreshJti.isEmpty) {
+            return Response.unauthorized('Токен без refresh jti');
           }
+
+          final refreshJtiHash = AuthUtils.hashRefreshJti(refreshJti);
+          final session = await sessionRepository.findActiveByRefreshJtiHash(refreshJtiHash);
+          if (session == null || session.userId != userId) {
+            return Response.unauthorized('Сессия недействительна');
+          }
+
+          sessionRepository.updateLastActive(session.id);
 
           final modifiedRequest = request.change(context: {
             'user': payload,

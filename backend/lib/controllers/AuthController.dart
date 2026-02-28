@@ -1,4 +1,4 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/AuthService.dart';
@@ -7,6 +7,7 @@ import '../utils/RequestContextUtils.dart';
 import '../model/dto/requests/CreateUserDto.dart';
 import '../model/dto/requests/LoginDto.dart';
 import '../utils/ValidationUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class AuthController {
   final AuthService _authService;
@@ -30,7 +31,7 @@ class AuthController {
         request.method,
         request.url.path,
         request.headers,
-        body,
+        null,
         requestId: RequestContextUtils.getRequestId(request),
       );
 
@@ -39,7 +40,11 @@ class AuthController {
         
         final createDto = CreateUserDto.fromJson(data);
         
-        final result = await _authService.register(createDto.toEntityData());
+        final result = await _authService.register(
+          createDto.toEntityData(),
+          userAgent: request.headers['user-agent'] ?? 'unknown',
+          ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
+        );
 
         final response = Response.ok(
           jsonEncode(result),
@@ -49,25 +54,17 @@ class AuthController {
         await LoggingUtils.logResponse(
           response.statusCode,
           response.headers,
-          jsonEncode(result),
+          '[REDACTED]',
           requestId: RequestContextUtils.getRequestId(request),
         );
 
         return response;
       } on ValidationException catch (e) {
-        return Response(
-          400,
-          body: jsonEncode({'error': e.message}),
-          headers: _getCorsHeaders(),
-        );
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЂРµРіРёСЃС‚СЂР°С†РёРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(
-        400,
-        body: jsonEncode({'error': e.toString()}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка регистрации', e, requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -78,7 +75,7 @@ class AuthController {
         request.method,
         request.url.path,
         request.headers,
-        body,
+        null,
         requestId: RequestContextUtils.getRequestId(request),
       );
 
@@ -90,6 +87,8 @@ class AuthController {
         final result = await _authService.login(
           loginDto.username,
           loginDto.password,
+          userAgent: request.headers['user-agent'] ?? 'unknown',
+          ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
         );
 
         final response = Response.ok(
@@ -100,25 +99,17 @@ class AuthController {
         await LoggingUtils.logResponse(
           response.statusCode,
           response.headers,
-          jsonEncode(result),
+          '[REDACTED]',
           requestId: RequestContextUtils.getRequestId(request),
         );
 
         return response;
       } on ValidationException catch (e) {
-        return Response(
-          400,
-          body: jsonEncode({'error': e.message}),
-          headers: _getCorsHeaders(),
-        );
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РІС…РѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(
-        400,
-        body: jsonEncode({'error': e.toString()}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка входа', e, requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -129,7 +120,7 @@ class AuthController {
         request.method,
         request.url.path,
         request.headers,
-        body,
+        null,
         requestId: RequestContextUtils.getRequestId(request),
       );
 
@@ -144,18 +135,14 @@ class AuthController {
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        jsonEncode(result),
+        '[REDACTED]',
         requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚РѕРєРµРЅР°', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(
-        400,
-        body: jsonEncode({'error': e.toString()}),
-        headers: _getCorsHeaders(),
-      );
+      await LoggingUtils.logError('Ошибка обновления токена', e, requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 

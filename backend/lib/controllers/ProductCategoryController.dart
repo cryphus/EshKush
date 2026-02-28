@@ -1,9 +1,10 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ProductCategoryService.dart';
 import '../model/entities/ProductCategory.dart';
 import '../utils/ValidationUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class ProductCategoryController {
   final ProductCategoryService _service;
@@ -35,7 +36,7 @@ class ProductCategoryController {
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -50,7 +51,7 @@ class ProductCategoryController {
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -75,7 +76,7 @@ class ProductCategoryController {
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РєР°С‚РµРіРѕСЂРёРё: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -101,7 +102,7 @@ class ProductCategoryController {
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёРё: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -117,7 +118,7 @@ class ProductCategoryController {
       );
     } catch (e) {
       return Response(400,
-        body: jsonEncode({'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёРё: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }

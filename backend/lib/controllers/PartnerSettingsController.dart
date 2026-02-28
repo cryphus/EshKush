@@ -1,9 +1,10 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'dart:convert';
 import '../services/PartnerSettingsService.dart';
 import 'package:shelf_router/shelf_router.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class PartnerSettingsController {
   final PartnerSettingsService _service;
@@ -38,7 +39,7 @@ class PartnerSettingsController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -52,7 +53,7 @@ class PartnerSettingsController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -80,7 +81,7 @@ class PartnerSettingsController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РЅР°СЃС‚СЂРѕРµРє', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РЅР°СЃС‚СЂРѕРµРє: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -99,7 +100,7 @@ class PartnerSettingsController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -114,7 +115,7 @@ class PartnerSettingsController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 

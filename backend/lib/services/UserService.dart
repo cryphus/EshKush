@@ -1,6 +1,6 @@
 import '../repositories/UserRepository.dart';
 import '../model/entities/User.dart';
-import 'package:shared/enums/UserRole.dart';
+import '../model/enums/UserRole.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/ValidationUtils.dart';

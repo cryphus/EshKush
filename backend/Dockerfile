@@ -4,7 +4,6 @@ WORKDIR /app
 
 # Копирование shared пакета (должен быть на уровень выше для path: ../shared)
 COPY shared /shared
-
 COPY backend/pubspec.* ./
 
 RUN dart pub get

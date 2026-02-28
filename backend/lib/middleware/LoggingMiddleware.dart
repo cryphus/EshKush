@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/LoggingUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class LoggingMiddleware {
   static const int _maxLoggedBodyBytes = 50 * 1024; // 50KB
@@ -66,16 +67,18 @@ class LoggingMiddleware {
           response = await innerHandler(
             request.change(context: {...request.context, 'requestId': requestId}),
           );
-        } catch (e) {
-          // Централизованная обработка необработанных исключений
-          await LoggingUtils.logError('Unhandled exception', e, requestId: requestId);
-          final errorBody = {
-            'error': 'Internal Server Error',
-            'requestId': requestId,
-          };
-          response = Response.internalServerError(
-            body: jsonEncode(errorBody),
-            headers: {'Content-Type': 'application/json'},
+        } catch (e, stackTrace) {
+          await LoggingUtils.logError('Unhandled exception', e, requestId: requestId, stackTrace: stackTrace);
+          response = ErrorResponseUtils.errorResponse(
+            e,
+            requestId: requestId,
+            forceCode: ErrorCode.internalError,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+              'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
+            },
           );
         }
 

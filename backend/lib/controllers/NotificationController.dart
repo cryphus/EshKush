@@ -1,4 +1,4 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/NotificationService.dart';
@@ -7,6 +7,7 @@ import '../utils/AuthUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
 import '../utils/ValidationUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class NotificationController {
   final NotificationService _service;
@@ -55,7 +56,7 @@ class NotificationController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СѓРІРµРґРѕРјР»РµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё СѓРІРµРґРѕРјР»РµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -92,7 +93,7 @@ class NotificationController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СѓРІРµРґРѕРјР»РµРЅРёР№ РїРѕ С‚РёРїСѓ', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё СѓРІРµРґРѕРјР»РµРЅРёР№ РїРѕ С‚РёРїСѓ: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -124,7 +125,7 @@ class NotificationController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РЅРµРїСЂРѕС‡РёС‚Р°РЅРЅС‹С… СѓРІРµРґРѕРјР»РµРЅРёР№', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё РЅРµРїСЂРѕС‡РёС‚Р°РЅРЅС‹С… СѓРІРµРґРѕРјР»РµРЅРёР№: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -148,7 +149,7 @@ class NotificationController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕСЃР»РµРґРЅРёС… СѓРІРµРґРѕРјР»РµРЅРёР№', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё РїРѕСЃР»РµРґРЅРёС… СѓРІРµРґРѕРјР»РµРЅРёР№: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -184,7 +185,7 @@ class NotificationController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ СѓРІРµРґРѕРјР»РµРЅРёСЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -217,7 +218,7 @@ class NotificationController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїСЂРё РѕС‚РјРµС‚РєРµ СѓРІРµРґРѕРјР»РµРЅРёСЏ РєР°Рє РїСЂРѕС‡РёС‚Р°РЅРЅРѕРіРѕ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -250,7 +251,7 @@ class NotificationController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїСЂРё РѕС‚РјРµС‚РєРµ СѓРІРµРґРѕРјР»РµРЅРёСЏ РєР°Рє РѕС‚РїСЂР°РІР»РµРЅРЅРѕРіРѕ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }

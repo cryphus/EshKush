@@ -1,4 +1,4 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import '../services/OrderService.dart';
 import '../model/enums/OrderStatus.dart';
@@ -7,6 +7,7 @@ import '../utils/SafeLoggingUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
 import '../utils/ValidationUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 import '../model/dto/responses/OrderResponseDto.dart';
 import '../model/dto/requests/CreateOrderDto.dart';
 import '../utils/ValidationUtils.dart';
@@ -47,7 +48,7 @@ class OrderController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°РєР°Р·РѕРІ', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response.internalServerError(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
+      return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -78,7 +79,7 @@ class OrderController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°РєР°Р·РѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response.badRequest(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
+      return Response.badRequest(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -112,7 +113,7 @@ class OrderController {
       }
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response.badRequest(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
+      return Response.badRequest(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -142,7 +143,7 @@ class OrderController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ СЃС‚Р°С‚СѓСЃР° Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response.badRequest(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
+      return Response.badRequest(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -164,7 +165,7 @@ class OrderController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response.badRequest(body: jsonEncode({'error': e.toString()}), headers: _getCorsHeaders());
+      return Response.badRequest(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 

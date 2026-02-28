@@ -3,7 +3,7 @@ import '../../utils/AuthUtils.dart';
 import '../../utils/SafeLoggingUtils.dart';
 import '../../utils/PasswordFilter.dart';
 import '../../utils/ValidationUtils.dart';
-import 'package:shared/enums/UserRole.dart';
+import '../enums/UserRole.dart';
 import 'package:email_validator/email_validator.dart';
 
 class User {
@@ -42,7 +42,7 @@ class User {
   String get passwordHash => _password;
   
   bool verifyPassword(String password) {
-    return _password == AuthUtils.hashPassword(password);
+    return AuthUtils.verifyPassword(password, _password);
   }
 
   bool get isAdmin => role == UserRole.admin;

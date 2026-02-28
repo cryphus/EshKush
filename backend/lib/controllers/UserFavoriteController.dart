@@ -1,8 +1,9 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import '../services/UserFavoriteService.dart';
 import '../model/entities/UserFavorite.dart';
 import '../utils/AuthUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 import 'dart:convert';
 
 class UserFavoriteController {
@@ -32,7 +33,7 @@ class UserFavoriteController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': e.toString()}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -53,7 +54,7 @@ class UserFavoriteController {
       return Response.ok(jsonEncode({'isFavorite': result}), headers: {'content-type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': e.toString()}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -77,7 +78,7 @@ class UserFavoriteController {
       return Response.ok(jsonEncode(result.toJson()), headers: {'content-type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': e.toString()}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -98,7 +99,7 @@ class UserFavoriteController {
       return Response.ok(jsonEncode({'message': 'РњРµСЃС‚Рѕ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅРѕ РёР· РёР·Р±СЂР°РЅРЅРѕРіРѕ'}), headers: {'content-type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': e.toString()}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -114,7 +115,7 @@ class UserFavoriteController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: {'error': e.toString()}.toString(),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -135,7 +136,7 @@ class UserFavoriteController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': e.toString()}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -153,7 +154,7 @@ class UserFavoriteController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: {'error': e.toString()}.toString(),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -170,7 +171,7 @@ class UserFavoriteController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: {'error': e.toString()}.toString(),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -187,7 +188,7 @@ class UserFavoriteController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: {'error': e.toString()}.toString(),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }

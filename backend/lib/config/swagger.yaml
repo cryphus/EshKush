@@ -480,6 +480,7 @@ paths:
               required:
                 - username
                 - password
+                - password_confirm
                 - email
                 - number
               properties:
@@ -487,6 +488,10 @@ paths:
                   type: string
                 password:
                   type: string
+                  description: "Минимум 8 символов, заглавная и строчная буквы, цифра и спецсимвол"
+                password_confirm:
+                  type: string
+                  description: "Должен совпадать с password"
                 email:
                   type: string
                   format: email

@@ -1,7 +1,8 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/CityService.dart';
+import '../utils/ErrorResponseUtils.dart';
 import '../model/entities/City.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
@@ -24,7 +25,7 @@ class CityController {
         return resp;
       } catch (e) {
         await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РіРѕСЂРѕРґРѕРІ', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РіРѕСЂРѕРґРѕРІ: $e'}), headers: _getCorsHeaders());
+        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
       }
     });
 
@@ -44,7 +45,7 @@ class CityController {
         return resp;
       } catch (e) {
         await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РіРѕСЂРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РіРѕСЂРѕРґР°: $e'}), headers: _getCorsHeaders());
+        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
       }
     });
 
@@ -67,7 +68,7 @@ class CityController {
         return resp;
       } catch (e) {
         await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РіРѕСЂРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РіРѕСЂРѕРґР°: $e'}), headers: _getCorsHeaders());
+        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
       }
     });
 
@@ -86,7 +87,7 @@ class CityController {
         return resp;
       } catch (e) {
         await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РіРѕСЂРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РіРѕСЂРѕРґР°: $e'}), headers: _getCorsHeaders());
+        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
       }
     });
 
@@ -100,7 +101,7 @@ class CityController {
         return resp;
       } catch (e) {
         await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РіРѕСЂРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РіРѕСЂРѕРґР°: $e'}), headers: _getCorsHeaders());
+        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
       }
     });
 

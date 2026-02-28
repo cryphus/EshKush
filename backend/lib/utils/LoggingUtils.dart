@@ -2,6 +2,10 @@ import 'dart:convert';
 import 'SafeLoggingUtils.dart';
 import '../config/AppConfig.dart';
 
+/// Логирование запросов/ответов и ошибок.
+/// Рекомендация по безопасности: доступ к логам (файлы, stdout, система сбора логов)
+/// должен быть ограничен — только уполномоченный персонал (операторы, DevOps).
+/// Настройте права на файлы логов (например, chmod 0600) и политики доступа в среде развёртывания.
 class LoggingUtils {
   static Future<void> logRequest(String method, String path, Map<String, String> headers, String? body, {String? requestId}) async {
     final payload = {
@@ -30,15 +34,19 @@ class LoggingUtils {
     _print(payload);
   }
 
-  static Future<void> logError(String message, dynamic error, {String? requestId}) async {
+  /// Логирование исключений без секретов и PII: сообщение и стек санитизируются.
+  static Future<void> logError(String message, dynamic error, {String? requestId, StackTrace? stackTrace}) async {
+    final errStr = error != null ? SafeLoggingUtils.sanitizeString(error.toString()) : 'null';
+    final stackStr = (stackTrace ?? StackTrace.current).toString();
     final payload = {
       'ts': DateTime.now().toIso8601String(),
       'level': 'error',
       'event': 'error',
       'requestId': requestId,
       'message': message,
-      'error': error.toString(),
-      'stack': StackTrace.current.toString(),
+      'error': errStr,
+      'errorType': error != null ? error.runtimeType.toString() : null,
+      'stack': SafeLoggingUtils.sanitizeStackTrace(stackStr),
     };
     _print(payload);
   }

@@ -1,9 +1,10 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ChangesService.dart';
 import '../model/enums/EntityType.dart';
 import '../model/enums/ChangeType.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class ChangesController {
   final ChangesService _service;
@@ -34,7 +35,7 @@ class ChangesController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№ СЃСѓС‰РЅРѕСЃС‚Рё: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -60,7 +61,7 @@ class ChangesController {
     } catch (e) {
       print('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e');
       return Response.internalServerError(
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -80,7 +81,7 @@ class ChangesController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№ РїРѕ С‚РёРїСѓ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -96,7 +97,7 @@ class ChangesController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕСЃР»РµРґРЅРёС… РёР·РјРµРЅРµРЅРёР№: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -117,7 +118,7 @@ class ChangesController {
       );
     } catch (e) {
       return Response.internalServerError(
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РѕС‚РјРµРЅС‹ РёР·РјРµРЅРµРЅРёСЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: {'content-type': 'application/json'},
       );
     }

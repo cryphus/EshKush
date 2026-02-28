@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 class SafeLoggingUtils {
-  // Список полей, которые не должны попадать в логи
+  // Поля, которые не должны попадать в логи (пароли, токены, PII)
   static const List<String> _sensitiveFields = [
     'password',
     'Password',
     'PASSWORD',
+    'password_confirm',
+    'passwordConfirm',
     'pass',
     'Pass',
     'PASS',
@@ -18,20 +20,46 @@ class SafeLoggingUtils {
     'token',
     'Token',
     'TOKEN',
+    'access_token',
+    'accessToken',
+    'refresh_token',
+    'refreshToken',
     'key',
     'Key',
     'KEY',
     'auth',
     'Auth',
     'AUTH',
+    'authorization',
+    'Authorization',
     'credential',
     'Credential',
     'CREDENTIAL',
     'private',
     'Private',
     'PRIVATE',
-    'ssn', 'card', 'cvv', 'iban', 'pan',
-    'authorization', 'cookie', 'set-cookie', 'x-api-key',
+    'email',
+    'Email',
+    'EMAIL',
+    'number',
+    'Number',
+    'number_confirm',
+    'phone',
+    'Phone',
+    'phone_number',
+    'phoneNumber',
+    'first_name',
+    'firstName',
+    'last_name',
+    'lastName',
+    'ssn',
+    'card',
+    'cvv',
+    'iban',
+    'pan',
+    'cookie',
+    'set-cookie',
+    'x-api-key',
   ];
 
   /// Создает безопасную копию данных для логирования, скрывая чувствительные поля
@@ -97,6 +125,18 @@ class SafeLoggingUtils {
     }
     
     return sanitized;
+  }
+
+  /// Санитизация стектрейса: убирает абсолютные пути (секреты, PII в путях).
+  static String sanitizeStackTrace(String stackTrace) {
+    if (stackTrace.isEmpty) return stackTrace;
+    String s = stackTrace;
+    // Windows: C:\Users\..., D:\project\...
+    s = s.replaceAll(RegExp(r'[A-Za-z]:\\[^\s]+', caseSensitive: false), '[PATH]');
+    // Unix/URL: /home/..., /var/..., file:///...
+    s = s.replaceAll(RegExp(r'/(?:home|var|tmp|usr|Users|root)/[^\s]*', caseSensitive: false), '[PATH]');
+    s = s.replaceAll(RegExp(r'file://[^\s]+', caseSensitive: false), '[PATH]');
+    return s;
   }
 }
 

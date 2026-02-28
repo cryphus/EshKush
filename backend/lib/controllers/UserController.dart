@@ -1,4 +1,4 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/UserService.dart';
@@ -9,6 +9,7 @@ import '../utils/RequestContextUtils.dart';
 import '../model/dto/responses/UserResponseDto.dart';
 import '../model/dto/requests/UpdateUserDto.dart';
 import '../utils/ValidationUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class UserController {
   final UserService _userService;
@@ -42,7 +43,7 @@ class UserController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕС„РёР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -98,7 +99,7 @@ class UserController {
        }
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ: $e'}), headers: _getCorsHeaders());
+      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
     }
   }
 
@@ -130,7 +131,7 @@ class UserController {
       return resp;
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -164,7 +165,7 @@ class UserController {
       return resp;
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -198,7 +199,7 @@ class UserController {
       return resp;
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }

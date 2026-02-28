@@ -13,6 +13,7 @@ class UserSessions {
   String? deviceId;
   String? location;
   String? token;
+  String refreshJtiHash;
   bool isActive;
 
   UserSessions({
@@ -27,10 +28,12 @@ class UserSessions {
     this.deviceId,
     this.location,
     this.token,
+    required this.refreshJtiHash,
     this.isActive = true,
   }) {
     if (userAgent.isEmpty) throw ArgumentError('User agent cannot be empty');
     if (ipAddress.isEmpty) throw ArgumentError('IP address cannot be empty');
+    if (refreshJtiHash.isEmpty) throw ArgumentError('Refresh JTI hash cannot be empty');
     if (expiresAt.isBefore(createdAt)) {
       throw ArgumentError('Expiration date cannot be before creation date');
     }
@@ -59,6 +62,7 @@ class UserSessions {
       deviceId: (json['deviceId'] ?? json['device_id']) as String?,
       location: json['location'] as String?,
       token: json['token'] as String?,
+      refreshJtiHash: (json['refreshJtiHash'] ?? json['refresh_jti_hash'] ?? '').toString(),
       isActive: (json['isActive'] as bool?) ?? (statusStr == 'active'),
     );
   }
@@ -76,6 +80,7 @@ class UserSessions {
       'deviceId': deviceId,
       'location': location,
       'token': token,
+      'refreshJtiHash': refreshJtiHash,
       'isActive': isActive,
     };
   }

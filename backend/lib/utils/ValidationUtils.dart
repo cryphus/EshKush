@@ -1,6 +1,6 @@
 import 'package:html_unescape/html_unescape.dart';
 import 'SafeLoggingUtils.dart';
-import 'package:shared/enums/UserRole.dart';
+import '../model/enums/UserRole.dart';
 
 class ValidationUtils {
   static final _htmlUnescape = HtmlUnescape();
@@ -946,11 +946,9 @@ class UserValidationUtils {
     return RegExp(r'^[a-zA-Z0-9_]{3,30}$').hasMatch(username);
   }
   
-  /// Валидация пароля
+  /// Валидация пароля (строгие требования: 8+ символов, верхний/нижний регистр, цифра, спецсимвол)
   static bool isValidPassword(String password) {
-    if (password.isEmpty) return false;
-    // Пароль должен быть минимум 6 символов
-    return password.length >= 6;
+    return ValidationUtils.isValidPassword(password);
   }
   
   /// Полная валидация данных пользователя для регистрации
@@ -965,10 +963,19 @@ class UserValidationUtils {
     }
     
     // Password
-    if (data['password'] == null || data['password'].toString().isEmpty) {
+    final password = data['password']?.toString() ?? '';
+    if (password.isEmpty) {
       errors['password'] = 'Пароль обязателен';
-    } else if (!isValidPassword(data['password'].toString())) {
-      errors['password'] = 'Пароль должен содержать минимум 6 символов';
+    } else if (!isValidPassword(password)) {
+      errors['password'] = 'Пароль: минимум 8 символов, заглавная и строчная буквы, цифра и спецсимвол (!@#\$%^&*(),.?":{}|<>).';
+    }
+    
+    // Password confirm
+    final passwordConfirm = data['password_confirm']?.toString() ?? data['passwordConfirm']?.toString() ?? '';
+    if (passwordConfirm.isEmpty) {
+      errors['password_confirm'] = 'Подтверждение пароля обязательно';
+    } else if (password != passwordConfirm) {
+      errors['password_confirm'] = 'Пароли не совпадают';
     }
     
     // Email

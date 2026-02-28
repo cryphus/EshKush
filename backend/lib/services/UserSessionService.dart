@@ -1,6 +1,5 @@
 import '../repositories/UserSessionRepository.dart';
 import '../model/entities/UserSessions.dart';
-import '../model/enums/SessionStatus.dart';
 
 class UserSessionService {
   final UserSessionRepository _sessionRepository;
@@ -45,6 +44,7 @@ class UserSessionService {
     required int userId,
     required String userAgent,
     required String ipAddress,
+    required String refreshJtiHash,
     String? deviceId,
     String? location,
     String? token,
@@ -63,6 +63,7 @@ class UserSessionService {
         deviceId: deviceId,
         location: location,
         token: token,
+        refreshJtiHash: refreshJtiHash,
       );
       return await _sessionRepository.create(session);
     } catch (e) {
@@ -120,8 +121,13 @@ class UserSessionService {
 
   Future<void> terminateSession(UserSessions session) async {
     try {
+      final jtiHash = session.refreshJtiHash;
       session.terminate();
       await _sessionRepository.update(session);
+      await _sessionRepository.addToBlacklist(
+        jtiHash,
+        DateTime.now().add(const Duration(days: 8)),
+      );
     } catch (e) {
       print('Ошибка завершения сессии: $e');
       rethrow;

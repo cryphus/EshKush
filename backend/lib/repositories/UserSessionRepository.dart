@@ -1,6 +1,5 @@
 import 'package:postgres/postgres.dart';
 import '../model/entities/UserSessions.dart';
-import '../model/enums/SessionStatus.dart';
 
 class UserSessionRepository {
   final PostgreSQLConnection _connection;
@@ -59,10 +58,10 @@ class UserSessionRepository {
       final result = await queryOne(
         '''
         INSERT INTO user_sessions (
-          user_id, token, device_info, ip_address, status, expires_at, created_at
+          user_id, token, refresh_jti_hash, device_info, ip_address, status, expires_at, created_at
         )
         VALUES (
-          @userId, @token, @deviceInfo, @ipAddress, @status::session_status, @expiresAt, @createdAt
+          @userId, @token, @refreshJtiHash, @deviceInfo, @ipAddress, @status::session_status, @expiresAt, @createdAt
         )
         RETURNING *
         ''',
@@ -76,6 +75,7 @@ class UserSessionRepository {
           'token': (session.token != null && session.token!.length > 255)
               ? session.token!.substring(0, 255)
               : session.token,
+          'refreshJtiHash': session.refreshJtiHash,
         },
       );
       if (result == null) {
@@ -95,7 +95,10 @@ class UserSessionRepository {
         UPDATE user_sessions 
         SET 
           expires_at = @expiresAt,
-          status = @status::session_status
+          status = @status::session_status,
+          refresh_jti_hash = @refreshJtiHash,
+          last_active = @lastActive,
+          is_active = @isActive
         WHERE id = @id
         RETURNING *
         ''',
@@ -103,6 +106,9 @@ class UserSessionRepository {
           'id': session.id,
           'expiresAt': session.expiresAt,
           'status': session.status.toString().split('.').last,
+          'refreshJtiHash': session.refreshJtiHash,
+          'lastActive': session.lastActive,
+          'isActive': session.isActive,
         },
       );
       if (result == null) {
@@ -130,6 +136,81 @@ class UserSessionRepository {
     }
   }
 
+  /// Проверка, что jti в blacklist (отозван при logout/terminate).
+  Future<bool> isBlacklisted(String jtiHash) async {
+    try {
+      final result = await queryOne(
+        '''
+        SELECT 1 FROM token_blacklist
+        WHERE jti_hash = @jtiHash AND expires_at > NOW()
+        LIMIT 1
+        ''',
+        params: {'jtiHash': jtiHash},
+      );
+      return result != null;
+    } catch (e) {
+      print('Ошибка проверки blacklist: $e');
+      return true;
+    }
+  }
+
+  Future<void> addToBlacklist(String jtiHash, DateTime expiresAt) async {
+    try {
+      await queryOne(
+        '''
+        INSERT INTO token_blacklist (jti_hash, expires_at)
+        VALUES (@jtiHash, @expiresAt)
+        ON CONFLICT (jti_hash) DO UPDATE SET expires_at = EXCLUDED.expires_at
+        RETURNING jti_hash
+        ''',
+        params: {'jtiHash': jtiHash, 'expiresAt': expiresAt},
+      );
+    } catch (e) {
+      print('Ошибка добавления в blacklist: $e');
+    }
+  }
+
+  Future<UserSessions?> findActiveByRefreshJtiHash(String refreshJtiHash) async {
+    try {
+      if (await isBlacklisted(refreshJtiHash)) return null;
+      final result = await queryOne(
+        '''
+        SELECT * FROM user_sessions
+        WHERE refresh_jti_hash = @refreshJtiHash
+          AND status = 'active'
+          AND is_active = TRUE
+          AND expires_at > NOW()
+        ORDER BY created_at DESC
+        LIMIT 1
+        ''',
+        params: {'refreshJtiHash': refreshJtiHash},
+      );
+      return result == null ? null : UserSessions.fromJson(result);
+    } catch (e) {
+      print('Ошибка поиска сессии по refresh_jti_hash: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> revokeByRefreshJtiHash(String refreshJtiHash) async {
+    try {
+      await queryOne(
+        '''
+        UPDATE user_sessions
+        SET status = 'revoked', is_active = FALSE, expires_at = NOW()
+        WHERE refresh_jti_hash = @refreshJtiHash
+        RETURNING id
+        ''',
+        params: {'refreshJtiHash': refreshJtiHash},
+      );
+      final blacklistExpires = DateTime.now().add(const Duration(days: 8));
+      await addToBlacklist(refreshJtiHash, blacklistExpires);
+    } catch (e) {
+      print('Ошибка ревокации сессии: $e');
+      rethrow;
+    }
+  }
+
   Future<List<UserSessions>> getActiveSessions() async {
     try {
       final results = await query(
@@ -144,17 +225,67 @@ class UserSessionRepository {
 
   Future<void> terminateAllUserSessions(int userId) async {
     try {
+      final sessions = await query(
+        '''
+        SELECT refresh_jti_hash FROM user_sessions
+        WHERE user_id = @userId AND status = 'active' AND is_active = TRUE
+        ''',
+        params: {'userId': userId},
+      );
+      final blacklistExpires = DateTime.now().add(const Duration(days: 8));
+      for (final row in sessions) {
+        final hash = row['refresh_jti_hash']?.toString();
+        if (hash != null && hash.isNotEmpty) await addToBlacklist(hash, blacklistExpires);
+      }
       await queryOne(
         '''
-        UPDATE user_sessions 
-        SET status = 'revoked'::session_status
+        UPDATE user_sessions
+        SET status = 'revoked'::session_status, is_active = FALSE, expires_at = NOW()
         WHERE user_id = @userId AND status = 'active'
+        RETURNING id
         ''',
         params: {'userId': userId},
       );
     } catch (e) {
       print('Ошибка завершения всех сессий пользователя: $e');
       rethrow;
+    }
+  }
+
+  Future<void> updateLastActive(int sessionId) async {
+    try {
+      await queryOne(
+        '''
+        UPDATE user_sessions SET last_active = NOW() WHERE id = @id
+        RETURNING id
+        ''',
+        params: {'id': sessionId},
+      );
+    } catch (e) {
+      print('Ошибка обновления last_active: $e');
+    }
+  }
+
+  /// Удаление истёкших сессий (TTL/auto-expire cleanup).
+  Future<int> cleanupExpiredSessions() async {
+    try {
+      return await _connection.execute(
+        'DELETE FROM user_sessions WHERE expires_at < NOW()',
+      );
+    } catch (e) {
+      print('Ошибка очистки истёкших сессий: $e');
+      return 0;
+    }
+  }
+
+  /// Удаление записей из blacklist с истёкшим expires_at.
+  Future<void> cleanupExpiredBlacklist() async {
+    try {
+      await _connection.execute(
+        'DELETE FROM token_blacklist WHERE expires_at < NOW()',
+      );
+    } catch (e) {
+      print('Ошибка очистки blacklist: $e');
     }
   }
 } 

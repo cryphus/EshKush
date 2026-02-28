@@ -65,6 +65,7 @@ DROP TABLE IF EXISTS action_logs CASCADE;
 DROP TABLE IF EXISTS payment_transactions CASCADE;
 DROP TABLE IF EXISTS partner_statistics CASCADE;
 DROP TABLE IF EXISTS partner_settings CASCADE;
+DROP TABLE IF EXISTS token_blacklist CASCADE;
 DROP TABLE IF EXISTS user_sessions CASCADE;
 DROP TABLE IF EXISTS profiles CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
@@ -248,6 +249,7 @@ CREATE TABLE user_sessions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token VARCHAR(255) NOT NULL,
+    refresh_jti_hash VARCHAR(64) NOT NULL,
     device_info TEXT,
     ip_address VARCHAR(45),
     status session_status NOT NULL DEFAULT 'active',
@@ -256,6 +258,15 @@ CREATE TABLE user_sessions (
     last_active TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+-- Blacklist отозванных JWT jti (logout/terminate). Создана для отзыва токенов.
+CREATE TABLE token_blacklist (
+    jti_hash VARCHAR(64) PRIMARY KEY,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS token_blacklist_expires_at_idx ON token_blacklist(expires_at);
 
 CREATE TABLE partner_settings (
     id SERIAL PRIMARY KEY,
@@ -417,6 +428,8 @@ CREATE INDEX IF NOT EXISTS notifications_is_read_idx ON notifications(is_read);
 CREATE INDEX IF NOT EXISTS profiles_user_id_idx ON profiles(user_id);
 CREATE INDEX IF NOT EXISTS user_sessions_user_id_idx ON user_sessions(user_id);
 CREATE INDEX IF NOT EXISTS user_sessions_token_idx ON user_sessions(token);
+CREATE INDEX IF NOT EXISTS user_sessions_refresh_jti_hash_idx ON user_sessions(refresh_jti_hash);
+CREATE INDEX IF NOT EXISTS user_sessions_expires_at_idx ON user_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS partner_settings_partner_id_idx ON partner_settings(partner_id);
 CREATE INDEX IF NOT EXISTS partner_statistics_partner_id_idx ON partner_statistics(partner_id);
 CREATE INDEX IF NOT EXISTS payment_transactions_order_id_idx ON payment_transactions(order_id);

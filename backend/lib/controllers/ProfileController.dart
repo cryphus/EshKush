@@ -1,4 +1,4 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ProfileService.dart';
@@ -10,6 +10,7 @@ import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
 import '../model/dto/responses/ProfileResponseDto.dart';
 import '../model/dto/requests/CreateProfileDto.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class ProfileController {
   final ProfileService _profileService;
@@ -74,7 +75,7 @@ class ProfileController {
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -131,7 +132,7 @@ class ProfileController {
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕС„РёР»СЏ РїРѕ ID', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -199,7 +200,7 @@ class ProfileController {
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРѕС„РёР»СЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -244,7 +245,7 @@ class ProfileController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -293,7 +294,7 @@ class ProfileController {
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
       headers: _getCorsHeaders(),
     );
     }

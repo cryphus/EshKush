@@ -1,10 +1,11 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/UserSessionService.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class UserSessionController {
   final UserSessionService _sessionService;
@@ -43,7 +44,7 @@ class UserSessionController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚РµРєСѓС‰РµР№ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -67,7 +68,7 @@ class UserSessionController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃРїРёСЃРєР° СЃРµСЃСЃРёР№', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -86,14 +87,19 @@ class UserSessionController {
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
       final data = jsonDecode(body);
+      final refreshJti = payload['rtj']?.toString() ?? '';
+      if (refreshJti.isEmpty) {
+        return Response(401, body: jsonEncode({'error': 'Требуется refresh jti'}), headers: _getCorsHeaders());
+      }
       
       final session = await _sessionService.createSession(
         userId: payload['id'],
-        userAgent: request.headers['user-agent'] ?? '',
-        ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? '',
+        userAgent: request.headers['user-agent'] ?? 'unknown',
+        ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
         deviceId: data['device_id'],
         location: data['location'],
         token: token,
+        refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
       );
 
       final out = jsonEncode(session.toJson());
@@ -102,7 +108,7 @@ class UserSessionController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -130,7 +136,7 @@ class UserSessionController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -154,7 +160,7 @@ class UserSessionController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ РІСЃРµС… СЃРµСЃСЃРёР№', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -193,7 +199,7 @@ class UserSessionController {
       return resp;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїСЂРѕРґР»РµРЅРёСЏ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': 'РћС€РёР±РєР°: $e'}), headers: _getCorsHeaders());
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 

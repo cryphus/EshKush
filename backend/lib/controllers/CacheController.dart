@@ -1,8 +1,9 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/CacheService.dart';
 import '../utils/AuthUtilsWithCache.dart' as AuthCache;
+import '../utils/ErrorResponseUtils.dart';
 
 class CacheController {
   final CacheService _cacheService;
@@ -55,7 +56,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё РєРµС€Р°: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -76,7 +77,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РєРµС€Р°: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -98,7 +99,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РєРµС€Р° РїРѕ РїР°С‚С‚РµСЂРЅСѓ: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -121,7 +122,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р·РЅР°С‡РµРЅРёСЏ: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -149,7 +150,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё Р·РЅР°С‡РµРЅРёСЏ: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -170,7 +171,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ Р·РЅР°С‡РµРЅРёСЏ: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -192,7 +193,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёСЏ РєР»СЋС‡Р°: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -215,7 +216,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ TTL: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -240,7 +241,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё TTL: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -261,7 +262,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё С‚РѕРєРµРЅРѕРІ: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -287,7 +288,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РёРЅРІР°Р»РёРґР°С†РёРё С‚РѕРєРµРЅР°: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -312,7 +313,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РёРЅРІР°Р»РёРґР°С†РёРё С‚РѕРєРµРЅРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );
@@ -334,7 +335,7 @@ class CacheController {
       return Response.internalServerError(
         body: jsonEncode({
           'success': false,
-          'error': 'РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РёСЃС‚РµРєС€РёС… С‚РѕРєРµРЅРѕРІ: $e',
+          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
         }),
         headers: {'Content-Type': 'application/json'},
       );

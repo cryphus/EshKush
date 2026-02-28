@@ -1,10 +1,11 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ActionLogService.dart';
 import '../model/enums/ActionType.dart';
 import '../model/enums/EntityType.dart';
 import '../utils/AuthUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class ActionLogController {
   final ActionLogService _service;
@@ -48,7 +49,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РѕРіРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -85,7 +86,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РѕРіРѕРІ СЃСѓС‰РЅРѕСЃС‚Рё: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -114,7 +115,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РѕРіРѕРІ РїРѕ С‚РёРїСѓ РґРµР№СЃС‚РІРёСЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -139,7 +140,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕСЃР»РµРґРЅРёС… Р»РѕРіРѕРІ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -195,7 +196,7 @@ class ActionLogController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ Р»РѕРіР° РґРµР№СЃС‚РІРёСЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }

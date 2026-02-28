@@ -1,7 +1,8 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ErrorLogsService.dart';
+import '../utils/ErrorResponseUtils.dart';
 import '../model/enums/ErrorSeverity.dart';
 import '../utils/AuthUtils.dart';
 
@@ -45,7 +46,7 @@ class ErrorLogsController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РѕРіРѕРІ РїРѕ СѓСЂРѕРІРЅСЋ СЃРµСЂСЊРµР·РЅРѕСЃС‚Рё: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -70,7 +71,7 @@ class ErrorLogsController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РѕРіРѕРІ РїРѕ РјРѕРґСѓР»СЋ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -103,7 +104,7 @@ class ErrorLogsController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РѕРіРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -127,7 +128,7 @@ class ErrorLogsController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РЅРµСЂРµС€РµРЅРЅС‹С… Р»РѕРіРѕРІ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -152,7 +153,7 @@ class ErrorLogsController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕСЃР»РµРґРЅРёС… Р»РѕРіРѕРІ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -186,7 +187,7 @@ class ErrorLogsController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РѕС‚РјРµС‚РєРё Р»РѕРіР° РєР°Рє СЂРµС€РµРЅРЅРѕРіРѕ: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }
@@ -234,7 +235,7 @@ class ErrorLogsController {
       );
     } catch (e) {
       return Response(400, 
-        body: jsonEncode({'error': 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ Р»РѕРіР° РѕС€РёР±РєРё: $e'}),
+        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
         headers: _getCorsHeaders(),
       );
     }

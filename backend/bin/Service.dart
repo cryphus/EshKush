@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:shelf/shelf.dart';
@@ -7,6 +8,8 @@ import 'package:backend/database/Database.dart';
 import 'package:backend/services/AuthService.dart';
 import 'package:backend/repositories/UserRepository.dart';
 import 'package:backend/utils/AuthUtils.dart';
+import 'package:backend/model/entities/UserSessions.dart';
+import 'package:backend/middleware/SecurityMiddleware.dart';
 import 'package:backend/services/CacheService.dart';
 import 'package:backend/config/AppConfig.dart';
 // import 'package:path/path.dart' as p;
@@ -93,7 +96,8 @@ void main() async {
     
     final db = await Database.instance;
     final userRepository = UserRepository(db.connection);
-    final authService = AuthService(userRepository);
+    final userSessionRepository = UserSessionRepository(db.connection);
+    final authService = AuthService(userRepository, userSessionRepository);
     final changesRepository = ChangesRepository(db.connection);
     final changesService = ChangesService(changesRepository);
     final userService = UserService(userRepository, cacheService);
@@ -105,7 +109,7 @@ void main() async {
     );
     final userSessionController = UserSessionController(
       UserSessionService(
-        UserSessionRepository(db.connection),
+        userSessionRepository,
       ),
     );
     final pointRepository = PointRepository(db.connection);
@@ -267,7 +271,28 @@ void main() async {
         
         
         if (user != null) {
-          final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
+          final bundle = AuthUtils.generateTokenBundle(user.id, user.role.name.toLowerCase());
+          final refreshJti = bundle['refresh_jti'] as String;
+          final refreshExpiresAt = bundle['refresh_expires_at'] as DateTime;
+
+          await userSessionRepository.create(
+            UserSessions(
+              id: 0,
+              userId: user.id,
+              createdAt: DateTime.now(),
+              expiresAt: refreshExpiresAt,
+              lastActive: DateTime.now(),
+              userAgent: request.headers['user-agent'] ?? 'unknown',
+              ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
+              token: bundle['access_token'] as String,
+              refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
+            ),
+          );
+
+          final tokens = {
+            'access_token': bundle['access_token'],
+            'refresh_token': bundle['refresh_token'],
+          };
           return Response.ok(
             jsonEncode({
               ...tokens,
@@ -301,7 +326,11 @@ void main() async {
         final body = await request.readAsString();
         final data = jsonDecode(body);
         
-        final result = await authService.register(data);
+        final result = await authService.register(
+          data,
+          userAgent: request.headers['user-agent'] ?? 'unknown',
+          ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
+        );
         
         return Response.ok(
           jsonEncode(result),
@@ -336,6 +365,8 @@ void main() async {
         final result = await authService.login(
           data['username'],
           data['password'],
+          userAgent: request.headers['user-agent'] ?? 'unknown',
+          ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
         );
         return Response.ok(jsonEncode(result));
       } catch (e) {
@@ -449,11 +480,25 @@ void main() async {
 
     final handler = const Pipeline()
         .addMiddleware(corsHandler)
+        .addMiddleware(SecurityMiddleware.checkJWT(
+          userSessionRepository,
+          openPaths: ['auth', 'login', 'swagger'],
+        ))
         .addMiddleware(LoggingMiddleware.requestResponseLogger())
         .addHandler(app.call);
 
     final server = await io.serve(handler, '0.0.0.0', 8080);
     print('Сервер запущен на http://localhost:${server.port}');
+
+    Timer.periodic(const Duration(minutes: 15), (_) async {
+      try {
+        final n = await userSessionRepository.cleanupExpiredSessions();
+        await userSessionRepository.cleanupExpiredBlacklist();
+        if (n > 0) print('Очистка сессий: удалено $n истёкших записей');
+      } catch (e) {
+        print('Ошибка периодической очистки сессий: $e');
+      }
+    });
   } catch (e, stackTrace) {
     print('Ошибка запуска сервера: $e');
     print('Stack trace: $stackTrace');

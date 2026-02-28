@@ -1,4 +1,4 @@
-﻿import '../../../utils/AuthUtils.dart';
+import '../../../utils/AuthUtils.dart';
 import '../../../utils/ValidationUtils.dart';
 
 bool _isValidPhoneNumber(String phone) {
@@ -46,8 +46,19 @@ class CreateUserDto {
     }
 
     final password = json['password']?.toString() ?? '';
-    if (password.isEmpty || password.length < 6) {
-      errors.add('Пароль должен быть минимум 6 символов');
+    if (password.isEmpty) {
+      errors.add('Пароль обязателен');
+    } else if (!ValidationUtils.isValidPassword(password)) {
+      errors.add(
+        'Пароль: минимум 8 символов, заглавная и строчная буквы, цифра и спецсимвол (!@#\$%^&*(),.?":{}|<>).',
+      );
+    }
+
+    final passwordConfirm = json['password_confirm']?.toString() ?? json['passwordConfirm']?.toString() ?? '';
+    if (passwordConfirm.isEmpty) {
+      errors.add('Подтверждение пароля обязательно');
+    } else if (password != passwordConfirm) {
+      errors.add('Пароли не совпадают');
     }
 
     final phoneNumber = json['phone_number']?.toString().trim() ?? 

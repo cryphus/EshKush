@@ -1,16 +1,23 @@
 import '../repositories/UserRepository.dart';
+import '../repositories/UserSessionRepository.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/ValidationUtils.dart';
-import '../model/entities/User.dart';
-import 'package:shared/enums/UserRole.dart';
+import '../model/entities/UserSessions.dart';
+import '../model/enums/UserRole.dart';
 
 class AuthService {
   final UserRepository _userRepository;
+  final UserSessionRepository _sessionRepository;
   
-  AuthService(this._userRepository);
+  AuthService(this._userRepository, this._sessionRepository);
 
-  Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> register(
+    Map<String, dynamic> data, {
+    String userAgent = 'unknown',
+    String ipAddress = 'unknown',
+    String? deviceId,
+  }) async {
     try {
       SafeLoggingUtils.logData('AuthService.register - входные данные', data);
       
@@ -44,10 +51,28 @@ class AuthService {
 
       final user = await _userRepository.createUser(data);
 
-      final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
+      final bundle = AuthUtils.generateTokenBundle(user.id, user.role.name.toLowerCase());
+      final refreshJti = bundle['refresh_jti'] as String;
+      final refreshExpiresAt = bundle['refresh_expires_at'] as DateTime;
+
+      await _sessionRepository.create(
+        UserSessions(
+          id: 0,
+          userId: user.id,
+          createdAt: DateTime.now(),
+          expiresAt: refreshExpiresAt,
+          lastActive: DateTime.now(),
+          userAgent: userAgent,
+          ipAddress: ipAddress,
+          deviceId: deviceId,
+          token: bundle['access_token'] as String,
+          refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
+        ),
+      );
 
       return {
-        ...tokens,
+        'access_token': bundle['access_token'],
+        'refresh_token': bundle['refresh_token'],
         'user': {
           'id': user.id,
           'username': user.username,
@@ -64,7 +89,13 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>> login(String username, String password) async {
+  Future<Map<String, dynamic>> login(
+    String username,
+    String password, {
+    String userAgent = 'unknown',
+    String ipAddress = 'unknown',
+    String? deviceId,
+  }) async {
     if (username.isEmpty || password.isEmpty) {
       throw Exception('Требуются username и password');
     }
@@ -75,10 +106,28 @@ class AuthService {
       throw Exception('Неверный логин или пароль');
     }
 
-    final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
+    final bundle = AuthUtils.generateTokenBundle(user.id, user.role.name.toLowerCase());
+    final refreshJti = bundle['refresh_jti'] as String;
+    final refreshExpiresAt = bundle['refresh_expires_at'] as DateTime;
+
+    await _sessionRepository.create(
+      UserSessions(
+        id: 0,
+        userId: user.id,
+        createdAt: DateTime.now(),
+        expiresAt: refreshExpiresAt,
+        lastActive: DateTime.now(),
+        userAgent: userAgent,
+        ipAddress: ipAddress,
+        deviceId: deviceId,
+        token: bundle['access_token'] as String,
+        refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
+      ),
+    );
 
     return {
-      ...tokens,
+      'access_token': bundle['access_token'],
+      'refresh_token': bundle['refresh_token'],
       'user': {
         'id': user.id,
         'username': user.username,
@@ -91,17 +140,35 @@ class AuthService {
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
     try {
       final payload = AuthUtils.verifyToken(refreshToken, isRefreshToken: true);
+      final refreshJti = payload['jti']?.toString() ?? '';
+      if (refreshJti.isEmpty) {
+        throw Exception('Отсутствует jti в refresh токене');
+      }
       final userId = payload['id'] as int;
       
+      final refreshJtiHash = AuthUtils.hashRefreshJti(refreshJti);
+      final session = await _sessionRepository.findActiveByRefreshJtiHash(refreshJtiHash);
+      if (session == null || session.userId != userId) {
+        throw Exception('Refresh токен отозван или недействителен');
+      }
+
       final user = await _userRepository.findById(userId);
       if (user == null) {
         throw Exception('Пользователь не найден');
       }
 
-      final tokens = AuthUtils.generateTokens(user.id, user.role.name.toLowerCase());
+      final bundle = AuthUtils.generateTokenBundle(user.id, user.role.name.toLowerCase());
+      final newRefreshJti = bundle['refresh_jti'] as String;
+      final refreshExpiresAt = bundle['refresh_expires_at'] as DateTime;
+
+      session.refreshJtiHash = AuthUtils.hashRefreshJti(newRefreshJti);
+      session.expiresAt = refreshExpiresAt;
+      session.lastActive = DateTime.now();
+      await _sessionRepository.update(session);
 
       return {
-        ...tokens,
+        'access_token': bundle['access_token'],
+        'refresh_token': bundle['refresh_token'],
         'user': {
           'id': user.id,
           'username': user.username,
