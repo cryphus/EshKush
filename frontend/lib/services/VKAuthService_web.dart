@@ -8,11 +8,12 @@ import 'dart:js_util' as js_util;
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/app_config.dart';
+
 // Реализация для веб-платформы
 // Этот файл используется только на веб
 
 class VKAuthService {
-  static const String _baseUrl = 'http://localhost:8080';
   final Dio _dio = Dio();
 
   Future<Map<String, dynamic>?> signIn() async {
@@ -66,19 +67,12 @@ class VKAuthService {
 
   Future<Map<String, dynamic>> _sendToBackend(Map<String, dynamic> userInfo, String? email) async {
     try {
+      final apiBase = AppConfig.apiBaseUrl;
       final response = await _dio.post(
-        '$_baseUrl/auth/vk',
+        '$apiBase/auth/vk',
         data: {
           'username': userInfo['id'].toString(),
-          'password': 'vk_${userInfo['id']}',
           'email': email ?? '${userInfo['id']}@vk.com',
-          'displayName': '${userInfo['first_name']} ${userInfo['last_name']}',
-          'phone': '',
-          'role': 'user',
-          'sumCO2': 0,
-          'money': 0,
-          'favoriteIds': [],
-          'purchases': [],
         },
         options: Options(
           validateStatus: (status) => status! < 500,

@@ -1,4 +1,4 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -45,12 +45,7 @@ class SwaggerController {
         final spec = await swaggerFile.readAsString();
         return Response.ok(
           spec,
-          headers: {
-            'content-type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Origin, Content-Type',
-          },
+          headers: {'content-type': 'application/json'},
         );
       } else {
         // Р•СЃР»Рё С„Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ, РІРѕР·РІСЂР°С‰Р°РµРј Р±Р°Р·РѕРІСѓСЋ СЃРїРµС†РёС„РёРєР°С†РёСЋ
@@ -87,12 +82,7 @@ class SwaggerController {
 
         return Response.ok(
           jsonEncode(swaggerJson),
-          headers: {
-            'content-type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Origin, Content-Type',
-          },
+          headers: {'content-type': 'application/json'},
         );
       }
     } catch (e) {
@@ -159,12 +149,7 @@ class SwaggerController {
 
     return Response.ok(
       swaggerUI,
-      headers: {
-        'Content-Type': 'text/html',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, Content-Type',
-      },
+      headers: {'Content-Type': 'text/html'},
     );
   }
 

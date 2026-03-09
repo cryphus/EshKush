@@ -12,13 +12,16 @@ class SecurityMiddleware {
       return (Request request) async {
         final response = await innerHandler(request);
         return response.change(headers: {
+          // Оставить
           'X-Content-Type-Options': 'nosniff',
-          'X-Frame-Options': 'DENY',
-          'X-XSS-Protection': '1; mode=block',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-          'Content-Type': 'application/json',
+          'X-Frame-Options': 'DENY', // или SAMEORIGIN по требованиям
+          // Добавить
+          'Content-Security-Policy':
+              "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Permissions-Policy': 'accelerometer=(), camera=(), geolocation=(), microphone=(), payment=(), usb=()',
+          'Cross-Origin-Opener-Policy': 'same-origin',
         });
       };
     };
@@ -40,11 +43,7 @@ class SecurityMiddleware {
     return (Handler innerHandler) {
       return (Request request) async {
         if (request.method == 'OPTIONS') {
-          return Response.ok('', headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-          });
+          return Response.ok('');
         }
 
         final path = request.url.path;

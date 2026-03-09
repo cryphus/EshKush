@@ -301,11 +301,6 @@ class ProfileController {
   }
 
   Map<String, String> _getCorsHeaders() {
-    return {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-    };
+    return {'Content-Type': 'application/json; charset=utf-8'};
   }
 }

@@ -183,11 +183,6 @@ class OrderController {
   }
 
   Map<String, String> _getCorsHeaders() {
-    return {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-      'Content-Type': 'application/json',
-    };
+    return {'Content-Type': 'application/json'};
   }
 } 

@@ -10,6 +10,7 @@ import 'package:backend/repositories/UserRepository.dart';
 import 'package:backend/utils/AuthUtils.dart';
 import 'package:backend/model/entities/UserSessions.dart';
 import 'package:backend/middleware/SecurityMiddleware.dart';
+import 'package:backend/middleware/CorsMiddleware.dart';
 import 'package:backend/services/CacheService.dart';
 import 'package:backend/config/AppConfig.dart';
 // import 'package:path/path.dart' as p;
@@ -82,6 +83,8 @@ import 'package:backend/controllers/PaymentTransactionsController.dart';
 import 'package:backend/services/PaymentTransactionsService.dart';
 import 'package:backend/repositories/PaymentTransactionsRepository.dart';
 import 'package:backend/middleware/LoggingMiddleware.dart';
+import 'package:backend/middleware/RbacMiddleware.dart';
+import 'package:backend/services/VKAuthHandler.dart' as vk_auth;
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 void main() async {
@@ -217,18 +220,7 @@ void main() async {
       );
     });
 
-    final corsHandler = createMiddleware(
-      requestHandler: (Request request) {
-        if (request.method == 'OPTIONS') {
-          return Response.ok('', headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-          });
-        }
-        return null;
-      },
-    );
+    final corsMiddleware = CorsMiddleware(allowedOrigins: config.allowedOrigins).call();
 
     app.post('/auth/google', (Request request) async {
       try {
@@ -319,6 +311,10 @@ void main() async {
           body: jsonEncode({'error': e.toString()}),
         );
       }
+    });
+
+    app.post('/auth/vk', (Request request) {
+      return vk_auth.handleVkAuth(request, userRepository, userSessionRepository);
     });
 
     app.post('/auth/register', (Request request) async {
@@ -478,12 +474,27 @@ void main() async {
     // Подключаем маршруты Swagger
     app.mount('/swagger', swaggerController.router);
 
+    final rbacRules = <String, Set<String>>{
+      // Явно админские/служебные разделы
+      'action-logs': {'admin'},
+      'error-logs': {'admin'},
+      'cache': {'admin'},
+      'partner-statistics': {'admin', 'support'},
+      'promo-codes': {'admin', 'support'},
+      'product-categories': {'admin', 'support'},
+      'point-categories': {'admin', 'support'},
+    };
+
     final handler = const Pipeline()
-        .addMiddleware(corsHandler)
-        .addMiddleware(SecurityMiddleware.checkJWT(
-          userSessionRepository,
-          openPaths: ['auth', 'login', 'swagger'],
-        ))
+        .addMiddleware(corsMiddleware)
+        .addMiddleware(SecurityMiddleware.securityHeaders())
+        .addMiddleware(
+          SecurityMiddleware.checkJWT(
+            userSessionRepository,
+            openPaths: ['auth', 'login', 'swagger'],
+          ),
+        )
+        .addMiddleware(RbacMiddleware.withRoleRules(rbacRules))
         .addMiddleware(LoggingMiddleware.requestResponseLogger())
         .addHandler(app.call);
 

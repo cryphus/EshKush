@@ -1,9 +1,10 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PointReviewService.dart';
 import '../model/entities/PointReview.dart';
 import '../utils/AuthUtils.dart';
+import '../middleware/RbacMiddleware.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
@@ -216,7 +217,7 @@ class PointReviewController {
         return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
         return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС‚Р·С‹РІР°');
@@ -227,7 +228,7 @@ class PointReviewController {
         return _createErrorResponse(404, 'РћС‚Р·С‹РІ РЅРµ РЅР°Р№РґРµРЅ');
       }
 
-      if (existingReview.userId != payload['id'] && payload['role'] != 'admin') {
+      if (!RbacMiddleware.isOwnerOrElevated(request, existingReview.userId)) {
         return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РЅР° СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РѕС‚Р·С‹РІР°');
       }
 
@@ -287,7 +288,7 @@ class PointReviewController {
         return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
       }
 
-      final payload = AuthUtils.verifyToken(token);
+      AuthUtils.verifyToken(token);
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
         return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС‚Р·С‹РІР°');
@@ -298,7 +299,7 @@ class PointReviewController {
         return _createErrorResponse(404, 'РћС‚Р·С‹РІ РЅРµ РЅР°Р№РґРµРЅ');
       }
 
-      if (existingReview.userId != payload['id'] && payload['role'] != 'admin') {
+      if (!RbacMiddleware.isOwnerOrElevated(request, existingReview.userId)) {
         return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РЅР° СѓРґР°Р»РµРЅРёРµ РѕС‚Р·С‹РІР°');
       }
 
@@ -337,11 +338,6 @@ class PointReviewController {
   }
 
   Map<String, String> _getCorsHeaders() {
-    return {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-    };
+    return {'Content-Type': 'application/json'};
   }
 }
