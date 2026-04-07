@@ -1,7 +1,9 @@
 import 'package:shelf/shelf.dart';
+import '../utils/RequestContextUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 /// Примитивный RBAC / owner helper поверх уже проверенного JWT.
-/// SecurityMiddleware.checkJWT кладёт payload токена в request.context['user'].
+/// Payload берётся через RequestContextUtils.getUser (кладёт SecurityMiddleware.checkJWT).
 class RbacMiddleware {
   /// Централизованная проверка ролей по префиксам маршрутов.
   ///
@@ -26,15 +28,23 @@ class RbacMiddleware {
           return innerHandler(request);
         }
 
-        final payload = request.context['user'] as Map<String, dynamic>?;
+        final payload = RequestContextUtils.getUser(request);
         final role = payload?['role']?.toString().toLowerCase();
 
         if (role == null) {
-          return Response.forbidden('Требуется аутентификация для доступа к этому ресурсу');
+          return ErrorResponseUtils.errorResponseWithMessage(
+            'Требуется аутентификация для доступа к этому ресурсу',
+            code: ErrorCode.forbidden,
+            headers: {'Content-Type': 'application/json'},
+          );
         }
 
         if (!allowedRoles.contains(role)) {
-          return Response.forbidden('Недостаточно прав для доступа к этому ресурсу');
+          return ErrorResponseUtils.errorResponseWithMessage(
+            'Недостаточно прав для доступа к этому ресурсу',
+            code: ErrorCode.forbidden,
+            headers: {'Content-Type': 'application/json'},
+          );
         }
 
         return innerHandler(request);
@@ -49,7 +59,7 @@ class RbacMiddleware {
     int ownerId, {
     Set<String> elevatedRoles = const {'admin'},
   }) {
-    final payload = request.context['user'] as Map<String, dynamic>?;
+    final payload = RequestContextUtils.getUser(request);
     if (payload == null) return false;
 
     final userId = payload['id'];

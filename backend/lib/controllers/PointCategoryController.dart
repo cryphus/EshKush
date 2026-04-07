@@ -26,10 +26,7 @@ class PointCategoryController {
       final category = await _categoryService.getCategory(categoryId);
       
       if (category == null) {
-        return Response.notFound(
-          jsonEncode({'error': 'РљР°С‚РµРіРѕСЂРёСЏ РЅРµ РЅР°Р№РґРµРЅР°'}),
-          headers: _getCorsHeaders(),
-        );
+        return ErrorResponseUtils.errorResponseWithMessage('Категория не найдена', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       return Response.ok(
@@ -37,10 +34,7 @@ class PointCategoryController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
@@ -52,10 +46,7 @@ class PointCategoryController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
@@ -77,10 +68,7 @@ class PointCategoryController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
@@ -96,10 +84,7 @@ class PointCategoryController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
@@ -112,10 +97,7 @@ class PointCategoryController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 

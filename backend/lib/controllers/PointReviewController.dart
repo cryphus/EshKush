@@ -3,28 +3,43 @@ import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PointReviewService.dart';
 import '../model/entities/PointReview.dart';
-import '../utils/AuthUtils.dart';
 import '../middleware/RbacMiddleware.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class PointReviewController {
   final PointReviewService _service;
+  late final Router _router;
 
-  PointReviewController(this._service);
+  PointReviewController(this._service) {
+    _router = Router();
+    _router.get('/', _getMyReviews);
+    _router.get('/point/<pointId>', _getByPointId);
+    _router.get('/user/<userId>', _getByUserId);
+    _router.post('/', _create);
+    _router.put('/<id>', _update);
+    _router.delete('/<id>', _delete);
+    _router.get('/<id>', _getById);
+  }
 
-  Router get router {
-    final router = Router();
+  Router get router => _router;
 
-    router.get('/<id>', _getById);
-    router.get('/point/<pointId>', _getByPointId);
-    router.get('/user/<userId>', _getByUserId);
-    router.post('/', _create);
-    router.put('/<id>', _update);
-    router.delete('/<id>', _delete);
-
-    return router;
+  Future<Response> _getMyReviews(Request request) async {
+    try {
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
+      final userId = payload['id'] as int;
+      final reviews = await _service.getByUserId(userId);
+      return Response.ok(
+        jsonEncode(reviews.map((r) => r.toJson()).toList()),
+        headers: _getCorsHeaders(),
+      );
+    } catch (e) {
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
+    }
   }
 
   Future<Response> _getById(Request request) async {
@@ -39,12 +54,12 @@ class PointReviewController {
 
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС‚Р·С‹РІР°');
+        return ErrorResponseUtils.errorResponseWithMessage('Ошибка очистки кеша', headers: _getCorsHeaders());
       }
 
       final review = await _service.getById(id);
       if (review == null) {
-        return _createErrorResponse(404, 'РћС‚Р·С‹РІ РЅРµ РЅР°Р№РґРµРЅ');
+        return ErrorResponseUtils.errorResponseWithMessage('Отзыв не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       final reviewJson = jsonEncode(review.toJson());
@@ -62,8 +77,8 @@ class PointReviewController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕС‚Р·С‹РІР°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка получения отзыва по ID', e, requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -78,7 +93,7 @@ class PointReviewController {
 
       final pointId = int.tryParse(request.params['pointId']!);
       if (pointId == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID точки', headers: _getCorsHeaders());
       }
 
       final reviews = await _service.getByPointId(pointId);
@@ -98,7 +113,7 @@ class PointReviewController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕС‚Р·С‹РІРѕРІ С‚РѕС‡РєРё', e);
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -113,7 +128,7 @@ class PointReviewController {
 
       final userId = int.tryParse(request.params['userId']!);
       if (userId == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ');
+        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', headers: _getCorsHeaders());
       }
 
       final reviews = await _service.getByUserId(userId);
@@ -133,7 +148,7 @@ class PointReviewController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕС‚Р·С‹РІРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e);
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -149,12 +164,9 @@ class PointReviewController {
         body,
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
       final userId = payload['id'] as int;
       data['user_id'] = userId;
 
@@ -171,7 +183,7 @@ class PointReviewController {
         final created = await _service.create(review);
 
         await LoggingUtils.logInfo(
-          'РЎРѕР·РґР°РЅ РЅРѕРІС‹Р№ РѕС‚Р·С‹РІ',
+          'Отзыв создан',
           context: {
             'reviewId': created.id,
             'pointId': created.pointId,
@@ -192,11 +204,11 @@ class PointReviewController {
 
         return response;
       } on ValidationException catch (e) {
-        return _createErrorResponse(400, e.toString());
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РѕС‚Р·С‹РІР°', e);
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -212,24 +224,20 @@ class PointReviewController {
         body,
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС‚Р·С‹РІР°');
+        return ErrorResponseUtils.errorResponseWithMessage('Ошибка очистки кеша', headers: _getCorsHeaders());
       }
 
       final existingReview = await _service.getById(id);
       if (existingReview == null) {
-        return _createErrorResponse(404, 'РћС‚Р·С‹РІ РЅРµ РЅР°Р№РґРµРЅ');
+        return ErrorResponseUtils.errorResponseWithMessage('Отзыв не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       if (!RbacMiddleware.isOwnerOrElevated(request, existingReview.userId)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РЅР° СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РѕС‚Р·С‹РІР°');
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав на редактирование отзыва', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       try {
@@ -245,7 +253,7 @@ class PointReviewController {
         final updated = await _service.update(review);
 
         await LoggingUtils.logInfo(
-          'РћР±РЅРѕРІР»РµРЅ РѕС‚Р·С‹РІ',
+          'Отзыв обновлён',
           context: {
             'reviewId': updated.id,
             'pointId': updated.pointId,
@@ -266,11 +274,11 @@ class PointReviewController {
 
         return response;
       } on ValidationException catch (e) {
-        return _createErrorResponse(400, e.toString());
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РѕС‚Р·С‹РІР°', e);
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -283,24 +291,20 @@ class PointReviewController {
         null,
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС‚Р·С‹РІР°');
+        return ErrorResponseUtils.errorResponseWithMessage('Ошибка очистки кеша', headers: _getCorsHeaders());
       }
 
       final existingReview = await _service.getById(id);
       if (existingReview == null) {
-        return _createErrorResponse(404, 'РћС‚Р·С‹РІ РЅРµ РЅР°Р№РґРµРЅ');
+        return ErrorResponseUtils.errorResponseWithMessage('Отзыв не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       if (!RbacMiddleware.isOwnerOrElevated(request, existingReview.userId)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РЅР° СѓРґР°Р»РµРЅРёРµ РѕС‚Р·С‹РІР°');
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав на удаление отзыва', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       await _service.delete(id);
@@ -310,7 +314,7 @@ class PointReviewController {
         context: {'reviewId': id},
       );
 
-      final responseJson = jsonEncode({'message': 'РћС‚Р·С‹РІ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'});
+      final responseJson = jsonEncode({'message': 'Отзыв успешно удалён'});
       final response = Response.ok(
         responseJson,
         headers: _getCorsHeaders(),
@@ -325,16 +329,8 @@ class PointReviewController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РѕС‚Р·С‹РІР°', e);
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
-  }
-
-  Response _createErrorResponse(int statusCode, String message) {
-    return Response(
-      statusCode,
-      body: jsonEncode({'error': message}),
-      headers: _getCorsHeaders(),
-    );
   }
 
   Map<String, String> _getCorsHeaders() {

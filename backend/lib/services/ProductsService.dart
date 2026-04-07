@@ -32,46 +32,39 @@ class ProductsService {
     }
   }
 
-  Future<List<Product>> getAllProducts() async {
+  Future<List<Product>> getAllProducts({int limit = 20, int offset = 0}) async {
     try {
-      // Пытаемся получить из кеша
-      final cacheKey = CacheKeys.allProducts();
-      final cachedData = await _cacheService.get<List>(cacheKey);
-      if (cachedData != null) {
-        // Конвертируем JSON обратно в List<Product>
-        return cachedData.map((json) => Product.fromJson(json as Map<String, dynamic>)).toList();
+      // Кеш только для первой страницы с дефолтными параметрами
+      if (limit == 20 && offset == 0) {
+        final cacheKey = CacheKeys.allProducts();
+        final cachedData = await _cacheService.get<List>(cacheKey);
+        if (cachedData != null) {
+          return cachedData.map((json) => Product.fromJson(json as Map<String, dynamic>)).toList();
+        }
+        final products = await _productsRepository.findAll(limit: limit, offset: offset);
+        await _cacheService.set(cacheKey, products, ttl: CacheTTL.product);
+        return products;
       }
-
-      // Если нет в кеше, получаем из БД
-      final products = await _productsRepository.findAll();
-      
-      // Сохраняем в кеш
-      await _cacheService.set(cacheKey, products, ttl: CacheTTL.product);
-      
-      return products;
+      return await _productsRepository.findAll(limit: limit, offset: offset);
     } catch (e) {
       print('Ошибка получения списка продуктов: $e');
       rethrow;
     }
   }
 
-  Future<List<Product>> getProductsByCategory(int categoryId) async {
+  Future<List<Product>> getProductsByCategory(int categoryId, {int limit = 20, int offset = 0}) async {
     try {
-      // Пытаемся получить из кеша
-      final cacheKey = CacheKeys.productsByCategory(categoryId);
-      final cachedData = await _cacheService.get<List>(cacheKey);
-      if (cachedData != null) {
-        // Конвертируем JSON обратно в List<Product>
-        return cachedData.map((json) => Product.fromJson(json as Map<String, dynamic>)).toList();
+      if (limit == 20 && offset == 0) {
+        final cacheKey = CacheKeys.productsByCategory(categoryId);
+        final cachedData = await _cacheService.get<List>(cacheKey);
+        if (cachedData != null) {
+          return cachedData.map((json) => Product.fromJson(json as Map<String, dynamic>)).toList();
+        }
+        final products = await _productsRepository.findByCategory(categoryId, limit: limit, offset: offset);
+        await _cacheService.set(cacheKey, products, ttl: CacheTTL.product);
+        return products;
       }
-
-      // Если нет в кеше, получаем из БД
-      final products = await _productsRepository.findByCategory(categoryId);
-      
-      // Сохраняем в кеш
-      await _cacheService.set(cacheKey, products, ttl: CacheTTL.product);
-      
-      return products;
+      return await _productsRepository.findByCategory(categoryId, limit: limit, offset: offset);
     } catch (e) {
       print('Ошибка получения продуктов по категории: $e');
       rethrow;
@@ -171,8 +164,8 @@ class ProductsService {
     }
   }
 
-  Future<List<Product>> getProductsByPointId(int pointId) async {
-    return await _productsRepository.findByPointId(pointId);
+  Future<List<Product>> getProductsByPointId(int pointId, {int limit = 20, int offset = 0}) async {
+    return await _productsRepository.findByPointId(pointId, limit: limit, offset: offset);
   }
 
   void _validateProductData(Map<String, dynamic> data) {

@@ -246,47 +246,36 @@ class OrderRepository {
     );
   }
 
-  Future<List<Order>> getAllOrders({OrderStatus? status}) async {
+  Future<List<Order>> getAllOrders({
+    OrderStatus? status,
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
-      final query = status != null 
-          ? '''
-            SELECT 
-              id,
-              user_id,
-              point_id,
-              products_id,
-              to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as date,
-              status,
-              total_price,
-              to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-              CASE 
-                WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-                ELSE NULL
-              END as updated_at
-            FROM orders 
-            WHERE status = @status::order_status
-          '''
-          : '''
-            SELECT 
-              id,
-              user_id,
-              point_id,
-              products_id,
-              to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as date,
-              status,
-              total_price,
-              to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-              CASE 
-                WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-                ELSE NULL
-              END as updated_at
-            FROM orders
-          ''';
-      
-      final Map<String, dynamic> params = status != null 
-          ? {'status': status.name.toLowerCase()} 
-          : {};
-      
+      final where = status != null ? 'WHERE status = @status::order_status' : '';
+      final query = '''
+        SELECT
+          id,
+          user_id,
+          point_id,
+          products_id,
+          to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as date,
+          status,
+          total_price,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          CASE
+            WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            ELSE NULL
+          END as updated_at
+        FROM orders
+        $where
+        ORDER BY created_at DESC
+        LIMIT @limit OFFSET @offset
+      ''';
+
+      final params = <String, dynamic>{'limit': limit, 'offset': offset};
+      if (status != null) params['status'] = status.name.toLowerCase();
+
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => Order.fromJson(row.values.first)).toList();
     } catch (e) {

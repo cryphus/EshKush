@@ -365,7 +365,7 @@ class UserRepository {
         throw Exception('Пользователь не найден');
       }
 
-      print('Результат обновления: $result');
+      print('Некорректный ID');
       return User.fromJson(result);
     } catch (e) {
       print('Ошибка обновления пользователя: $e');
@@ -373,11 +373,11 @@ class UserRepository {
     }
   }
 
-  Future<List<User>> findAll() async {
+  Future<List<User>> findAll({int limit = 20, int offset = 0}) async {
     try {
       final results = await query(
         '''
-        SELECT 
+        SELECT
           id,
           username,
           password,
@@ -387,7 +387,10 @@ class UserRepository {
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
           to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
         FROM users
-        '''
+        ORDER BY id
+        LIMIT @limit OFFSET @offset
+        ''',
+        params: {'limit': limit, 'offset': offset},
       );
       return results.map((map) => User.fromJson(map)).toList();
     } catch (e) {

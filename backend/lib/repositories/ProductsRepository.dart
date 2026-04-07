@@ -46,11 +46,11 @@ class ProductsRepository extends BaseRepository {
     }
   }
 
-  Future<List<Product>> findAll() async {
+  Future<List<Product>> findAll({int limit = 20, int offset = 0}) async {
     try {
       await _connection.execute('SET client_encoding TO \'UTF8\'');
       final results = await query('''
-        SELECT 
+        SELECT
           id,
           COALESCE(name, '') as name,
           COALESCE(description, '') as description,
@@ -62,12 +62,14 @@ class ProductsRepository extends BaseRepository {
           COALESCE(is_available, true) as is_available,
           COALESCE(is_active, true) as is_active,
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          CASE 
+          CASE
             WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
             ELSE NULL
           END as updated_at
         FROM products
-      ''');
+        ORDER BY id
+        LIMIT @limit OFFSET @offset
+      ''', params: {'limit': limit, 'offset': offset});
       return results.map((map) => Product.fromJson(map)).toList();
     } catch (e) {
       print('Ошибка получения списка продуктов: $e');
@@ -75,11 +77,11 @@ class ProductsRepository extends BaseRepository {
     }
   }
 
-  Future<List<Product>> findByCategory(int categoryId) async {
+  Future<List<Product>> findByCategory(int categoryId, {int limit = 20, int offset = 0}) async {
     try {
       await _connection.execute('SET client_encoding TO \'UTF8\'');
       final results = await _connection.mappedResultsQuery('''
-        SELECT 
+        SELECT
           p.id,
           COALESCE(p.name, '') as name,
           COALESCE(p.description, '') as description,
@@ -91,15 +93,17 @@ class ProductsRepository extends BaseRepository {
           COALESCE(p.is_available, true) as is_available,
           COALESCE(p.is_active, true) as is_active,
           to_char(p.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          CASE 
+          CASE
             WHEN p.updated_at IS NOT NULL THEN to_char(p.updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
             ELSE NULL
           END as updated_at
         FROM products p
         JOIN product_category_map pcm ON p.id = pcm.product_id
         WHERE pcm.category_id = @categoryId
-      ''', substitutionValues: {'categoryId': categoryId});
-      
+        ORDER BY p.id
+        LIMIT @limit OFFSET @offset
+      ''', substitutionValues: {'categoryId': categoryId, 'limit': limit, 'offset': offset});
+
       return results.map((row) => Product.fromJson(row['products']!)).toList();
     } catch (e) {
       print('Ошибка поиска продуктов по категории: $e');
@@ -288,22 +292,20 @@ class ProductsRepository extends BaseRepository {
   Future<void> updateProductCategories(int productId, List<int> categoryIds) async {
     try {
       await transaction((txn) async {
-        // Удаляем все существующие связи
         await txn.query(
           'DELETE FROM product_category_map WHERE product_id = @productId',
           substitutionValues: {'productId': productId},
         );
 
-        // Создаем новые связи
-        for (final categoryId in categoryIds) {
+        if (categoryIds.isNotEmpty) {
           await txn.query(
             '''
             INSERT INTO product_category_map (product_id, category_id, created_at)
-            VALUES (@productId, @categoryId, CURRENT_TIMESTAMP)
+            SELECT @productId, UNNEST(@categoryIds::int[]), CURRENT_TIMESTAMP
             ''',
             substitutionValues: {
               'productId': productId,
-              'categoryId': categoryId,
+              'categoryIds': categoryIds,
             },
           );
         }
@@ -314,11 +316,11 @@ class ProductsRepository extends BaseRepository {
     }
   }
 
-  Future<List<Product>> findByPointId(int pointId) async {
+  Future<List<Product>> findByPointId(int pointId, {int limit = 20, int offset = 0}) async {
     try {
       final results = await query(
         '''
-        SELECT 
+        SELECT
           id,
           name,
           COALESCE(description, '') as description,
@@ -331,10 +333,12 @@ class ProductsRepository extends BaseRepository {
           is_active,
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
           to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
-        FROM products 
+        FROM products
         WHERE point_id = @pointId
+        ORDER BY id
+        LIMIT @limit OFFSET @offset
         ''',
-        params: {'pointId': pointId},
+        params: {'pointId': pointId, 'limit': limit, 'offset': offset},
       );
       return results.map((map) => Product.fromJson(map)).toList();
     } catch (e) {

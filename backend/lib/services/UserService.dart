@@ -95,7 +95,7 @@ class UserService {
 
       print('Вызов метода update в UserRepository');
       final result = await _userRepository.update(id, data);
-      print('Результат обновления: $result');
+      print('Некорректный ID');
 
       if (result == null) {
         throw Exception('Пользователь не найден');

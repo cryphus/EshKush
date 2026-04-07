@@ -46,12 +46,35 @@ services:
       - LOG_JSON=${LOG_JSON:-true}
       - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
       - RATE_LIMIT_WINDOW_MINUTES=${RATE_LIMIT_WINDOW_MINUTES:-1}
+      # Установи RUN_TESTS=true в .env чтобы прогнать тесты при старте
+      - RUN_TESTS=${RUN_TESTS:-false}
     networks:
       - app-network
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: dart run bin/migrate.dart
+    working_dir: /app/backend
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    profiles:
+      - migrate
 
   nginx:
     image: nginx:latest

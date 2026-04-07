@@ -172,7 +172,7 @@ class PartnerStatisticsService {
       throw Exception('Количество отмен не может быть отрицательным');
     }
     if (data['average_rating'] != null && (data['average_rating'] < 0 || data['average_rating'] > 5)) {
-      throw Exception('Рейтинг должен быть от 0 до 5');
+      throw Exception('Некорректный ID');
     }
     if (data['total_reviews'] != null && data['total_reviews'] < 0) {
       throw Exception('Количество отзывов не может быть отрицательным');
@@ -190,7 +190,7 @@ class PartnerStatisticsService {
       throw Exception('Количество отмен не может быть отрицательным');
     }
     if (data['average_rating'] != null && (data['average_rating'] < 0 || data['average_rating'] > 5)) {
-      throw Exception('Рейтинг должен быть от 0 до 5');
+      throw Exception('Некорректный ID');
     }
     if (data['total_reviews'] != null && data['total_reviews'] < 0) {
       throw Exception('Количество отзывов не может быть отрицательным');

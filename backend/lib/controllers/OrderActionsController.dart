@@ -3,10 +3,10 @@ import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/OrderActionsService.dart';
 import '../model/enums/ActionType.dart';
-import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 
 class OrderActionsController {
   final OrderActionsService _orderActionsService;
@@ -15,6 +15,7 @@ class OrderActionsController {
   OrderActionsController(this._orderActionsService);
 
   Router get router => _router
+    ..get('/', getActiveActions)
     ..get('/one', getAction)
     ..get('/by-order', getOrderActions)
     ..get('/by-partner', getPartnerActions)
@@ -29,15 +30,11 @@ class OrderActionsController {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final id = int.tryParse(request.url.queryParameters['id'] ?? '');
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРІРµСЂРЅС‹Р№ ID РґРµР№СЃС‚РІРёСЏ');
+        return ErrorResponseUtils.errorResponseWithMessage('Неверный ID действия', headers: _getCorsHeaders());
       }
 
       final action = await _orderActionsService.getActionById(id);
@@ -47,7 +44,7 @@ class OrderActionsController {
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -55,15 +52,11 @@ class OrderActionsController {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final orderId = int.tryParse(request.url.queryParameters['orderId'] ?? '');
       if (orderId == null) {
-        return _createErrorResponse(400, 'РќРµРІРµСЂРЅС‹Р№ ID Р·Р°РєР°Р·Р°');
+        return ErrorResponseUtils.errorResponseWithMessage('Неверный ID заказа', headers: _getCorsHeaders());
       }
 
       final actions = await _orderActionsService.getOrderActions(orderId);
@@ -73,7 +66,7 @@ class OrderActionsController {
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -81,19 +74,15 @@ class OrderActionsController {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final partnerId = int.tryParse(request.url.queryParameters['partnerId'] ?? '');
       if (partnerId == null) {
-        return _createErrorResponse(400, 'РќРµРІРµСЂРЅС‹Р№ ID РїР°СЂС‚РЅРµСЂР°');
+        return ErrorResponseUtils.errorResponseWithMessage('Неверный ID партнёра', headers: _getCorsHeaders());
       }
 
       final actions = await _orderActionsService.getPartnerActions(partnerId);
@@ -103,7 +92,7 @@ class OrderActionsController {
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ РїР°СЂС‚РЅРµСЂР°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -112,12 +101,8 @@ class OrderActionsController {
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final data = jsonDecode(body);
       
       try {
@@ -141,11 +126,11 @@ class OrderActionsController {
         await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
         return Response.ok(responseBody, headers: headers);
       } on ValidationException catch (e) {
-        return _createErrorResponse(400, e.toString());
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -154,19 +139,15 @@ class OrderActionsController {
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final data = jsonDecode(body);
       if (data['id'] == null || data['actionType'] == null) {
-        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅС‹ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹');
+        return ErrorResponseUtils.errorResponseWithMessage('Не указаны обязательные параметры', headers: _getCorsHeaders());
       }
 
       final action = await _orderActionsService.updateActionType(
@@ -185,7 +166,7 @@ class OrderActionsController {
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚РёРїР° РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -194,20 +175,16 @@ class OrderActionsController {
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final data = jsonDecode(body);
       
       if (data['id'] == null || data['description'] == null) {
-        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅС‹ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹');
+        return ErrorResponseUtils.errorResponseWithMessage('Не указаны обязательные параметры', headers: _getCorsHeaders());
       }
 
       if (!ValidationUtils.isValidDescription(data['description'])) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅРѕРµ РѕРїРёСЃР°РЅРёРµ');
+        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅРѕРµ РѕРїРёСЃР°РЅРёРµ', headers: _getCorsHeaders());
       }
 
       final action = await _orderActionsService.updateActionDescription(
@@ -223,7 +200,7 @@ class OrderActionsController {
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РѕРїРёСЃР°РЅРёСЏ РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -232,19 +209,15 @@ class OrderActionsController {
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final data = jsonDecode(body);
       if (data['id'] == null) {
-        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅ ID РґРµР№СЃС‚РІРёСЏ');
+        return ErrorResponseUtils.errorResponseWithMessage('Не указан ID действия', headers: _getCorsHeaders());
       }
 
       final action = await _orderActionsService.deactivateAction(data['id']);
@@ -257,7 +230,7 @@ class OrderActionsController {
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РґРµР°РєС‚РёРІР°С†РёРё РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -266,19 +239,15 @@ class OrderActionsController {
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final data = jsonDecode(body);
       if (data['id'] == null) {
-        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅ ID РґРµР№СЃС‚РІРёСЏ');
+        return ErrorResponseUtils.errorResponseWithMessage('Не указан ID действия', headers: _getCorsHeaders());
       }
 
       final action = await _orderActionsService.activateAction(data['id']);
@@ -291,7 +260,7 @@ class OrderActionsController {
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° Р°РєС‚РёРІР°С†РёРё РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -299,19 +268,15 @@ class OrderActionsController {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final type = request.url.queryParameters['type'];
       if (type == null) {
-        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅ С‚РёРї РґРµР№СЃС‚РІРёСЏ');
+        return ErrorResponseUtils.errorResponseWithMessage('Не указан тип действия', headers: _getCorsHeaders());
       }
 
       final actions = await _orderActionsService.getActionsByType(
@@ -327,7 +292,7 @@ class OrderActionsController {
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ РїРѕ С‚РёРїСѓ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -341,14 +306,10 @@ class OrderActionsController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final actions = await _orderActionsService.getActiveActions();
@@ -358,20 +319,8 @@ class OrderActionsController {
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р°РєС‚РёРІРЅС‹С… РґРµР№СЃС‚РІРёР№', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
-  }
-
-  bool _isAdmin(Map<String, dynamic> payload) {
-    return payload['role'] == 'admin';
-  }
-
-  Response _createErrorResponse(int statusCode, String message) {
-    return Response(
-      statusCode,
-      body: jsonEncode({'error': message}),
-      headers: _getCorsHeaders(),
-    );
   }
 
   Map<String, String> _getCorsHeaders() {

@@ -32,10 +32,7 @@ class PartnerController {
       final partner = await _partnerService.getPartner(partnerId);
       
       if (partner == null) {
-        return Response.notFound(
-          jsonEncode({'error': 'РџР°СЂС‚РЅРµСЂ РЅРµ РЅР°Р№РґРµРЅ'}),
-          headers: _getCorsHeaders(),
-        );
+        return ErrorResponseUtils.errorResponseWithMessage('Партнёр не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       // Р”Р»СЏ Р°РґРјРёРЅРѕРІ РёСЃРїРѕР»СЊР·СѓР№С‚Рµ РѕС‚РґРµР»СЊРЅС‹Р№ endpoint СЃ PartnerAdminDto
@@ -45,8 +42,8 @@ class PartnerController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїР°СЂС‚РЅРµСЂР°', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('Ошибка получения партнёра', e, requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -59,10 +56,7 @@ class PartnerController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -78,11 +72,13 @@ class PartnerController {
         id: 0,
         userId: int.parse(sanitized['user_id'].toString()),
         name: sanitized['name'],
-        contactPerson: sanitized['contact_person'],
-        contactEmail: sanitized['contact_email'],
-        contactPhone: sanitized['contact_phone'],
-        contactDocument: sanitized['contact_document'],
-        maxDiscount: (sanitized['max_discount'] ?? 0.0) as double,
+        contactPerson: sanitized['contact_person'] != null
+            ? int.tryParse(sanitized['contact_person'].toString())
+            : int.tryParse(sanitized['user_id'].toString()),
+        contactEmail: sanitized['contact_email']?.toString(),
+        contactPhone: sanitized['contact_phone']?.toString(),
+        contactDocument: sanitized['contact_document']?.toString() ?? '',
+        maxDiscount: (sanitized['max_discount'] ?? 0.0) is num ? (sanitized['max_discount'] ?? 0.0).toDouble() : 0.0,
         createdAt: DateTime.now(),
       );
 
@@ -93,8 +89,8 @@ class PartnerController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїР°СЂС‚РЅРµСЂР°', e, requestId: RequestContextUtils.getRequestId(request));
-      return Response(400, body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
+      await LoggingUtils.logError('Ошибка создания партнёра', e, requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -114,10 +110,7 @@ class PartnerController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -126,15 +119,12 @@ class PartnerController {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
       final partnerId = int.parse(id);
       await _partnerService.deletePartner(partnerId);
-      final body = jsonEncode({'message': 'РџР°СЂС‚РЅРµСЂ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'});
+      final body = jsonEncode({'message': 'Партнёр успешно удалён'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 

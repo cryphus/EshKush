@@ -2,14 +2,15 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/ProductsService.dart';
-import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
 import '../model/dto/responses/ProductResponseDto.dart';
 import '../model/dto/requests/CreateProductDto.dart';
 import '../model/dto/requests/UpdateProductDto.dart';
+import '../utils/PaginationUtils.dart';
 
 class ProductsController {
   final ProductsService _productsService;
@@ -42,8 +43,12 @@ class ProductsController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final products = await _productsService.getAllProducts();
-      final responseBody = jsonEncode(products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList());
+      final pagination = PaginationUtils.parse(request);
+      final products = await _productsService.getAllProducts(limit: pagination.limit, offset: pagination.offset);
+      final responseBody = jsonEncode(PaginationUtils.wrap(
+        products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList(),
+        pagination,
+      ));
       
       final response = Response.ok(
         responseBody,
@@ -60,7 +65,7 @@ class ProductsController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃРїРёСЃРєР° РїСЂРѕРґСѓРєС‚РѕРІ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -76,7 +81,7 @@ class ProductsController {
 
       final productId = int.tryParse(id);
       if (productId == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїСЂРѕРґСѓРєС‚Р°');
+        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения транзакций по методу оплаты', headers: _getCorsHeaders());
       }
 
       final product = await _productsService.getProductById(productId);
@@ -98,7 +103,7 @@ class ProductsController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(404, 'РџСЂРѕРґСѓРєС‚ РЅРµ РЅР°Р№РґРµРЅ');
+      return ErrorResponseUtils.errorResponseWithMessage('Продукт не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
     }
   }
 
@@ -113,14 +118,10 @@ class ProductsController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
              final data = jsonDecode(body);
@@ -131,7 +132,7 @@ class ProductsController {
          
          final product = await _productsService.createProduct(createDto.toEntityData());
         await LoggingUtils.logInfo(
-          'РЎРѕР·РґР°РЅ РЅРѕРІС‹Р№ РїСЂРѕРґСѓРєС‚',
+          'Некорректная сумма',
           context: {
             'productId': product.id,
             'name': product.name,
@@ -155,11 +156,11 @@ class ProductsController {
 
         return response;
       } on ValidationException catch (e) {
-        return _createErrorResponse(400, e.toString());
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -174,19 +175,15 @@ class ProductsController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final productId = int.tryParse(id);
       if (productId == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїСЂРѕРґСѓРєС‚Р°');
+        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения транзакций по методу оплаты', headers: _getCorsHeaders());
       }
 
              final data = jsonDecode(body);
@@ -196,7 +193,7 @@ class ProductsController {
          final product = await _productsService.updateProduct(productId, updateDto.toEntityData());
         
         await LoggingUtils.logInfo(
-          'РћР±РЅРѕРІР»РµРЅ РїСЂРѕРґСѓРєС‚',
+          'Некорректный ID',
           context: {
             'productId': product.id,
             'name': product.name,
@@ -220,11 +217,11 @@ class ProductsController {
 
         return response;
       } on ValidationException catch (e) {
-        return _createErrorResponse(400, e.toString());
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -238,30 +235,26 @@ class ProductsController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final productId = int.tryParse(id);
       if (productId == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїСЂРѕРґСѓРєС‚Р°');
+        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения транзакций по методу оплаты', headers: _getCorsHeaders());
       }
 
       await _productsService.deleteProduct(productId);
       
       await LoggingUtils.logInfo(
-        'РЈРґР°Р»РµРЅ РїСЂРѕРґСѓРєС‚',
+        'TTL в секундах',
         context: {'productId': productId},
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final responseBody = jsonEncode({'message': 'РџСЂРѕРґСѓРєС‚ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'});
+      final responseBody = jsonEncode({'message': 'Продукт успешно удалён'});
       final response = Response.ok(
         responseBody,
         headers: _getCorsHeaders(),
@@ -277,7 +270,7 @@ class ProductsController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -293,11 +286,15 @@ class ProductsController {
 
       final categoryIdInt = int.tryParse(categoryId);
       if (categoryIdInt == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РєР°С‚РµРіРѕСЂРёРё');
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID категории', headers: _getCorsHeaders());
       }
 
-      final products = await _productsService.getProductsByCategory(categoryIdInt);
-      final responseBody = jsonEncode(products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList());
+      final pagination = PaginationUtils.parse(request);
+      final products = await _productsService.getProductsByCategory(categoryIdInt, limit: pagination.limit, offset: pagination.offset);
+      final responseBody = jsonEncode(PaginationUtils.wrap(
+        products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList(),
+        pagination,
+      ));
       
       final response = Response.ok(
         responseBody,
@@ -314,7 +311,7 @@ class ProductsController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРґСѓРєС‚РѕРІ РїРѕ РєР°С‚РµРіРѕСЂРёРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -337,7 +334,7 @@ class ProductsController {
       );
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёР№ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -351,14 +348,10 @@ class ProductsController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final productId = int.parse(id);
@@ -374,7 +367,7 @@ class ProductsController {
       );
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёР№ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
@@ -390,11 +383,15 @@ class ProductsController {
 
       final pointIdInt = int.tryParse(pointId);
       if (pointIdInt == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID точки', headers: _getCorsHeaders());
       }
 
-      final products = await _productsService.getProductsByPointId(pointIdInt);
-      final responseBody = jsonEncode(products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList());
+      final pagination = PaginationUtils.parse(request);
+      final products = await _productsService.getProductsByPointId(pointIdInt, limit: pagination.limit, offset: pagination.offset);
+      final responseBody = jsonEncode(PaginationUtils.wrap(
+        products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList(),
+        pagination,
+      ));
       
       final response = Response.ok(
         responseBody,
@@ -411,21 +408,10 @@ class ProductsController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРґСѓРєС‚РѕРІ РїРѕ ID С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
 
-  bool _isAdmin(Map<String, dynamic> payload) {
-    return payload['role'] == 'admin';
-  }
-
-  Response _createErrorResponse(int statusCode, String message) {
-    return Response(
-      statusCode,
-      body: jsonEncode({'error': message}),
-      headers: _getCorsHeaders(),
-    );
-  }
 
   Map<String, String> _getCorsHeaders() {
     return {'Content-Type': 'application/json'};

@@ -24,18 +24,12 @@ class UserSessionController {
   Future<Response> getSession(Request request) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
       final session = await _sessionService.getCurrentActiveSessionForUser(payload['id']);
       if (session == null) {
-        return Response(404, body: jsonEncode({'error': 'РђРєС‚РёРІРЅР°СЏ СЃРµСЃСЃРёСЏ РЅРµ РЅР°Р№РґРµРЅР°'}), headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Активная сессия не найдена', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       final body = jsonEncode(session.toJson());
@@ -43,7 +37,7 @@ class UserSessionController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚РµРєСѓС‰РµР№ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения списка сессий', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -51,15 +45,9 @@ class UserSessionController {
   Future<Response> getUserSessions(Request request) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
       final sessions = await _sessionService.getUserSessions(payload['id']);
 
       final body = jsonEncode(sessions.map((s) => s.toJson()).toList());
@@ -75,23 +63,17 @@ class UserSessionController {
   Future<Response> createSession(Request request) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
+      final token = request.headers['authorization']?.replaceAll('Bearer ', '') ?? '';
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
       final data = jsonDecode(body);
       final refreshJti = payload['rtj']?.toString() ?? '';
       if (refreshJti.isEmpty) {
-        return Response(401, body: jsonEncode({'error': 'Требуется refresh jti'}), headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Требуется refresh jti', code: ErrorCode.unauthorized, headers: _getCorsHeaders());
       }
-      
       final session = await _sessionService.createSession(
         userId: payload['id'],
         userAgent: request.headers['user-agent'] ?? 'unknown',
@@ -115,18 +97,12 @@ class UserSessionController {
   Future<Response> terminateSession(Request request) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
       final session = await _sessionService.getCurrentActiveSessionForUser(payload['id']);
       if (session == null) {
-        return Response(404, body: jsonEncode({'error': 'РђРєС‚РёРІРЅР°СЏ СЃРµСЃСЃРёСЏ РЅРµ РЅР°Р№РґРµРЅР°'}), headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Активная сессия не найдена', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
       await _sessionService.terminateSession(session);
 
@@ -143,15 +119,9 @@ class UserSessionController {
   Future<Response> terminateAllSessions(Request request) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
       await _sessionService.terminateAllUserSessions(payload['id']);
 
       final body = jsonEncode({'message': 'Р’СЃРµ СЃРµСЃСЃРёРё Р·Р°РІРµСЂС€РµРЅС‹'});
@@ -167,29 +137,20 @@ class UserSessionController {
   Future<Response> extendSession(Request request) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
       final data = jsonDecode(body);
       
       if (data['duration'] == null) {
-        return Response(400, 
-          body: jsonEncode({'error': 'РќРµ СѓРєР°Р·Р°РЅР° РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ РїСЂРѕРґР»РµРЅРёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
+        return ErrorResponseUtils.errorResponseWithMessage('Не указана длительность продления', headers: _getCorsHeaders());
       }
 
       final session = await _sessionService.getCurrentActiveSessionForUser(payload['id']);
       if (session == null) {
-        return Response(404, body: jsonEncode({'error': 'РђРєС‚РёРІРЅР°СЏ СЃРµСЃСЃРёСЏ РЅРµ РЅР°Р№РґРµРЅР°'}), headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Активная сессия не найдена', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
       await _sessionService.extendSession(session, Duration(days: data['duration'] as int));
 

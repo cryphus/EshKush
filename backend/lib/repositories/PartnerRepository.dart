@@ -182,7 +182,7 @@ class PartnerRepository {
         throw Exception('Партнер не найден');
       }
 
-      print('Результат обновления: $result');
+      print('Некорректный ID');
       return Partner.fromJson(result);
     } catch (e) {
       print('Ошибка обновления партнера: $e');

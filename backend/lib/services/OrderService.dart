@@ -34,17 +34,17 @@ class OrderService {
     }
   }
 
-  Future<List<Order>> getAllOrders({OrderStatus? status}) async {
+  Future<List<Order>> getAllOrders({
+    OrderStatus? status,
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
-      final query = status != null 
-          ? 'SELECT * FROM orders WHERE status = @status::order_status'
-          : 'SELECT * FROM orders';
-      final Map<String, dynamic> params = status != null 
-          ? {'status': status.name.toLowerCase()} 
-          : {};
-      
-      final results = await _orderRepository.query(query, params: params);
-      return results.map((map) => Order.fromJson(map)).toList();
+      return await _orderRepository.getAllOrders(
+        status: status,
+        limit: limit,
+        offset: offset,
+      );
     } catch (e) {
       print('Ошибка получения списка заказов: $e');
       rethrow;

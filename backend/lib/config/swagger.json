@@ -3,7 +3,7 @@
   "info": {
     "title": "EshKush API",
     "version": "1.0.0",
-    "description": "API для приложения EshKush"
+    "description": "API для приложения EshKush. Ошибки возвращаются в формате ApiError (ErrorResponseUtils)."
   },
   "servers": [
     {
@@ -48,6 +48,36 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CreateProfileRequest": {
+        "type": "object",
+        "required": ["user_id", "first_name", "last_name"],
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "ID пользователя, для которого создаётся профиль. Должен существовать в таблице users."
+          },
+          "first_name": {
+            "type": "string",
+            "description": "Имя, обязательно, проходит ValidationUtils.isValidName"
+          },
+          "last_name": {
+            "type": "string",
+            "description": "Фамилия, обязательно, проходит ValidationUtils.isValidName"
+          },
+          "avatar_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "Необязательно, если задано — должен начинаться с http"
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500,
+            "description": "Необязательно, максимум 500 символов"
           }
         }
       },
@@ -897,6 +927,30 @@
             "format": "date-time"
           }
         }
+      },
+      "ApiError": {
+        "type": "object",
+        "description": "Единый формат ошибки API (ErrorResponseUtils)",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": ["VALIDATION_ERROR", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "CONFLICT", "BAD_REQUEST", "INTERNAL_ERROR"],
+                "description": "Код ошибки (ErrorCode)"
+              },
+              "message": {
+                "type": "string",
+                "description": "Сообщение для клиента"
+              },
+              "requestId": {
+                "type": "string",
+                "description": "Идентификатор запроса для логов"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -965,6 +1019,30 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Ошибка запроса (BAD_REQUEST)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "401": {
+            "description": "Недействительный токен (UNAUTHORIZED)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка сервера (INTERNAL_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
           }
         }
       }
@@ -979,19 +1057,37 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": ["email", "username", "password", "password_confirm", "number"],
                 "properties": {
                   "email": {
                     "type": "string",
-                    "format": "email"
+                    "format": "email",
+                    "description": "Обязателен, валидный email"
                   },
                   "username": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 30,
+                    "pattern": "^[a-zA-Z0-9_]{3,30}$",
+                    "description": "3-30 символов, буквы/цифры/подчёркивание"
                   },
                   "password": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Минимум 8 символов, заглавная и строчная буквы, цифра и спецсимвол"
                   },
-                  "phoneNumber": {
-                    "type": "string"
+                  "password_confirm": {
+                    "type": "string",
+                    "description": "Обязателен, должен совпадать с password"
+                  },
+                  "number": {
+                    "type": "string",
+                    "description": "Телефон +7XXXXXXXXXX / 8XXXXXXXXXX и др. согласно валидации"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": ["guest", "user", "partner", "support", "admin"],
+                    "description": "Опционально, по умолчанию user"
                   }
                 }
               }
@@ -1017,6 +1113,22 @@
                     }
                   }
                 }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации (VALIDATION_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "409": {
+            "description": "Пользователь уже существует (CONFLICT)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
               }
             }
           }
@@ -1311,10 +1423,10 @@
         }
       }
     },
-    "/user/profile": {
+    "/profiles": {
       "get": {
-        "summary": "Получить профиль пользователя",
-        "tags": ["Пользователи"],
+        "summary": "Получить профиль текущего пользователя",
+        "tags": ["Профиль"],
         "security": [
           {
             "bearerAuth": []
@@ -1330,12 +1442,20 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Профиль не найден (NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
           }
         }
       },
-      "put": {
-        "summary": "Обновить профиль пользователя",
-        "tags": ["Пользователи"],
+      "post": {
+        "summary": "Создать профиль пользователя",
+        "tags": ["Профиль"],
         "security": [
           {
             "bearerAuth": []
@@ -1346,33 +1466,27 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "firstName": {
-                    "type": "string"
-                  },
-                  "lastName": {
-                    "type": "string"
-                  },
-                  "avatar": {
-                    "type": "string"
-                  },
-                  "preferences": {
-                    "type": "object"
-                  }
-                }
+                "$ref": "#/components/schemas/CreateProfileRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Профиль обновлен",
+            "description": "Профиль создан",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Profile"
                 }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации профиля (VALIDATION_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
               }
             }
           }

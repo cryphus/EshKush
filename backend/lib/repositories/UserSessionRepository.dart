@@ -170,6 +170,22 @@ class UserSessionRepository {
     }
   }
 
+  Future<void> addManyToBlacklist(List<String> jtiHashes, DateTime expiresAt) async {
+    try {
+      await queryOne(
+        '''
+        INSERT INTO token_blacklist (jti_hash, expires_at)
+        SELECT UNNEST(@hashes::text[]), @expiresAt
+        ON CONFLICT (jti_hash) DO UPDATE SET expires_at = EXCLUDED.expires_at
+        RETURNING jti_hash
+        ''',
+        params: {'hashes': jtiHashes, 'expiresAt': expiresAt},
+      );
+    } catch (e) {
+      print('Ошибка пакетного добавления в blacklist: $e');
+    }
+  }
+
   Future<UserSessions?> findActiveByRefreshJtiHash(String refreshJtiHash) async {
     try {
       if (await isBlacklisted(refreshJtiHash)) return null;
@@ -233,9 +249,13 @@ class UserSessionRepository {
         params: {'userId': userId},
       );
       final blacklistExpires = DateTime.now().add(const Duration(days: 8));
-      for (final row in sessions) {
-        final hash = row['refresh_jti_hash']?.toString();
-        if (hash != null && hash.isNotEmpty) await addToBlacklist(hash, blacklistExpires);
+      final hashes = sessions
+          .map((r) => r['refresh_jti_hash']?.toString())
+          .where((h) => h != null && h.isNotEmpty)
+          .cast<String>()
+          .toList();
+      if (hashes.isNotEmpty) {
+        await addManyToBlacklist(hashes, blacklistExpires);
       }
       await queryOne(
         '''

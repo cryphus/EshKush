@@ -1,6 +1,10 @@
 import '../../../utils/AuthUtils.dart';
 import '../../../utils/ValidationUtils.dart';
 
+/// Контракт DTO регистрации пользователя.
+/// Обязательные поля: username (3+ символов, допустимые символы), email (формат email),
+/// password (8+ символов, заглавная/строчная/цифра/спецсимвол), phoneNumber (формат телефона).
+/// Опционально: role (если передан — проверяется по списку допустимых ролей).
 bool _isValidPhoneNumber(String phone) {
   if (phone.isEmpty) return false;
   final cleanPhone = phone.replaceAll(RegExp(r'[\s\-\(\)]'), '');
@@ -36,7 +40,8 @@ class CreateUserDto {
     if (username.isEmpty || username.length < 3) {
       errors.add('Username должен быть минимум 3 символа');
     }
-    if (!ValidationUtils.isValidName(username)) {
+    // Используем те же правила, что и UserValidationUtils (буквы/цифры/подчёркивание, 3-30 символов)
+    if (!UserValidationUtils.isValidUsername(username)) {
       errors.add('Некорректный username');
     }
 

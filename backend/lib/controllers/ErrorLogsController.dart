@@ -4,36 +4,31 @@ import 'dart:convert';
 import '../services/ErrorLogsService.dart';
 import '../utils/ErrorResponseUtils.dart';
 import '../model/enums/ErrorSeverity.dart';
-import '../utils/AuthUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class ErrorLogsController {
   final ErrorLogsService _service;
 
-  ErrorLogsController(this._service);
+  late final Router _router;
 
-  Router get router {
-    final router = Router();
-    router.get('/severity', getErrorsBySeverity);
-    router.get('/module', getErrorsByModule);
-    router.get('/user', getUserErrors);
-    router.get('/unresolved', getUnresolvedErrors);
-    router.get('/recent', getRecentErrors);
-    router.post('/resolve', markErrorAsResolved);
-    router.post('/log', logError);
-    return router;
+  ErrorLogsController(this._service) {
+    _router = Router();
+    _router.get('/', getRecentErrors);
+    _router.get('/severity', getErrorsBySeverity);
+    _router.get('/module', getErrorsByModule);
+    _router.get('/user', getUserErrors);
+    _router.get('/unresolved', getUnresolvedErrors);
+    _router.get('/recent', getRecentErrors);
+    _router.post('/resolve', markErrorAsResolved);
+    _router.post('/log', logError);
   }
+
+  Router get router => _router;
 
   Future<Response> getErrorsBySeverity(Request request) async {
     try {
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final severity = ErrorSeverity.values.firstWhere(
         (e) => e.toString().split('.').last == request.url.queryParameters['severity'],
         orElse: () => ErrorSeverity.medium,
@@ -45,24 +40,14 @@ class ErrorLogsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Future<Response> getErrorsByModule(Request request) async {
     try {
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final module = request.url.queryParameters['module'] ?? '';
       final errors = await _service.getErrorsByModule(module);
       return Response.ok(
@@ -70,31 +55,18 @@ class ErrorLogsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Future<Response> getUserErrors(Request request) async {
     try {
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
       
       if (userId == null) {
-        return Response(400, 
-          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ'}),
-          headers: _getCorsHeaders(),
-        );
+        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', headers: _getCorsHeaders());
       }
 
       final errors = await _service.getUserErrors(userId);
@@ -103,48 +75,28 @@ class ErrorLogsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Future<Response> getUnresolvedErrors(Request request) async {
     try {
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final errors = await _service.getUnresolvedErrors();
       return Response.ok(
         jsonEncode(errors.map((error) => error.toJson()).toList()),
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Future<Response> getRecentErrors(Request request) async {
     try {
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final limit = int.tryParse(request.url.queryParameters['limit'] ?? '100') ?? 100;
       final errors = await _service.getRecentErrors(limit: limit);
       return Response.ok(
@@ -152,66 +104,40 @@ class ErrorLogsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Future<Response> markErrorAsResolved(Request request) async {
     try {
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final errorId = int.tryParse(request.url.queryParameters['errorId'] ?? '');
       final resolvedBy = request.url.queryParameters['resolvedBy'] ?? '';
       
       if (errorId == null) {
-        return Response(400, 
-          body: jsonEncode({'error': 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС€РёР±РєРё'}),
-          headers: _getCorsHeaders(),
-        );
+        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС€РёР±РєРё', headers: _getCorsHeaders());
       }
       
       await _service.markErrorAsResolved(errorId, resolvedBy);
       return Response.ok(
-        jsonEncode({'message': 'РћС€РёР±РєР° СѓСЃРїРµС€РЅРѕ РѕС‚РјРµС‡РµРЅР° РєР°Рє СЂРµС€РµРЅРЅР°СЏ'}),
+        jsonEncode({'message': 'Ошибка успешно отмечена как решённая'}),
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Future<Response> logError(Request request) async {
     try {
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response(401, 
-          body: jsonEncode({'error': 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ'}),
-          headers: _getCorsHeaders(),
-        );
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
       final data = jsonDecode(await request.readAsString());
       
       if (data['errorMessage'] == null || data['errorCode'] == null || 
           data['stackTrace'] == null || data['severity'] == null) {
-        return Response(400, 
-          body: jsonEncode({'error': 'РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ'}),
-          headers: _getCorsHeaders(),
-        );
+        return ErrorResponseUtils.errorResponseWithMessage('РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ', headers: _getCorsHeaders());
       }
 
       final severity = ErrorSeverity.values.firstWhere(
@@ -234,10 +160,7 @@ class ErrorLogsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400, 
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 

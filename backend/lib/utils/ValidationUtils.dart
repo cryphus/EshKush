@@ -2,9 +2,12 @@ import 'package:html_unescape/html_unescape.dart';
 import 'SafeLoggingUtils.dart';
 import '../model/enums/UserRole.dart';
 
+/// Общий слой валидации: контракты полей (типы, длины, форматы, диапазоны).
+/// Используется DTO (CreateUserDto, LoginDto и др.) и контроллерами.
+/// Константы ограничений: maxNameLength, maxEmailLength, maxPasswordLength и т.д.
 class ValidationUtils {
   static final _htmlUnescape = HtmlUnescape();
-  
+
   // Максимальные длины полей
   static const int maxNameLength = 100;
   static const int maxEmailLength = 255;
@@ -348,7 +351,7 @@ class ValidationUtils {
       try {
         data['rating'] = double.parse(data['rating'].toString());
         if (data['rating'] < 0 || data['rating'] > 5) {
-          errors.add('Рейтинг должен быть от 0 до 5');
+          errors.add('Некорректный ID');
         }
       } catch (e) {
         errors.add('Рейтинг должен быть числом');
@@ -425,7 +428,7 @@ class ValidationUtils {
       try {
         data['rating'] = double.parse(data['rating'].toString());
         if (data['rating'] < 0 || data['rating'] > 5) {
-          errors.add('Рейтинг должен быть от 0 до 5');
+          errors.add('Некорректный ID');
         }
       } catch (e) {
         errors.add('Рейтинг должен быть числом');
@@ -666,10 +669,10 @@ class ValidationUtils {
   static Map<String, dynamic> validateAndSanitizePartnerData(Map<String, dynamic> data) {
     final sanitized = sanitizeJson(data);
     final errors = <String>[];
-    if (sanitized['user_id'] == null || !isValidNumber(sanitized['user_id'], min: 1)) {
+    if (sanitized['user_id'] != null && !isValidNumber(sanitized['user_id'], min: 1)) {
       errors.add('Некорректный ID пользователя');
     }
-    if (sanitized['name'] == null || !isValidName(sanitized['name'])) {
+    if (sanitized['name'] != null && !isValidName(sanitized['name'])) {
       errors.add('Некорректное имя партнера');
     }
     if (sanitized['contact_email'] != null && !isValidEmail(sanitized['contact_email'])) {
@@ -782,7 +785,7 @@ class ValidationUtils {
       try {
         data['rating'] = double.parse(data['rating'].toString());
         if (data['rating'] < 0 || data['rating'] > 5) {
-          errors.add('Рейтинг должен быть от 0 до 5');
+          errors.add('Некорректный ID');
         }
       } catch (e) {
         errors.add('Рейтинг должен быть числом');
@@ -816,7 +819,7 @@ class ValidationUtils {
       try {
         data['rating'] = double.parse(data['rating'].toString());
         if (data['rating'] < 0 || data['rating'] > 5) {
-          errors.add('Рейтинг должен быть от 0 до 5');
+          errors.add('Некорректный ID');
         }
       } catch (e) {
         errors.add('Рейтинг должен быть числом');

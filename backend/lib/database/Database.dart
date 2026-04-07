@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:postgres/postgres.dart';
 
+import '../utils/LoggingUtils.dart';
 
 class Database {
   static Database? _instance;
@@ -15,21 +16,40 @@ class Database {
 
   static Future<Database> _init() async {
     final db = Database._();
-    
     final env = Platform.environment;
 
-    print('Подключение к базе данных...');
-    print('Host: ${env['DB_HOST'] ?? 'localhost'}');
-    print('Port: ${env['DB_PORT'] ?? '5432'}');
-    print('Database: ${env['DB_NAME'] ?? 'flutter_auth'}');
-    print('User: ${env['DB_USER'] ?? 'postgres'}');
+    await LoggingUtils.logInfo(
+      'Подключение к базе данных',
+      context: {
+        'host': env['DB_HOST'] ?? 'localhost',
+        'port': env['DB_PORT'] ?? '5432',
+        'database': env['DB_NAME'] ?? 'flutter_auth',
+        'user': env['DB_USER'] ?? 'postgres',
+      },
+    );
+
+    final dbPassword = env['DB_PASSWORD'];
+    final isProd = (env['ENVIRONMENT'] ?? 'development') == 'production';
+    if (dbPassword == null || dbPassword.isEmpty) {
+      if (isProd) {
+        await LoggingUtils.logError(
+          'DB_PASSWORD не задан — запуск в production без пароля БД запрещён',
+          'ConfigError',
+          requestId: null,
+        );
+        exit(1);
+      }
+      await LoggingUtils.logInfo(
+        'DB_PASSWORD не задан, используется пустой пароль (только для dev)',
+      );
+    }
 
     db._connection = PostgreSQLConnection(
       env['DB_HOST'] ?? 'localhost',
       int.parse(env['DB_PORT'] ?? '5432'),
       env['DB_NAME'] ?? 'flutter_auth',
       username: env['DB_USER'] ?? 'postgres',
-      password: env['DB_PASSWORD'] ?? 'TQr132123',
+      password: dbPassword ?? '',
       timeoutInSeconds: 30,
       useSSL: false,
     );
@@ -37,10 +57,15 @@ class Database {
     try {
       await db._connection.open();
       await db._connection.execute('SET client_encoding TO \'UTF8\'');
-      print('Подключение к базе данных успешно установлено');
-    } catch (e) {
-      print('Ошибка подключения к базе данных: $e');
-      rethrow;
+      await LoggingUtils.logInfo('Подключение к базе данных успешно установлено');
+    } catch (e, stackTrace) {
+      await LoggingUtils.logError(
+        'Ошибка подключения к базе данных',
+        e,
+        requestId: null,
+        stackTrace: stackTrace,
+      );
+      exit(1);
     }
     return db;
   }

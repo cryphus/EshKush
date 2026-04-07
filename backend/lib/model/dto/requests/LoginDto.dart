@@ -1,5 +1,6 @@
-﻿import '../../../utils/ValidationUtils.dart';
+import '../../../utils/ValidationUtils.dart';
 
+/// Контракт DTO входа: обязательные поля username и password (непустые строки).
 class LoginDto {
   final String username;
   final String password;

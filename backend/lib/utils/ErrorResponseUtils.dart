@@ -32,7 +32,9 @@ class ErrorResponseUtils {
     if (e == null) return ErrorCode.internalError;
     if (e is ValidationException) return ErrorCode.validationError;
     final msg = e.toString().toLowerCase();
-    if (msg.contains('unauthorized') || msg.contains('токен') || msg.contains('авториз')) return ErrorCode.unauthorized;
+    if (msg.contains('unauthorized') || msg.contains('токен') || msg.contains('авториз') ||
+        msg.contains('неверный') || msg.contains('недействительный') || msg.contains('token') ||
+        msg.contains('неверные') || msg.contains('invalid')) return ErrorCode.unauthorized;
     if (msg.contains('forbidden') || msg.contains('доступ')) return ErrorCode.forbidden;
     if (msg.contains('not found') || msg.contains('не найден')) return ErrorCode.notFound;
     if (msg.contains('conflict') || msg.contains('уже существует')) return ErrorCode.conflict;
@@ -67,7 +69,7 @@ class ErrorResponseUtils {
     };
   }
 
-  /// Единый ответ об ошибке: статус, стабильный код, безопасное сообщение.
+  /// Единый ответ об ошибке по исключению: статус, стабильный код, безопасное сообщение.
   static Response errorResponse(
     dynamic e, {
     String? requestId,
@@ -77,6 +79,21 @@ class ErrorResponseUtils {
     final code = forceCode ?? errorCodeFromException(e);
     final status = statusFromCode(code);
     final message = clientSafeErrorMessage(e);
+    final body = buildBody(code, message);
+    if (requestId != null) body['requestId'] = requestId;
+    final h = Map<String, String>.from(headers ?? {});
+    h['Content-Type'] = 'application/json';
+    return Response(status, body: jsonEncode(body), headers: h);
+  }
+
+  /// Ответ об ошибке по явному сообщению и коду (без исключения).
+  static Response errorResponseWithMessage(
+    String message, {
+    ErrorCode code = ErrorCode.badRequest,
+    String? requestId,
+    Map<String, String>? headers,
+  }) {
+    final status = statusFromCode(code);
     final body = buildBody(code, message);
     if (requestId != null) body['requestId'] = requestId;
     final h = Map<String, String>.from(headers ?? {});

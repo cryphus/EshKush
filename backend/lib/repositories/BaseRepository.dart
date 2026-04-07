@@ -40,10 +40,13 @@ abstract class BaseRepository {
     }
   }
 
+  /// Выполняет [callback] в одной транзакции. Результат колбека возвращается;
+  /// колбек вызывается только один раз — внутри транзакции (не на основном connection).
   Future<T> transaction<T>(Future<T> Function(PostgreSQLExecutionContext) callback) async {
+    dynamic result;
     await connection.transaction((txn) async {
-      await callback(txn);
+      result = await callback(txn);
     });
-    return callback(connection);
+    return result as T;
   }
 } 

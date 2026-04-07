@@ -5,12 +5,14 @@ import '../services/ChangesService.dart';
 import '../model/enums/EntityType.dart';
 import '../model/enums/ChangeType.dart';
 import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class ChangesController {
   final ChangesService _service;
   final Router _router = Router();
 
   ChangesController(this._service) {
+    _router.get('/', _getRecentChanges);
     _router.get('/entity/<entityType>/<entityId>', _getEntityChanges);
     _router.get('/user/<userId>', _getUserChanges);
     _router.get('/type/<changeType>', _getChangeTypeChanges);
@@ -34,8 +36,9 @@ class ChangesController {
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: RequestContextUtils.getRequestId(request),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -59,9 +62,9 @@ class ChangesController {
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      print('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $e');
-      return Response.internalServerError(
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: RequestContextUtils.getRequestId(request),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -80,8 +83,9 @@ class ChangesController {
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: RequestContextUtils.getRequestId(request),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -96,8 +100,9 @@ class ChangesController {
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: RequestContextUtils.getRequestId(request),
         headers: {'content-type': 'application/json'},
       );
     }
@@ -117,8 +122,9 @@ class ChangesController {
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: RequestContextUtils.getRequestId(request),
         headers: {'content-type': 'application/json'},
       );
     }

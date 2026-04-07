@@ -7,14 +7,12 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:backend/database/Database.dart';
 import 'package:backend/services/AuthService.dart';
 import 'package:backend/repositories/UserRepository.dart';
-import 'package:backend/utils/AuthUtils.dart';
-import 'package:backend/model/entities/UserSessions.dart';
 import 'package:backend/middleware/SecurityMiddleware.dart';
 import 'package:backend/middleware/CorsMiddleware.dart';
 import 'package:backend/services/CacheService.dart';
 import 'package:backend/config/AppConfig.dart';
-// import 'package:path/path.dart' as p;
-// import 'package:shelf_cors_headers/shelf_cors_headers.dart';
+import 'package:backend/config/Routes.dart';
+import 'package:backend/controllers/AuthController.dart';
 import 'package:backend/controllers/PointController.dart';
 import 'package:backend/services/PointService.dart';
 import 'package:backend/repositories/PointRepository.dart';
@@ -84,8 +82,7 @@ import 'package:backend/services/PaymentTransactionsService.dart';
 import 'package:backend/repositories/PaymentTransactionsRepository.dart';
 import 'package:backend/middleware/LoggingMiddleware.dart';
 import 'package:backend/middleware/RbacMiddleware.dart';
-import 'package:backend/services/VKAuthHandler.dart' as vk_auth;
-import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:backend/controllers/HealthController.dart';
 
 void main() async {
   try {
@@ -198,8 +195,17 @@ void main() async {
     );
 
     final swaggerController = SwaggerController();
+    final healthController = HealthController(db.connection, cacheService);
 
     final app = Router();
+
+    final authController = AuthController(
+      authService,
+      userRepository,
+      userSessionRepository,
+    );
+
+    final corsMiddleware = CorsMiddleware(allowedOrigins: config.allowedOrigins).call();
 
     // Корневой маршрут
     app.get('/', (Request request) {
@@ -214,292 +220,70 @@ void main() async {
             'products': '/products',
             'orders': '/orders',
             'users': '/users',
-          }
+          },
         }),
         headers: {'content-type': 'application/json'},
       );
     });
 
-    final corsMiddleware = CorsMiddleware(allowedOrigins: config.allowedOrigins).call();
-
-    app.post('/auth/google', (Request request) async {
-      try {
-        final body = await request.readAsString();
-        final data = jsonDecode(body);
-        
-        // Проверяем наличие idToken
-        if (data['idToken'] == null) {
-          return Response(
-            400,
-            body: jsonEncode({'error': 'Отсутствует idToken от Google'}),
-          );
-        }
-
-        // Проверяем валидность Google ID токена
-        try {
-          final decodedToken = JwtDecoder.decode(data['idToken']);
-          final clientId = Platform.environment['GOOGLE_CLIENT_ID'];
-          final clientSecret = Platform.environment['GOOGLE_CLIENT_SECRET'];
-          
-          if (clientId == null || clientSecret == null) {
-            throw Exception('Отсутствуют учетные данные Google OAuth2');
-          }
-
-          if (decodedToken['iss'] != 'https://accounts.google.com' ||
-              decodedToken['aud'] != clientId) {
-            return Response(
-              401,
-              body: jsonEncode({'error': 'Недействительный Google ID токен'}),
-            );
-          }
-        } catch (e) {
-          return Response(
-            401,
-            body: jsonEncode({'error': 'Ошибка проверки Google ID токена: $e'}),
-          );
-        }
-        
-        final user = await userRepository.findByEmail(data['email']);
-        
-        
-        if (user != null) {
-          final bundle = AuthUtils.generateTokenBundle(user.id, user.role.name.toLowerCase());
-          final refreshJti = bundle['refresh_jti'] as String;
-          final refreshExpiresAt = bundle['refresh_expires_at'] as DateTime;
-
-          await userSessionRepository.create(
-            UserSessions(
-              id: 0,
-              userId: user.id,
-              createdAt: DateTime.now(),
-              expiresAt: refreshExpiresAt,
-              lastActive: DateTime.now(),
-              userAgent: request.headers['user-agent'] ?? 'unknown',
-              ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
-              token: bundle['access_token'] as String,
-              refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
-            ),
-          );
-
-          final tokens = {
-            'access_token': bundle['access_token'],
-            'refresh_token': bundle['refresh_token'],
-          };
-          return Response.ok(
-            jsonEncode({
-              ...tokens,
-              'user': {
-                'email': user.email,
-                'username': user.username,
-                'role': user.role.name.toLowerCase(),
-              }
-            }),
-          );
-        } else {
-          return Response(
-            404,
-            body: jsonEncode({
-              'needsRegistration': true,
-              'email': data['email'],
-              'displayName': data['displayName'],
-            }),
-          );
-        }
-      } catch (e) {
-        return Response(
-          400,
-          body: jsonEncode({'error': e.toString()}),
-        );
-      }
-    });
-
-    app.post('/auth/vk', (Request request) {
-      return vk_auth.handleVkAuth(request, userRepository, userSessionRepository);
-    });
-
-    app.post('/auth/register', (Request request) async {
-      try {
-        final body = await request.readAsString();
-        final data = jsonDecode(body);
-        
-        final result = await authService.register(
-          data,
-          userAgent: request.headers['user-agent'] ?? 'unknown',
-          ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
-        );
-        
-        return Response.ok(
-          jsonEncode(result),
-        );
-      } catch (e) {
-        return Response(
-          400,
-          body: jsonEncode({'error': e.toString()}),
-        );
-      }
-    });
-
-    app.post('/auth/refresh', (Request request) async {
-      try {
-        final body = await request.readAsString();
-        final data = jsonDecode(body);
-        
-        if (data['refresh_token'] == null) {
-          return Response(400, body: jsonEncode({'error': 'Требуется refresh_token'}));
-        }
-
-        final result = await authService.refreshToken(data['refresh_token']);
-        return Response.ok(jsonEncode(result));
-      } catch (e) {
-        return Response(401, body: jsonEncode({'error': e.toString()}));
-      }
-    });
-
-    app.post('/login', (Request request) async {
-      try {
-        final data = jsonDecode(await request.readAsString());
-        final result = await authService.login(
-          data['username'],
-          data['password'],
-          userAgent: request.headers['user-agent'] ?? 'unknown',
-          ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
-        );
-        return Response.ok(jsonEncode(result));
-      } catch (e) {
-        return Response(401, body: jsonEncode({'error': e.toString()}));
-      }
-    });
-
-    app.post('/auth/check_user', (Request request) async {
-      try {
-        final body = await request.readAsString();
-        final data = jsonDecode(body);
-        final phoneNumber = data['phoneNumber'] as String;
-        
-        final user = await userRepository.queryOne(
-          '''
-          SELECT 
-            id,
-            username,
-            password,
-            email,
-            number,
-            role,
-            to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-            CASE 
-              WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-              ELSE NULL
-            END as updated_at
-          FROM users 
-          WHERE number = @number
-          ''',
-          params: {'number': phoneNumber},
-        );
-        
-        return Response.ok(
-          jsonEncode({
-            'exists': user != null,
-            'user': user
-          }),
-        );
-      } catch (e) {
-        return Response(
-          400,
-          body: jsonEncode({'error': e.toString()}),
-        );
-      }
-    });
-
-    // Подключаем маршруты PointController
-    app.mount('/points', pointController.router);
-    
-    // Подключаем маршруты CityController
-    app.mount('/cities', cityController.router);
-
-    // Подключаем маршруты PartnerController
-    app.mount('/partners', partnerController.router);
-
-    // Подключаем маршруты PartnerSettingsController
-    app.mount('/partner-settings', partnerSettingsController.router);
-
-    // Подключаем маршруты UserController
-    app.mount('/users', userController.router);
-    // Роуты избранного
-    app.mount('/favorites', userFavoriteController.router);
-    // Дублируем роуты избранного и под префиксом /users/favorites
-    app.mount('/users/favorites', userFavoriteController.router);
-
-    // Подключаем маршруты ProfileController
-    app.mount('/profiles', profileController.router);
-    // Подключаем маршруты UserSessionController
-    app.mount('/sessions', userSessionController.router);
-
-    // Подключаем маршруты ChangesController
-    app.mount('/changes', changesController.router);
-
-    // Подключаем маршруты PointCategoryController
-    app.mount('/point-categories', pointCategoryController.router);
-
-    // Подключаем маршруты ProductCategoryController
-    app.mount('/product-categories', productCategoryController.router);
-
-    // Подключаем маршруты PromoCodesController
-    app.mount('/promo-codes', promoCodesController.router);
-
-    // Подключаем маршруты PointReviewController
-    app.mount('/reviews', pointReviewController.router);
-
-    // Подключаем маршруты ProductsController
-    app.mount('/products', productsController.router);
-
-    // Подключаем маршруты OrderController
-    app.mount('/orders', orderController.router);
-    // Подключаем маршруты OrderActionsController
-    app.mount('/order-actions', orderActionsController.router);
-    // Подключаем маршруты OrderHistoryController
-    app.mount('/order-history', orderHistoryController.router);
-    app.mount('/partner-statistics', partnerStatisticsController.router);
-    app.mount('/order-history', orderHistoryController.router);
-    // Подключаем маршруты ActionLogController
-    app.mount('/action-logs', actionLogController.router);
-    // Подключаем маршруты ErrorLogsController
-    app.mount('/error-logs', errorLogsController.router);
-    // Подключаем маршруты CacheController
-    app.mount('/cache', cacheController.router);
-    // Подключаем маршруты NotificationController
-    app.mount('/notifications', notificationController.router);
-    // Подключаем маршруты PaymentTransactionsController
-    app.mount('/payment-transactions', paymentTransactionsController.router);
-
-    // Подключаем маршруты Swagger
-    app.mount('/swagger', swaggerController.router);
-
-    final rbacRules = <String, Set<String>>{
-      // Явно админские/служебные разделы
-      'action-logs': {'admin'},
-      'error-logs': {'admin'},
-      'cache': {'admin'},
-      'partner-statistics': {'admin', 'support'},
-      'promo-codes': {'admin', 'support'},
-      'product-categories': {'admin', 'support'},
-      'point-categories': {'admin', 'support'},
-    };
+    // Монтирование из конфига Routes (один цикл, без дублирования путей)
+    final routers = [
+      authController.router,
+      pointController.router,
+      cityController.router,
+      partnerController.router,
+      partnerSettingsController.router,
+      userController.router,
+      userFavoriteController.router,
+      userFavoriteController.router, // /favorites и /users/favorites
+      profileController.router,
+      userSessionController.router,
+      changesController.router,
+      pointCategoryController.router,
+      productCategoryController.router,
+      promoCodesController.router,
+      pointReviewController.router,
+      productsController.router,
+      orderController.router,
+      orderActionsController.router,
+      orderHistoryController.router,
+      partnerStatisticsController.router,
+      actionLogController.router,
+      errorLogsController.router,
+      cacheController.router,
+      notificationController.router,
+      paymentTransactionsController.router,
+      swaggerController.router,
+      healthController.router,
+    ];
+    for (var i = 0; i < Routes.mountPathsInOrder.length; i++) {
+      app.mount(Routes.mountPathsInOrder[i], routers[i]);
+    }
 
     final handler = const Pipeline()
         .addMiddleware(corsMiddleware)
         .addMiddleware(SecurityMiddleware.securityHeaders())
+        .addMiddleware(SecurityMiddleware.rateLimiter(
+          maxRequests: config.rateLimitRequests,
+          window: config.rateLimitWindow,
+        ))
         .addMiddleware(
           SecurityMiddleware.checkJWT(
             userSessionRepository,
-            openPaths: ['auth', 'login', 'swagger'],
+            openPaths: Routes.openPathSegments,
           ),
         )
-        .addMiddleware(RbacMiddleware.withRoleRules(rbacRules))
+        .addMiddleware(RbacMiddleware.withRoleRules(Routes.rbacRoleRules))
         .addMiddleware(LoggingMiddleware.requestResponseLogger())
         .addHandler(app.call);
 
-    final server = await io.serve(handler, '0.0.0.0', 8080);
+    final server = await io.serve(handler, '0.0.0.0', config.port);
     print('Сервер запущен на http://localhost:${server.port}');
+
+    // Запуск API-тестов если задана переменная окружения RUN_TESTS=true
+    if (Platform.environment['RUN_TESTS'] == 'true') {
+      _runApiTests(); // intentionally not awaited — сервер продолжает работу
+    }
 
     Timer.periodic(const Duration(minutes: 15), (_) async {
       try {
@@ -514,5 +298,53 @@ void main() async {
     print('Ошибка запуска сервера: $e');
     print('Stack trace: $stackTrace');
     exit(1);
+  }
+}
+
+/// Запускает скомпилированный тест-бинарник (Docker) или dart-скрипт (локально).
+/// Вызывается асинхронно — сервер не блокируется.
+Future<void> _runApiTests() async {
+  // Дать серверу секунду полностью инициализироваться перед тестами
+  await Future<void>.delayed(const Duration(seconds: 2));
+  print('\n[API Tests] ══════════════════════════════════════════');
+  print('[API Tests] Запуск тестов...');
+
+  try {
+    final binDir = File(Platform.resolvedExecutable).parent.path;
+    final compiled = File('$binDir/api_test');
+
+    late Process proc;
+    if (compiled.existsSync()) {
+      // Docker: скомпилированный бинарник рядом с сервером
+      proc = await Process.start(
+        compiled.path, [],
+        mode: ProcessStartMode.inheritStdio,
+      );
+    } else {
+      // Локальная разработка: запуск через dart run
+      final scriptCandidates = [
+        '${Directory.current.path}/test/ApiTest.dart',
+        '${File(Platform.script.toFilePath()).parent.parent.path}/test/ApiTest.dart',
+      ];
+      final script = scriptCandidates.firstWhere(
+        (p) => File(p).existsSync(),
+        orElse: () => '',
+      );
+      if (script.isEmpty) {
+        print('[API Tests] Файл теста не найден. '
+            'Ожидается test/ApiTest.dart в корне проекта.');
+        return;
+      }
+      proc = await Process.start(
+        'dart', ['run', script],
+        mode: ProcessStartMode.inheritStdio,
+      );
+    }
+
+    final code = await proc.exitCode;
+    print('[API Tests] Завершено с кодом $code');
+    print('[API Tests] ══════════════════════════════════════════\n');
+  } catch (e) {
+    print('[API Tests] Ошибка запуска тестов: $e');
   }
 }

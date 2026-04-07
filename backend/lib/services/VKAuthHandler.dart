@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shelf/shelf.dart';
 
 import '../repositories/UserRepository.dart';
+import '../utils/ErrorResponseUtils.dart';
 import '../repositories/UserSessionRepository.dart';
 import '../utils/AuthUtils.dart';
 import '../model/entities/UserSessions.dart';
@@ -21,11 +22,10 @@ Future<Response> handleVkAuth(
     // Берём VK ID из username или id
     final rawId = data['username']?.toString() ?? data['id']?.toString();
     if (rawId == null || rawId.isEmpty) {
-      return Response(
-        400,
-        body: jsonEncode(
-          {'error': 'Отсутствует идентификатор пользователя VK (username/id)'},
-        ),
+      return ErrorResponseUtils.errorResponseWithMessage(
+        'Отсутствует идентификатор пользователя VK (username/id)',
+        code: ErrorCode.badRequest,
+        headers: {'Content-Type': 'application/json'},
       );
     }
 
@@ -93,9 +93,9 @@ Future<Response> handleVkAuth(
       }),
     );
   } catch (e) {
-    return Response(
-      400,
-      body: jsonEncode({'error': e.toString()}),
+    return ErrorResponseUtils.errorResponse(
+      e,
+      headers: {'Content-Type': 'application/json'},
     );
   }
 }

@@ -24,8 +24,8 @@ class CityController {
         await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
         return resp;
       } catch (e) {
-        await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РіРѕСЂРѕРґРѕРІ', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
+        await LoggingUtils.logError('Ошибка получения городов', e, requestId: RequestContextUtils.getRequestId(request));
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     });
 
@@ -34,18 +34,15 @@ class CityController {
         await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
         final city = await _service.getById(int.parse(id));
         if (city == null) {
-          return Response.notFound(
-            jsonEncode({'error': 'Р“РѕСЂРѕРґ РЅРµ РЅР°Р№РґРµРЅ'}),
-            headers: _getCorsHeaders(),
-          );
+          return ErrorResponseUtils.errorResponseWithMessage('Город не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
         }
         final body = jsonEncode(city.toJson());
         final resp = Response.ok(body, headers: _getCorsHeaders());
         await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
         return resp;
       } catch (e) {
-        await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РіРѕСЂРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
+        await LoggingUtils.logError('Ошибка получения города', e, requestId: RequestContextUtils.getRequestId(request));
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     });
 
@@ -58,7 +55,16 @@ class CityController {
         final bytes = utf8.encode(body);
         final decodedBody = utf8.decode(bytes);
         final json = jsonDecode(decodedBody) as Map<String, dynamic>;
-        
+
+        final name = json['name'];
+        if (name == null || name.toString().trim().isEmpty) {
+          return ErrorResponseUtils.errorResponseWithMessage(
+            'Поле name обязательно',
+            code: ErrorCode.badRequest,
+            headers: _getCorsHeaders(),
+          );
+        }
+
         final city = City.fromJson(json);
         
         final created = await _service.create(city);
@@ -67,8 +73,8 @@ class CityController {
         await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
         return resp;
       } catch (e) {
-        await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РіРѕСЂРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
+        await LoggingUtils.logError('Ошибка создания города', e, requestId: RequestContextUtils.getRequestId(request));
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     });
 
@@ -86,8 +92,8 @@ class CityController {
         await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
         return resp;
       } catch (e) {
-        await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РіРѕСЂРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
+        await LoggingUtils.logError('Ошибка обновления города', e, requestId: RequestContextUtils.getRequestId(request));
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     });
 
@@ -95,13 +101,13 @@ class CityController {
       try {
         await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
         await _service.delete(int.parse(id));
-        final body = jsonEncode({'message': 'Р“РѕСЂРѕРґ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'});
+        final body = jsonEncode({'message': 'Город успешно удалён'});
         final resp = Response.ok(body, headers: _getCorsHeaders());
         await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
         return resp;
       } catch (e) {
-        await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РіРѕСЂРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
-        return Response.internalServerError(body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}), headers: _getCorsHeaders());
+        await LoggingUtils.logError('Ошибка удаления города', e, requestId: RequestContextUtils.getRequestId(request));
+        return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     });
 

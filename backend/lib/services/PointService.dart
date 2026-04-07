@@ -35,46 +35,38 @@ class PointService {
     }
   }
 
-  Future<List<Point>> getAllPoints() async {
+  Future<List<Point>> getAllPoints({int limit = 20, int offset = 0}) async {
     try {
-      // Пытаемся получить из кеша
-      final cacheKey = CacheKeys.allPoints();
-      final cachedData = await _cacheService.get<List>(cacheKey);
-      if (cachedData != null) {
-        // Конвертируем JSON обратно в List<Point>
-        return cachedData.map((json) => Point.fromJson(json as Map<String, dynamic>)).toList();
+      if (limit == 20 && offset == 0) {
+        final cacheKey = CacheKeys.allPoints();
+        final cachedData = await _cacheService.get<List>(cacheKey);
+        if (cachedData != null) {
+          return cachedData.map((json) => Point.fromJson(json as Map<String, dynamic>)).toList();
+        }
+        final points = await _pointRepository.findAll(limit: limit, offset: offset);
+        await _cacheService.set(cacheKey, points, ttl: CacheTTL.point);
+        return points;
       }
-
-      // Если нет в кеше, получаем из БД
-      final points = await _pointRepository.findAll();
-      
-      // Сохраняем в кеш
-      await _cacheService.set(cacheKey, points, ttl: CacheTTL.point);
-      
-      return points;
+      return await _pointRepository.findAll(limit: limit, offset: offset);
     } catch (e) {
       print('Ошибка получения списка точек: $e');
       rethrow;
     }
   }
 
-  Future<List<Point>> getPointsByCategory(int categoryId) async {
+  Future<List<Point>> getPointsByCategory(int categoryId, {int limit = 20, int offset = 0}) async {
     try {
-      // Пытаемся получить из кеша
-      final cacheKey = CacheKeys.pointsByCategory(categoryId);
-      final cachedData = await _cacheService.get<List>(cacheKey);
-      if (cachedData != null) {
-        // Конвертируем JSON обратно в List<Point>
-        return cachedData.map((json) => Point.fromJson(json as Map<String, dynamic>)).toList();
+      if (limit == 20 && offset == 0) {
+        final cacheKey = CacheKeys.pointsByCategory(categoryId);
+        final cachedData = await _cacheService.get<List>(cacheKey);
+        if (cachedData != null) {
+          return cachedData.map((json) => Point.fromJson(json as Map<String, dynamic>)).toList();
+        }
+        final points = await _pointRepository.findByCategory(categoryId, limit: limit, offset: offset);
+        await _cacheService.set(cacheKey, points, ttl: CacheTTL.point);
+        return points;
       }
-
-      // Если нет в кеше, получаем из БД
-      final points = await _pointRepository.findByCategory(categoryId);
-      
-      // Сохраняем в кеш
-      await _cacheService.set(cacheKey, points, ttl: CacheTTL.point);
-      
-      return points;
+      return await _pointRepository.findByCategory(categoryId, limit: limit, offset: offset);
     } catch (e) {
       print('Ошибка получения точек по категории: $e');
       rethrow;
@@ -143,7 +135,7 @@ class PointService {
   Future<void> updateRating(int pointId, double rating) async {
     try {
       if (rating < 0 || rating > 5) {
-        throw Exception('Рейтинг должен быть от 0 до 5');
+        throw Exception('Некорректный ID');
       }
       
       final result = await _pointRepository.updateRating(pointId, rating);

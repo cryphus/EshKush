@@ -4,43 +4,32 @@ import 'dart:convert';
 import '../services/CacheService.dart';
 import '../utils/AuthUtilsWithCache.dart' as AuthCache;
 import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class CacheController {
   final CacheService _cacheService;
 
-  CacheController(this._cacheService);
+  late final Router _router;
 
-  Router get router {
-    final router = Router();
-
-    router.get('/stats', _getCacheStats);
-    
-    router.delete('/clear', _clearCache);
-    
-    router.delete('/clear/<pattern>', _clearCacheByPattern);
-    
-    router.get('/get/<key>', _getValue);
-    
-    router.post('/set', _setValue);
-    
-    router.delete('/delete/<key>', _deleteValue);
-    
-    router.get('/exists/<key>', _existsKey);
-    
-    router.get('/ttl/<key>', _getTTL);
-    
-    router.post('/expire/<key>', _setTTL);
-    
-    router.get('/tokens/stats', _getTokenStats);
-    
-    router.post('/tokens/invalidate', _invalidateToken);
-    
-    router.post('/tokens/invalidate-user', _invalidateUserTokens);
-    
-    router.post('/tokens/cleanup', _cleanupExpiredTokens);
-
-    return router;
+  CacheController(this._cacheService) {
+    _router = Router();
+    _router.get('/', _getCacheStats);
+    _router.get('/stats', _getCacheStats);
+    _router.delete('/clear', _clearCache);
+    _router.delete('/clear/<pattern>', _clearCacheByPattern);
+    _router.get('/get/<key>', _getValue);
+    _router.post('/set', _setValue);
+    _router.delete('/delete/<key>', _deleteValue);
+    _router.get('/exists/<key>', _existsKey);
+    _router.get('/ttl/<key>', _getTTL);
+    _router.post('/expire/<key>', _setTTL);
+    _router.get('/tokens/stats', _getTokenStats);
+    _router.post('/tokens/invalidate', _invalidateToken);
+    _router.post('/tokens/invalidate-user', _invalidateUserTokens);
+    _router.post('/tokens/cleanup', _cleanupExpiredTokens);
   }
+
+  Router get router => _router;
 
   Future<Response> _getCacheStats(Request request) async {
     try {
@@ -53,13 +42,7 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -69,18 +52,12 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': success,
-          'message': success ? 'РљРµС€ РѕС‡РёС‰РµРЅ' : 'РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РєРµС€Р°',
+          'message': success ? 'Кеш успешно очищен' : 'Ошибка очистки кеша',
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -96,13 +73,7 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -119,13 +90,7 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -142,18 +107,12 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': success,
-          'message': success ? 'Р—РЅР°С‡РµРЅРёРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅРѕ' : 'РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё Р·РЅР°С‡РµРЅРёСЏ',
+          'message': success ? 'Значение успешно сохранено' : 'Ошибка установки значения',
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -163,18 +122,12 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': success,
-          'message': success ? 'Р—РЅР°С‡РµРЅРёРµ СѓРґР°Р»РµРЅРѕ' : 'РљР»СЋС‡ РЅРµ РЅР°Р№РґРµРЅ',
+          'message': success ? 'Значение удалено' : 'Ключ не найден',
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -190,13 +143,7 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -208,18 +155,12 @@ class CacheController {
           'success': true,
           'key': key,
           'ttl': ttl,
-          'message': ttl == -1 ? 'РљР»СЋС‡ РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚ РёР»Рё РЅРµ РёРјРµРµС‚ TTL' : 'TTL РІ СЃРµРєСѓРЅРґР°С…',
+          'message': ttl == -1 ? 'Ключ не имеет TTL или не существует' : 'TTL в секундах',
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -233,18 +174,12 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': success,
-          'message': success ? 'TTL СѓСЃС‚Р°РЅРѕРІР»РµРЅ' : 'РљР»СЋС‡ РЅРµ РЅР°Р№РґРµРЅ',
+          'message': success ? 'TTL установлен' : 'Ключ не найден',
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -259,13 +194,7 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -280,18 +209,12 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': true,
-          'message': 'РўРѕРєРµРЅ РёРЅРІР°Р»РёРґРёСЂРѕРІР°РЅ',
+          'message': 'Токен инвалидирован',
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -310,13 +233,7 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -327,18 +244,12 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': true,
-          'message': 'РСЃС‚РµРєС€РёРµ С‚РѕРєРµРЅС‹ РѕС‡РёС‰РµРЅС‹',
+          'message': 'Истёкшие токены успешно удалены',
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({
-          'success': false,
-          'error': ErrorResponseUtils.clientSafeErrorMessage(e),
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
+      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
     }
   }
 }

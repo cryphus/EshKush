@@ -9,7 +9,7 @@ class PointRepository {
 
   PointRepository(this._connection);
 
-  Future<List<Point>> findAll() async {
+  Future<List<Point>> findAll({int limit = 20, int offset = 0}) async {
     try {
       final result = await _connection.mappedResultsQuery('''
         WITH point_ratings AS (
@@ -21,7 +21,8 @@ class PointRepository {
         FROM points p
         LEFT JOIN point_ratings pr ON p.id = pr.point_id
         ORDER BY p.id
-      ''');
+        LIMIT @limit OFFSET @offset
+      ''', substitutionValues: {'limit': limit, 'offset': offset});
 
       return result.map((row) => Point.fromJson(row['points']!)).toList();
     } catch (e) {
@@ -57,14 +58,16 @@ class PointRepository {
     }
   }
 
-  Future<List<Point>> findByCategory(int categoryId) async {
+  Future<List<Point>> findByCategory(int categoryId, {int limit = 20, int offset = 0}) async {
     try {
       final results = await _connection.mappedResultsQuery('''
         SELECT p.* FROM points p
         JOIN point_category_map pcm ON p.id = pcm.point_id
         WHERE pcm.category_id = @categoryId
-      ''', substitutionValues: {'categoryId': categoryId});
-      
+        ORDER BY p.id
+        LIMIT @limit OFFSET @offset
+      ''', substitutionValues: {'categoryId': categoryId, 'limit': limit, 'offset': offset});
+
       return results.map((row) => Point.fromJson(row['points']!)).toList();
     } catch (e) {
       print('Ошибка поиска точек по категории: $e');
@@ -196,23 +199,19 @@ class PointRepository {
   }
 
   Future<void> updatePointCategories(int pointId, List<int> categoryIds) async {
-    // Начинаем транзакцию
     await _connection.transaction((txn) async {
-      // Удаляем все существующие маппинги
       await txn.mappedResultsQuery(
         'DELETE FROM point_category_map WHERE point_id = @pointId',
         substitutionValues: {'pointId': pointId},
       );
 
-      // Создаем новые маппинги
-      for (final categoryId in categoryIds) {
+      if (categoryIds.isNotEmpty) {
         await txn.mappedResultsQuery('''
           INSERT INTO point_category_map (point_id, category_id, created_at)
-          VALUES (@pointId, @categoryId, @createdAt)
+          SELECT @pointId, UNNEST(@categoryIds::int[]), CURRENT_TIMESTAMP
         ''', substitutionValues: {
           'pointId': pointId,
-          'categoryId': categoryId,
-          'createdAt': DateTime.now().toIso8601String(),
+          'categoryIds': categoryIds,
         });
       }
     });

@@ -1,11 +1,10 @@
 import 'package:shelf/shelf.dart';
 import '../utils/AuthUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
+import '../utils/RateLimiterStore.dart';
 import '../repositories/UserSessionRepository.dart';
 
 class SecurityMiddleware {
-  static final Map<String, List<DateTime>> _requests = {};
-  static const int maxRequests = 100;
-  static const Duration window = Duration(minutes: 1);
 
   static Middleware securityHeaders() {
     return (Handler innerHandler) {
@@ -27,12 +26,35 @@ class SecurityMiddleware {
     };
   }
 
-  static Middleware rateLimiter() {
+  /// Middleware ограничения частоты запросов.
+  ///
+  /// [store] — хранилище счётчиков. По умолчанию [InMemoryRateLimiterStore].
+  ///   Для нескольких инстансов передайте Redis-реализацию [RateLimiterStore].
+  /// [maxRequests] — максимум запросов в окне (из AppConfig.rateLimitRequests).
+  /// [window] — размер окна (из AppConfig.rateLimitWindow).
+  static Middleware rateLimiter({
+    RateLimiterStore? store,
+    int maxRequests = 100,
+    Duration window = const Duration(minutes: 1),
+  }) {
+    final effectiveStore = store ?? InMemoryRateLimiterStore();
     return (Handler innerHandler) {
       return (Request request) async {
-        final ip = request.headers['x-forwarded-for'] ?? 'unknown';
-        if (!_isAllowed(ip)) {
-          return Response(429, body: 'Too many requests');
+        final ip = request.headers['x-forwarded-for']
+            ?? request.headers['x-real-ip']
+            ?? 'unknown';
+        final count = await effectiveStore.increment(ip, window);
+        if (count > maxRequests) {
+          return Response(
+            429,
+            body: '{"error":"Too many requests","retryAfterSeconds":${window.inSeconds}}',
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': '${window.inSeconds}',
+              'X-RateLimit-Limit': '$maxRequests',
+              'X-RateLimit-Remaining': '0',
+            },
+          );
         }
         return innerHandler(request);
       };
@@ -47,13 +69,17 @@ class SecurityMiddleware {
         }
 
         final path = request.url.path;
-        if (path.isEmpty || openPaths.any((p) => path.startsWith(p))) {
+        if (path.isEmpty || path == '/' || openPaths.any((p) => path.startsWith(p))) {
           return innerHandler(request);
         }
 
         final token = request.headers['authorization']?.replaceAll('Bearer ', '');
         if (token == null) {
-          return Response.unauthorized('Требуется авторизация');
+          return ErrorResponseUtils.errorResponseWithMessage(
+            'Требуется авторизация',
+            code: ErrorCode.unauthorized,
+            headers: {'Content-Type': 'application/json'},
+          );
         }
 
         try {
@@ -61,13 +87,21 @@ class SecurityMiddleware {
           final userId = payload['id'] as int;
           final refreshJti = payload['rtj']?.toString() ?? '';
           if (refreshJti.isEmpty) {
-            return Response.unauthorized('Токен без refresh jti');
+            return ErrorResponseUtils.errorResponseWithMessage(
+              'Токен без refresh jti',
+              code: ErrorCode.unauthorized,
+              headers: {'Content-Type': 'application/json'},
+            );
           }
 
           final refreshJtiHash = AuthUtils.hashRefreshJti(refreshJti);
           final session = await sessionRepository.findActiveByRefreshJtiHash(refreshJtiHash);
           if (session == null || session.userId != userId) {
-            return Response.unauthorized('Сессия недействительна');
+            return ErrorResponseUtils.errorResponseWithMessage(
+              'Сессия недействительна',
+              code: ErrorCode.unauthorized,
+              headers: {'Content-Type': 'application/json'},
+            );
           }
 
           sessionRepository.updateLastActive(session.id);
@@ -77,24 +111,14 @@ class SecurityMiddleware {
           });
           return innerHandler(modifiedRequest);
         } catch (e) {
-          return Response.unauthorized('Недействительный токен');
+          return ErrorResponseUtils.errorResponseWithMessage(
+            'Недействительный токен',
+            code: ErrorCode.unauthorized,
+            headers: {'Content-Type': 'application/json'},
+          );
         }
       };
     };
   }
 
-  static bool _isAllowed(String ip) {
-    final now = DateTime.now();
-    _requests[ip] = _requests[ip]?.where(
-      (time) => now.difference(time) < window
-    ).toList() ?? [];
-    
-    final requestCount = _requests[ip]?.length ?? 0;
-    if (requestCount >= maxRequests) {
-      return false;
-    }
-    
-    _requests[ip]?.add(now);
-    return true;
-  }
-} 
+}
