@@ -3,6 +3,7 @@ import 'package:crypto/crypto.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'dart:io';
 import 'package:bcrypt/bcrypt.dart';
+import 'package:uuid/uuid.dart';
 
 class AuthUtils {
   static String get _jwtSecret {
@@ -131,10 +132,11 @@ class AuthUtils {
     return _encodeJWT(header, payload, _refreshSecret);
   }
 
+  static final _uuid = Uuid();
+
   static String _generateJTI() {
-    final random = DateTime.now().millisecondsSinceEpoch.toString() + 
-                  (1000 + DateTime.now().microsecond).toString();
-    return sha256.convert(utf8.encode(random)).toString();
+    // v4 использует dart:math Random.secure() — криптографически стойкий
+    return _uuid.v4();
   }
 
   static String _encodeJWT(Map<String, dynamic> header, Map<String, dynamic> payload, String secret) {

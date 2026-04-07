@@ -51,7 +51,7 @@ class Database {
       username: env['DB_USER'] ?? 'postgres',
       password: dbPassword ?? '',
       timeoutInSeconds: 30,
-      useSSL: false,
+      useSSL: isProd,
     );
 
     try {

@@ -1,23 +1,22 @@
+import 'package:resp_client/resp_client.dart';
+import 'package:resp_client/resp_commands.dart';
+import 'package:resp_client/resp_server.dart';
+
 /// Абстракция хранилища для rate limiter.
 ///
 /// Позволяет использовать разные бэкенды:
-///   - [InMemoryRateLimiterStore] — по умолчанию, один инстанс
-///   - Любая реализация на Redis (напр. через resp_client) для нескольких инстансов
+///   - [InMemoryRateLimiterStore] — по умолчанию, один инстанс / dev
+///   - [RedisRateLimiterStore] — production, несколько инстансов
 abstract class RateLimiterStore {
-  /// Увеличивает счётчик запросов для [key] и возвращает текущее количество
-  /// запросов в окне [window]. Если запись устарела — сбрасывает счётчик.
   Future<int> increment(String key, Duration window);
-
-  /// Освобождает ресурсы (закрывает соединение и т.п.).
   Future<void> close() async {}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// In-Memory реализация (один инстанс / тесты)
+// In-Memory реализация (один инстанс / dev / тесты)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class InMemoryRateLimiterStore implements RateLimiterStore {
-  // Для каждого ключа хранится список меток времени запросов в текущем окне.
   final Map<String, List<DateTime>> _windows = {};
 
   @override
@@ -34,40 +33,51 @@ class InMemoryRateLimiterStore implements RateLimiterStore {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Redis-ready интерфейс (для нескольких инстансов)
-//
-// Чтобы активировать:
-//   1. Добавить в pubspec.yaml зависимость: resp_client: ^0.4.0  (или redis: ^3.x)
-//   2. Раскомментировать import ниже
-//   3. Раскомментировать класс RedisRateLimiterStore
-//   4. В Service.dart: заменить InMemoryRateLimiterStore() на RedisRateLimiterStore(...)
-//
-// import 'package:resp_client/resp_client.dart';
-// import 'package:resp_client/resp_commands.dart';
-//
-// class RedisRateLimiterStore implements RateLimiterStore {
-//   final RespCommands _redis;
-//   RedisRateLimiterStore(this._redis);
-//
-//   @override
-//   Future<int> increment(String key, Duration window) async {
-//     final count = await _redis.incr(key);
-//     if (count == 1) {
-//       // Первый запрос в окне — устанавливаем TTL
-//       await _redis.expire(key, window.inSeconds);
-//     }
-//     return count;
-//   }
-//
-//   static Future<RedisRateLimiterStore> connect(String host, int port, {String? password}) async {
-//     final client = await RespClient.connect(host, port);
-//     final commands = RespCommands(client);
-//     if (password != null && password.isNotEmpty) {
-//       await commands.auth(password);
-//     }
-//     return RedisRateLimiterStore(commands);
-//   }
-//
-//   @override
-//   Future<void> close() async => _redis.client.close();
-// }
+// Redis реализация (production / несколько инстансов)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Rate limiter на базе Redis (resp_client 1.x).
+/// INCR + PEXPIRE — атомарный счётчик с автоистечением.
+/// Счётчики не теряются при перезапуске сервера.
+class RedisRateLimiterStore implements RateLimiterStore {
+  final RespCommandsTier1 _commands;
+  final RespServerConnection _connection;
+
+  RedisRateLimiterStore._(this._commands, this._connection);
+
+  static Future<RedisRateLimiterStore> connect(
+    String host,
+    int port, {
+    String? password,
+    int db = 0,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final conn = await connectSocket(host, port: port, timeout: timeout);
+    final client = RespClient(conn);
+    final commands = RespCommandsTier1(client);
+
+    if (password != null && password.isNotEmpty) {
+      await commands.auth(password);
+    }
+    if (db != 0) {
+      await commands.select(db);
+    }
+    return RedisRateLimiterStore._(commands, conn);
+  }
+
+  @override
+  Future<int> increment(String key, Duration window) async {
+    final redisKey = 'rl:$key';
+    // INCR атомарен — безопасно при конкурентных запросах
+    final incrResult = await _commands.incr(redisKey);
+    final count = (incrResult as RespInteger).payload;
+    if (count == 1) {
+      // Первый запрос в окне — устанавливаем TTL через PEXPIRE
+      await _commands.pexpire(redisKey, window);
+    }
+    return count;
+  }
+
+  @override
+  Future<void> close() async => await _connection.close();
+}

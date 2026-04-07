@@ -104,7 +104,7 @@ class SecurityMiddleware {
             );
           }
 
-          sessionRepository.updateLastActive(session.id);
+          await sessionRepository.updateLastActive(session.id);
 
           final modifiedRequest = request.change(context: {
             'user': payload,

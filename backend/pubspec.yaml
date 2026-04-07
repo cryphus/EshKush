@@ -22,6 +22,7 @@ dependencies:
   dotenv: ^4.1.0
   logger: ^2.0.2+1
   rate_limiter: ^1.0.0
+  resp_client: ^1.2.0
   openapi_generator: ^4.0.0
   yaml: ^3.1.2
   shared:

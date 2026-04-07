@@ -83,6 +83,8 @@ import 'package:backend/repositories/PaymentTransactionsRepository.dart';
 import 'package:backend/middleware/LoggingMiddleware.dart';
 import 'package:backend/middleware/RbacMiddleware.dart';
 import 'package:backend/controllers/HealthController.dart';
+import 'package:backend/utils/RateLimiterStore.dart';
+import 'package:backend/utils/LoggingUtils.dart';
 
 void main() async {
   try {
@@ -234,8 +236,8 @@ void main() async {
       partnerController.router,
       partnerSettingsController.router,
       userController.router,
-      userFavoriteController.router,
-      userFavoriteController.router, // /favorites и /users/favorites
+      userFavoriteController.router, // монтируется на /favorites
+      userFavoriteController.router, // монтируется на /users/favorites (тот же контроллер, два пути)
       profileController.router,
       userSessionController.router,
       changesController.router,
@@ -260,10 +262,27 @@ void main() async {
       app.mount(Routes.mountPathsInOrder[i], routers[i]);
     }
 
+    // Rate limiter: Redis в production, InMemory в dev/test
+    final RateLimiterStore rateLimiterStore;
+    if (config.isProduction) {
+      rateLimiterStore = await RedisRateLimiterStore.connect(
+        config.redisHost,
+        config.redisPort,
+        password: config.redisPassword.isNotEmpty ? config.redisPassword : null,
+        db: config.redisDb,
+        timeout: config.redisConnectionTimeout,
+      );
+      await LoggingUtils.logInfo('Rate limiter: Redis (${config.redisHost}:${config.redisPort})');
+    } else {
+      rateLimiterStore = InMemoryRateLimiterStore();
+      await LoggingUtils.logInfo('Rate limiter: InMemory (только для dev)');
+    }
+
     final handler = const Pipeline()
         .addMiddleware(corsMiddleware)
         .addMiddleware(SecurityMiddleware.securityHeaders())
         .addMiddleware(SecurityMiddleware.rateLimiter(
+          store: rateLimiterStore,
           maxRequests: config.rateLimitRequests,
           window: config.rateLimitWindow,
         ))
