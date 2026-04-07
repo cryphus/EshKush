@@ -20,6 +20,32 @@
       }
     },
     "schemas": {
+      "PaginationMeta": {
+        "type": "object",
+        "description": "Метаданные пагинации, возвращаемые всеми list-эндпоинтами",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Максимальное количество элементов в ответе (1–100)",
+            "example": 20
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Смещение от начала списка",
+            "example": 0
+          },
+          "count": {
+            "type": "integer",
+            "description": "Фактическое количество элементов в текущем ответе",
+            "example": 20
+          },
+          "hasMore": {
+            "type": "boolean",
+            "description": "Есть ли ещё страницы после текущей",
+            "example": true
+          }
+        }
+      },
       "User": {
         "type": "object",
         "properties": {
@@ -955,6 +981,60 @@
     }
   },
   "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Проверяет состояние сервиса и его зависимостей (БД, кеш). Не требует авторизации. Используется оркестраторами (Docker, k8s) для readiness/liveness probe.",
+        "tags": ["Системные"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Сервис работает нормально (status: ok или degraded)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok", "degraded", "error"],
+                      "example": "ok"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "1.0.0"
+                    },
+                    "uptime": {
+                      "type": "integer",
+                      "description": "Время работы сервиса в секундах",
+                      "example": 3600
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "string",
+                          "enum": ["ok", "error"],
+                          "example": "ok"
+                        },
+                        "cache": {
+                          "type": "string",
+                          "enum": ["ok", "error"],
+                          "example": "ok"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Сервис недоступен (status: error) — один или несколько компонентов недоступны"
+          }
+        }
+      }
+    },
     "/auth/google": {
       "post": {
         "summary": "Аутентификация через Google",
@@ -1226,19 +1306,9 @@
             }
           },
           {
-            "name": "page",
-            "in": "query",
-            "description": "Номер страницы",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            }
-          },
-          {
             "name": "limit",
             "in": "query",
-            "description": "Количество элементов на странице",
+            "description": "Количество элементов на странице (1–100, по умолчанию 20)",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -1247,22 +1317,13 @@
             }
           },
           {
-            "name": "sort",
+            "name": "offset",
             "in": "query",
-            "description": "Поле для сортировки",
+            "description": "Смещение от начала списка (по умолчанию 0)",
             "schema": {
-              "type": "string",
-              "enum": ["rating", "distance", "name"]
-            }
-          },
-          {
-            "name": "order",
-            "in": "query",
-            "description": "Порядок сортировки",
-            "schema": {
-              "type": "string",
-              "enum": ["asc", "desc"],
-              "default": "desc"
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
             }
           },
           {
@@ -1279,29 +1340,20 @@
         ],
         "responses": {
           "200": {
-            "description": "Список точек",
+            "description": "Список точек с метаданными пагинации",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "items": {
+                    "data": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Point"
                       }
                     },
-                    "total": {
-                      "type": "integer"
-                    },
-                    "page": {
-                      "type": "integer"
-                    },
-                    "limit": {
-                      "type": "integer"
-                    },
-                    "pages": {
-                      "type": "integer"
+                    "pagination": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   }
                 }
@@ -1513,19 +1565,9 @@
             }
           },
           {
-            "name": "page",
-            "in": "query",
-            "description": "Номер страницы",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            }
-          },
-          {
             "name": "limit",
             "in": "query",
-            "description": "Количество элементов на странице",
+            "description": "Количество элементов на странице (1–100, по умолчанию 20)",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -1534,50 +1576,32 @@
             }
           },
           {
-            "name": "sort",
+            "name": "offset",
             "in": "query",
-            "description": "Поле для сортировки",
+            "description": "Смещение от начала списка (по умолчанию 0)",
             "schema": {
-              "type": "string",
-              "enum": ["created_at", "name", "rating"]
-            }
-          },
-          {
-            "name": "order",
-            "in": "query",
-            "description": "Порядок сортировки",
-            "schema": {
-              "type": "string",
-              "enum": ["asc", "desc"],
-              "default": "desc"
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Список избранных точек",
+            "description": "Список избранных точек с метаданными пагинации",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "items": {
+                    "data": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/UserFavorite"
                       }
                     },
-                    "total": {
-                      "type": "integer"
-                    },
-                    "page": {
-                      "type": "integer"
-                    },
-                    "limit": {
-                      "type": "integer"
-                    },
-                    "pages": {
-                      "type": "integer"
+                    "pagination": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   }
                 }
@@ -1707,19 +1731,9 @@
             }
           },
           {
-            "name": "page",
-            "in": "query",
-            "description": "Номер страницы",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            }
-          },
-          {
             "name": "limit",
             "in": "query",
-            "description": "Количество элементов на странице",
+            "description": "Количество элементов на странице (1–100, по умолчанию 20)",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -1728,50 +1742,32 @@
             }
           },
           {
-            "name": "sort",
+            "name": "offset",
             "in": "query",
-            "description": "Поле для сортировки",
+            "description": "Смещение от начала списка (по умолчанию 0)",
             "schema": {
-              "type": "string",
-              "enum": ["created_at", "total_amount", "status"]
-            }
-          },
-          {
-            "name": "order",
-            "in": "query",
-            "description": "Порядок сортировки",
-            "schema": {
-              "type": "string",
-              "enum": ["asc", "desc"],
-              "default": "desc"
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Список заказов",
+            "description": "Список заказов с метаданными пагинации",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "items": {
+                    "data": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Order"
                       }
                     },
-                    "total": {
-                      "type": "integer"
-                    },
-                    "page": {
-                      "type": "integer"
-                    },
-                    "limit": {
-                      "type": "integer"
-                    },
-                    "pages": {
-                      "type": "integer"
+                    "pagination": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   }
                 }
@@ -2326,50 +2322,43 @@
             }
           },
           {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            }
-          },
-          {
             "name": "limit",
             "in": "query",
+            "description": "Количество элементов на странице (1–100, по умолчанию 20)",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
               "default": 20
             }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Смещение от начала списка (по умолчанию 0)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Список продуктов",
+            "description": "Список продуктов с метаданными пагинации",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "items": {
+                    "data": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Products"
                       }
                     },
-                    "total": {
-                      "type": "integer"
-                    },
-                    "page": {
-                      "type": "integer"
-                    },
-                    "limit": {
-                      "type": "integer"
-                    },
-                    "pages": {
-                      "type": "integer"
+                    "pagination": {
+                      "$ref": "#/components/schemas/PaginationMeta"
                     }
                   }
                 }
