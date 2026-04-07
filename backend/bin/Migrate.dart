@@ -1,7 +1,7 @@
 /// Инструмент применения SQL-миграций.
 ///
 /// Использование:
-///   dart run bin/migrate.dart
+///   dart run bin/Migrate.dart
 ///
 /// Переменные окружения (те же что у сервера):
 ///   DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
@@ -76,15 +76,15 @@ Future<void> main() async {
     exit(0);
   }
 
-  int applied_count = 0;
-  int skipped_count = 0;
+  int appliedCount = 0;
+  int skippedCount = 0;
 
   for (final file in files) {
     final version = file.uri.pathSegments.last; // имя файла, напр. 001_initial_schema.sql
 
     if (applied.contains(version)) {
       print('  [SKIP] $version — уже применена');
-      skipped_count++;
+      skippedCount++;
       continue;
     }
 
@@ -102,7 +102,7 @@ Future<void> main() async {
         );
       });
       print('  [OK]   $version');
-      applied_count++;
+      appliedCount++;
     } catch (e) {
       print('  [ERR]  $version: $e');
       await conn.close();
@@ -113,5 +113,5 @@ Future<void> main() async {
   await conn.close();
 
   print('');
-  print('Готово: применено $applied_count, пропущено $skipped_count.');
+  print('Готово: применено $appliedCount, пропущено $skippedCount.');
 }

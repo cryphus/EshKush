@@ -41,7 +41,6 @@ class ProductsRepository extends BaseRepository {
       );
       return result == null ? null : Product.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска продукта: $e');
       rethrow;
     }
   }
@@ -72,7 +71,6 @@ class ProductsRepository extends BaseRepository {
       ''', params: {'limit': limit, 'offset': offset});
       return results.map((map) => Product.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения списка продуктов: $e');
       rethrow;
     }
   }
@@ -106,7 +104,6 @@ class ProductsRepository extends BaseRepository {
 
       return results.map((row) => Product.fromJson(row['products']!)).toList();
     } catch (e) {
-      print('Ошибка поиска продуктов по категории: $e');
       rethrow;
     }
   }
@@ -128,7 +125,6 @@ class ProductsRepository extends BaseRepository {
       );
       return results.map((map) => ProductCategory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения категорий для продукта: $e');
       rethrow;
     }
   }
@@ -150,13 +146,6 @@ class ProductsRepository extends BaseRepository {
       final partnerId = data['partner_id'] is String ? int.parse(data['partner_id']) : (data['partner_id'] as num).toInt();
       final weight = data['weight'] is String ? double.parse(data['weight']) : (data['weight'] as num).toDouble();
       
-      print('Преобразованные значения:');
-      print('name: $name');
-      print('description: $description');
-      print('price: $price (${price.runtimeType})');
-      print('pointId: $pointId (${pointId.runtimeType})');
-      print('partnerId: $partnerId (${partnerId.runtimeType})');
-      print('weight: $weight (${weight.runtimeType})');
       
       final result = await queryOne(
         '''
@@ -212,17 +201,14 @@ class ProductsRepository extends BaseRepository {
         throw Exception('Ошибка создания продукта');
       }
       
-      print('Результат из БД: $result');
       return Product.fromJson(result);
     } catch (e) {
-      print('Ошибка создания продукта: $e');
       rethrow;
     }
   }
 
   Future<Product> update(Product product) async {
     try {
-      print('Обновление продукта: ${product.toJson()}');
       
       final result = await queryOne(
         '''
@@ -269,10 +255,8 @@ class ProductsRepository extends BaseRepository {
         },
       );
       
-      print('Результат из БД: $result');
       return Product.fromJson(result!);
     } catch (e) {
-      print('Ошибка обновления продукта: $e');
       rethrow;
     }
   }
@@ -284,7 +268,6 @@ class ProductsRepository extends BaseRepository {
         params: {'id': id},
       );
     } catch (e) {
-      print('Ошибка удаления продукта: $e');
       rethrow;
     }
   }
@@ -311,7 +294,6 @@ class ProductsRepository extends BaseRepository {
         }
       });
     } catch (e) {
-      print('Ошибка обновления категорий продукта: $e');
       rethrow;
     }
   }
@@ -342,7 +324,6 @@ class ProductsRepository extends BaseRepository {
       );
       return results.map((map) => Product.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска продуктов по ID точки: $e');
       rethrow;
     }
   }
@@ -363,7 +344,6 @@ class ProductsRepository extends BaseRepository {
       );
       return result == null ? null : ProductCategory.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска категории по ID: $e');
       rethrow;
     }
   }
@@ -391,10 +371,8 @@ class ProductsRepository extends BaseRepository {
         WHERE id = ANY(@ids)
       ''', params: {'ids': ids});
       
-      print('Результаты поиска продуктов: $results');
       return results;
     } catch (e) {
-      print('Ошибка поиска продуктов по ID: $e');
       rethrow;
     }
   }

@@ -12,7 +12,6 @@ class PartnerStatisticsRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -22,7 +21,6 @@ class PartnerStatisticsRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -35,7 +33,6 @@ class PartnerStatisticsRepository {
       );
       return result == null ? null : PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска статистики по ID: $e');
       rethrow;
     }
   }
@@ -48,7 +45,6 @@ class PartnerStatisticsRepository {
       );
       return result == null ? null : PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска статистики по ID партнера: $e');
       rethrow;
     }
   }
@@ -61,7 +57,6 @@ class PartnerStatisticsRepository {
       );
       return result == null ? null : PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска статистики по ID точки: $e');
       rethrow;
     }
   }
@@ -96,7 +91,6 @@ class PartnerStatisticsRepository {
       }
       return PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка создания статистики: $e');
       rethrow;
     }
   }
@@ -130,7 +124,6 @@ class PartnerStatisticsRepository {
       }
       return PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления статистики: $e');
       rethrow;
     }
   }
@@ -146,7 +139,6 @@ class PartnerStatisticsRepository {
         params: {'id': id},
       );
     } catch (e) {
-      print('Ошибка деактивации статистики: $e');
       rethrow;
     }
   }
@@ -162,7 +154,6 @@ class PartnerStatisticsRepository {
         params: {'id': id},
       );
     } catch (e) {
-      print('Ошибка активации статистики: $e');
       rethrow;
     }
   }

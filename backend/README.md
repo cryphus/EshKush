@@ -62,14 +62,14 @@ docker compose --env-file .env.test --profile migrate run --rm migrate
 
 # Локально (нужен dart и доступная БД)
 cd backend
-DB_HOST=localhost DB_PASSWORD=secret dart run bin/migrate.dart
+DB_HOST=localhost DB_PASSWORD=secret dart run bin/Migrate.dart
 ```
 
 ### Добавить новую миграцию
 
 1. Создать файл `database/migrations/002_описание.sql`
 2. Написать идемпотентный SQL (`IF NOT EXISTS`, `CREATE OR REPLACE` и т.п.)
-3. Запустить `dart run bin/migrate.dart` — применится только новый файл
+3. Запустить `dart run bin/Migrate.dart` — применится только новый файл
 
 ```sql
 -- Пример: database/migrations/002_add_avatar_thumb.sql

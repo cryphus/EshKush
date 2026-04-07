@@ -13,7 +13,6 @@ class PointCategoryRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -24,7 +23,6 @@ class PointCategoryRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -50,7 +48,6 @@ class PointCategoryRepository {
         'created_at': result['created_at'] ?? DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('Ошибка поиска категории по ID: $e');
       rethrow;
     }
   }
@@ -74,7 +71,6 @@ class PointCategoryRepository {
         'created_at': map['created_at'] ?? DateTime.now().toIso8601String(),
       })).toList();
     } catch (e) {
-      print('Ошибка получения списка категорий: $e');
       rethrow;
     }
   }
@@ -109,7 +105,6 @@ class PointCategoryRepository {
         'created_at': result['created_at'] ?? DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('Ошибка создания категории: $e');
       rethrow;
     }
   }
@@ -157,7 +152,6 @@ class PointCategoryRepository {
         'created_at': result['created_at'] ?? DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('Ошибка обновления категории: $e');
       rethrow;
     }
   }
@@ -172,7 +166,6 @@ class PointCategoryRepository {
         throw Exception('Категория не найдена');
       }
     } catch (e) {
-      print('Ошибка удаления категории: $e');
       rethrow;
     }
   }

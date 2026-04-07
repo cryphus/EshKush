@@ -73,14 +73,15 @@ class Routes {
     'swagger',
   ];
 
-  /// Правила RBAC: префикс пути (как в request.url.path, БЕЗ ведущего слэша) -> роли с доступом.
-  static const Map<String, Set<String>> rbacRoleRules = {
-    'action-logs': {'admin'},
-    'error-logs': {'admin'},
-    'cache': {'admin'},
-    'partner-statistics': {'admin', 'support'},
-    'promo-codes': {'admin', 'support'},
-    'product-categories': {'admin', 'support'},
-    'point-categories': {'admin', 'support'},
+  /// Правила RBAC: префикс пути -> {HTTP-метод -> роли}.
+  /// '*' = все методы; пустое множество ролей = разрешено любому аутентифицированному.
+  static const Map<String, Map<String, Set<String>>> rbacRoleRules = {
+    'action-logs':        {'*': {'admin'}},
+    'error-logs':         {'*': {'admin'}},
+    'cache':              {'*': {'admin'}},
+    'partner-statistics': {'GET': {}, '*': {'admin', 'support'}},
+    'promo-codes':        {'GET': {}, '*': {'admin', 'support'}},
+    'product-categories': {'GET': {}, '*': {'admin', 'support'}},
+    'point-categories':   {'GET': {}, '*': {'admin', 'support'}},
   };
 }

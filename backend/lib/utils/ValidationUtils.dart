@@ -186,7 +186,6 @@ class ValidationUtils {
       'status': sanitized['status'],
       'notes': sanitized['notes'],
     };
-    print('ValidationUtils: Результат валидации: $result');
     return result;
   }
 

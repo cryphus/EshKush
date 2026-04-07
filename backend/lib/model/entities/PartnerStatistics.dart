@@ -68,7 +68,7 @@ class PartnerStatistics {
 
   void updateRating(double newRating) {
     if (newRating < 0 || newRating > 5) {
-      throw ArgumentError('Некорректный ID');
+      throw ArgumentError('Рейтинг должен быть от 0 до 5');
     }
     averageRating = ((averageRating * totalReviews) + newRating) / (totalReviews + 1);
     totalReviews++;

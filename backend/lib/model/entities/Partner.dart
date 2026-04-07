@@ -35,9 +35,7 @@ class Partner {
   }
 
   factory Partner.fromJson(Map<String, dynamic> json) {
-    print('Преобразование JSON в Partner:');
     final safeJson = SafeLoggingUtils.sanitizeData(json);
-    print('JSON данные: $safeJson');
     
     try {
       final partner = Partner(
@@ -57,11 +55,8 @@ class Partner {
                 : DateTime.parse(json['created_at'] as String))
             : DateTime.now(),
       );
-      print('Partner успешно создан');
       return partner;
     } catch (e, stackTrace) {
-      print('Ошибка при создании Partner: $e');
-      print('Stack trace: $stackTrace');
       rethrow;
     }
   }

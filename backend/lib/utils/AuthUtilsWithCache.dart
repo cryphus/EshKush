@@ -258,7 +258,6 @@ class AuthUtils {
       final blacklistKey = 'blacklist:${isRefreshToken ? 'refresh' : 'access'}:$token';
       await cacheService.set(blacklistKey, true, ttl: Duration(days: 30));
     } catch (e) {
-      print('Ошибка инвалидации токена: $e');
     }
   }
 
@@ -282,7 +281,6 @@ class AuthUtils {
       final userBlacklistKey = 'blacklist:user:$userId';
       await cacheService.set(userBlacklistKey, true, ttl: Duration(minutes: 5));
     } catch (e) {
-      print('Ошибка инвалидации токенов пользователя: $e');
     }
   }
 
@@ -338,7 +336,6 @@ class AuthUtils {
       
       await cacheService.deleteByPattern('blacklist:*');
     } catch (e) {
-      print('Ошибка очистки истекших токенов: $e');
     }
   }
 

@@ -27,7 +27,6 @@ class ProductsService {
       
       return product;
     } catch (e) {
-      print('Ошибка получения продукта: $e');
       rethrow;
     }
   }
@@ -47,7 +46,6 @@ class ProductsService {
       }
       return await _productsRepository.findAll(limit: limit, offset: offset);
     } catch (e) {
-      print('Ошибка получения списка продуктов: $e');
       rethrow;
     }
   }
@@ -66,7 +64,6 @@ class ProductsService {
       }
       return await _productsRepository.findByCategory(categoryId, limit: limit, offset: offset);
     } catch (e) {
-      print('Ошибка получения продуктов по категории: $e');
       rethrow;
     }
   }
@@ -75,7 +72,6 @@ class ProductsService {
     try {
       return await _productsRepository.getCategoriesForProduct(productId);
     } catch (e) {
-      print('Ошибка получения категорий продукта: $e');
       rethrow;
     }
   }
@@ -90,7 +86,6 @@ class ProductsService {
       
       return product;
     } catch (e) {
-      print('Ошибка создания продукта: $e');
       rethrow;
     }
   }
@@ -123,7 +118,6 @@ class ProductsService {
       
       return result;
     } catch (e) {
-      print('Ошибка обновления продукта: $e');
       rethrow;
     }
   }
@@ -135,7 +129,6 @@ class ProductsService {
       // Инвалидируем кеш
       await _invalidateProductCache(id);
     } catch (e) {
-      print('Ошибка удаления продукта: $e');
       rethrow;
     }
   }
@@ -159,7 +152,6 @@ class ProductsService {
       await _productsRepository.updateProductCategories(productId, categoryIds);
       return await _productsRepository.getCategoriesForProduct(productId);
     } catch (e) {
-      print('Ошибка обновления категорий продукта: $e');
       rethrow;
     }
   }
@@ -194,7 +186,6 @@ class ProductsService {
       await _cacheService.deleteByPattern('products:point:*');
       await _cacheService.deleteByPattern('products:partner:*');
     } catch (e) {
-      print('Ошибка инвалидации кеша продуктов: $e');
       // Не пробрасываем ошибку, так как это не критично
     }
   }

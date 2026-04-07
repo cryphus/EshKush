@@ -13,7 +13,6 @@ class OrderHistoryRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -23,7 +22,6 @@ class OrderHistoryRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -36,7 +34,6 @@ class OrderHistoryRepository {
       );
       return result == null ? null : OrderHistory.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска истории заказа по ID: $e');
       rethrow;
     }
   }
@@ -49,7 +46,6 @@ class OrderHistoryRepository {
       );
       return results.map((map) => OrderHistory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска истории заказов пользователя: $e');
       rethrow;
     }
   }
@@ -62,7 +58,6 @@ class OrderHistoryRepository {
       );
       return results.map((map) => OrderHistory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска истории заказов точки: $e');
       rethrow;
     }
   }
@@ -105,7 +100,6 @@ class OrderHistoryRepository {
       }
       return OrderHistory.fromJson(result);
     } catch (e) {
-      print('Ошибка создания истории заказа: $e');
       rethrow;
     }
   }
@@ -146,7 +140,6 @@ class OrderHistoryRepository {
       }
       return OrderHistory.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления истории заказа: $e');
       rethrow;
     }
   }
@@ -159,7 +152,6 @@ class OrderHistoryRepository {
       );
       return results.map((map) => OrderHistory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения истории заказов по статусу: $e');
       rethrow;
     }
   }
@@ -178,7 +170,6 @@ class OrderHistoryRepository {
       );
       return results.map((map) => OrderHistory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения истории заказов по диапазону дат: $e');
       rethrow;
     }
   }

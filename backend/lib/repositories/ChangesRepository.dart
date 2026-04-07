@@ -14,7 +14,6 @@ class ChangesRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -24,7 +23,6 @@ class ChangesRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -67,7 +65,6 @@ class ChangesRepository {
 
       return Changes.fromJson(result);
     } catch (e) {
-      print('Ошибка создания записи об изменении: $e');
       rethrow;
     }
   }
@@ -88,7 +85,6 @@ class ChangesRepository {
       );
       return results.map((map) => Changes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска изменений по сущности: $e');
       rethrow;
     }
   }
@@ -115,7 +111,6 @@ class ChangesRepository {
       );
       return results.map((map) => Changes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска изменений по пользователю: $e');
       rethrow;
     }
   }
@@ -128,7 +123,6 @@ class ChangesRepository {
       );
       return results.map((map) => Changes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска изменений по типу: $e');
       rethrow;
     }
   }
@@ -141,7 +135,6 @@ class ChangesRepository {
       );
       return results.map((map) => Changes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения последних изменений: $e');
       rethrow;
     }
   }
@@ -164,7 +157,6 @@ class ChangesRepository {
         },
       );
     } catch (e) {
-      print('Ошибка отмены изменения: $e');
       rethrow;
     }
   }

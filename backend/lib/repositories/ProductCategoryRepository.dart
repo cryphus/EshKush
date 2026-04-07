@@ -12,7 +12,6 @@ class ProductCategoryRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -22,7 +21,6 @@ class ProductCategoryRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -35,7 +33,6 @@ class ProductCategoryRepository {
       );
       return result == null ? null : ProductCategory.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска категории по ID: $e');
       rethrow;
     }
   }
@@ -45,7 +42,6 @@ class ProductCategoryRepository {
       final results = await query('SELECT * FROM product_categories');
       return results.map((map) => ProductCategory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения всех категорий: $e');
       rethrow;
     }
   }
@@ -69,7 +65,6 @@ class ProductCategoryRepository {
       }
       return ProductCategory.fromJson(result);
     } catch (e) {
-      print('Ошибка создания категории: $e');
       rethrow;
     }
   }
@@ -94,7 +89,6 @@ class ProductCategoryRepository {
       }
       return ProductCategory.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления категории: $e');
       rethrow;
     }
   }
@@ -109,7 +103,6 @@ class ProductCategoryRepository {
         throw Exception('Категория не найдена');
       }
     } catch (e) {
-      print('Ошибка удаления категории: $e');
       rethrow;
     }
   }

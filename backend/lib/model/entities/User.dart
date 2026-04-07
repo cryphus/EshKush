@@ -51,7 +51,6 @@ class User {
   bool get isGuest => role == UserRole.guest;
 
   factory User.fromJson(Map<String, dynamic> json) {
-    print('Преобразование JSON в User:');
     // Не логируем JSON данные для безопасности
     
     try {
@@ -76,11 +75,8 @@ class User {
           orElse: () => UserRole.user,
         ),
       );
-      print('User успешно создан');
       return user;
     } catch (e, stackTrace) {
-      print('Ошибка при создании User: $e');
-      print('Stack trace: $stackTrace');
       rethrow;
     }
   }

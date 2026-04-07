@@ -16,9 +16,7 @@ class PartnerSettings {
   });
 
   factory PartnerSettings.fromJson(Map<String, dynamic> json) {
-    print('Преобразование JSON в PartnerSettings:');
     final safeJson = SafeLoggingUtils.sanitizeData(json);
-    print('JSON данные: $safeJson');
     
     try {
     return PartnerSettings(
@@ -33,8 +31,6 @@ class PartnerSettings {
             : DateTime.now(),
     );
     } catch (e, stackTrace) {
-      print('Ошибка при создании PartnerSettings: $e');
-      print('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -86,5 +82,6 @@ class PartnerSettings {
 
   @override
   String toString() =>
-      'PartnerSettings(id: $id, partnerId: $partnerId, brandingColor: $brandingColor, ';
+      'PartnerSettings(id: $id, partnerId: $partnerId, brandingColor: $brandingColor, '
+      'createdAt: $createdAt, updatedAt: $updatedAt)';
 }

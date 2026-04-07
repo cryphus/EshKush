@@ -31,7 +31,7 @@ class PointReview {
       throw ArgumentError('ID пользователя должен быть положительным числом');
     }
     if (!rating.isFinite || rating < 0 || rating > 5) {
-      throw ArgumentError('Некорректный ID');
+      throw ArgumentError('Рейтинг должен быть от 0 до 5');
     }
     // Разрешаем небольшой временной дрейф (5 минут), но защищаемся от явного будущего времени
     if (createdAt.isAfter(DateTime.now().add(const Duration(minutes: 5)))) {
@@ -51,7 +51,7 @@ class PointReview {
 
   void updateRating(double newRating) {
     if (!newRating.isFinite || newRating < 0 || newRating > 5) {
-      throw ArgumentError('Некорректный ID');
+      throw ArgumentError('Рейтинг должен быть от 0 до 5');
     }
     rating = newRating;
   }

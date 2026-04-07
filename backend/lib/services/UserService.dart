@@ -37,7 +37,6 @@ class UserService {
       
       return user;
     } catch (e) {
-      print('Ошибка получения пользователя: $e');
       rethrow;
     }
   }
@@ -72,14 +71,12 @@ class UserService {
       
       return users;
     } catch (e) {
-      print('Ошибка получения списка пользователей: $e');
       rethrow;
     }
   }
 
   Future<User> updateUser(int id, Map<String, dynamic> data) async {
     try {
-      print('Обновление пользователя с ID: $id');
       SafeLoggingUtils.logData('Данные для обновления', data);
       
       // Валидация данных обновления
@@ -93,9 +90,7 @@ class UserService {
         data['password'] = AuthUtils.hashPassword(data['password']);
       }
 
-      print('Вызов метода update в UserRepository');
       final result = await _userRepository.update(id, data);
-      print('Некорректный ID');
 
       if (result == null) {
         throw Exception('Пользователь не найден');
@@ -106,7 +101,6 @@ class UserService {
       
       return result;
     } catch (e) {
-      print('Ошибка обновления пользователя: $e');
       rethrow;
     }
   }
@@ -124,7 +118,6 @@ class UserService {
       // Инвалидируем кеш
       await _invalidateUserCache(id);
     } catch (e) {
-      print('Ошибка удаления пользователя: $e');
       rethrow;
     }
   }
@@ -150,7 +143,6 @@ class UserService {
         throw Exception('Пользователь не найден');
       }
     } catch (e) {
-      print('Ошибка обновления баланса: $e');
       rethrow;
     }
   }
@@ -172,7 +164,6 @@ class UserService {
         },
       );
     } catch (e) {
-      print('Ошибка добавления в избранное: $e');
       rethrow;
     }
   }
@@ -194,7 +185,6 @@ class UserService {
         },
       );
     } catch (e) {
-      print('Ошибка удаления из избранного: $e');
       rethrow;
     }
   }
@@ -230,7 +220,6 @@ class UserService {
       await _cacheService.delete(CacheKeys.allUsers());
       await _cacheService.deleteByPattern('users:role:*');
     } catch (e) {
-      print('Ошибка инвалидации кеша пользователя: $e');
       // Не пробрасываем ошибку, так как это не критично
     }
   }

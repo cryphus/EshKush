@@ -6,7 +6,6 @@ import '../model/enums/ActionType.dart';
 
 class OrderRepository {
   final PostgreSQLConnection _connection;
-  PostgreSQLConnection? _transactionConnection;
 
   OrderRepository(this._connection);
 
@@ -16,7 +15,6 @@ class OrderRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -26,7 +24,6 @@ class OrderRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -55,33 +52,25 @@ class OrderRepository {
       );
       return result == null ? null : Order.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска заказа по ID: $e');
       rethrow;
     }
   }
 
-  Future<Order> createOrder(Map<String, dynamic> data) async {
-    try {
-      SafeLoggingUtils.logData('Создание заказа с данными', data);
-      
-      // Преобразуем числовые значения
-      final userId = data['user_id'] is String ? int.parse(data['user_id']) : (data['user_id'] as num).toInt();
-      final pointId = data['point_id'] is String ? int.parse(data['point_id']) : (data['point_id'] as num).toInt();
-      final totalPrice = data['total_price'] is String ? double.parse(data['total_price']) : (data['total_price'] as num).toDouble();
-      
-      // Преобразуем массив products_id
-      final productsId = (data['products_id'] as List).map((e) {
-        if (e is String) return int.parse(e);
-        return e as int;
-      }).toList();
-      
-      print('Преобразованные значения:');
-      print('userId: $userId');
-      print('pointId: $pointId');
-      print('totalPrice: $totalPrice');
-      print('productsId: $productsId');
-      
-      final result = await _connection.mappedResultsQuery(
+  /// Создаёт заказ и связанную запись о платеже атомарно в одной DB-транзакции.
+  Future<Order> createWithPayment(Map<String, dynamic> data) async {
+    SafeLoggingUtils.logData('Создание заказа с данными', data);
+
+    final userId = data['user_id'] is String ? int.parse(data['user_id']) : (data['user_id'] as num).toInt();
+    final pointId = data['point_id'] is String ? int.parse(data['point_id']) : (data['point_id'] as num).toInt();
+    final totalPrice = data['total_price'] is String ? double.parse(data['total_price']) : (data['total_price'] as num).toDouble();
+    final productsId = (data['products_id'] as List).map((e) {
+      if (e is String) return int.parse(e);
+      return e as int;
+    }).toList();
+
+    late Order order;
+    await _connection.transaction((txn) async {
+      final orderResult = await txn.mappedResultsQuery(
         '''
         WITH inserted_order AS (
           INSERT INTO orders (
@@ -90,7 +79,7 @@ class OrderRepository {
             @user_id, @point_id, @products_id, @date, @total_price, 'pending', CURRENT_TIMESTAMP
           ) RETURNING *
         )
-        SELECT 
+        SELECT
           id,
           products_id,
           user_id,
@@ -99,7 +88,7 @@ class OrderRepository {
           status,
           total_price,
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          CASE 
+          CASE
             WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
             ELSE NULL
           END as updated_at
@@ -113,17 +102,28 @@ class OrderRepository {
           'total_price': totalPrice,
         },
       );
-      
-      if (result.isEmpty) {
-        throw Exception('Ошибка создания заказа');
-      }
-      
-      print('Результат из БД: ${result.first.values.first}');
-      return Order.fromJson(result.first.values.first);
-    } catch (e) {
-      print('Ошибка создания заказа: $e');
-      rethrow;
-    }
+
+      if (orderResult.isEmpty) throw Exception('Ошибка создания заказа');
+      order = Order.fromJson(orderResult.first.values.first);
+
+      // Создаём запись о платеже атомарно вместе с заказом.
+      // provider_transaction_id = order.id как placeholder до получения ответа от платёжного провайдера.
+      await txn.mappedResultsQuery(
+        '''
+        INSERT INTO payment_transactions (
+          order_id, provider_transaction_id, order_price, payment_method, status, transaction_date, is_active
+        ) VALUES (
+          @orderId, @orderId, @orderPrice, 'other', 'pending', CURRENT_TIMESTAMP, true
+        )
+        ''',
+        substitutionValues: {
+          'orderId': order.id,
+          'orderPrice': totalPrice,
+        },
+      );
+    });
+
+    return order;
   }
 
   Future<Order?> updateStatus(int id, OrderStatus status) async {
@@ -151,7 +151,6 @@ class OrderRepository {
       );
       return result == null ? null : Order.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления статуса заказа: $e');
       rethrow;
     }
   }
@@ -177,21 +176,8 @@ class OrderRepository {
       );
       return result == null ? null : Order.fromJson(result);
     } catch (e) {
-      print('Ошибка удаления заказа: $e');
       rethrow;
     }
-  }
-
-  Future<void> beginTransaction() async {
-    await _connection.execute('BEGIN');
-  }
-
-  Future<void> commitTransaction() async {
-    await _connection.execute('COMMIT');
-  }
-
-  Future<void> rollbackTransaction() async {
-    await _connection.execute('ROLLBACK');
   }
 
   Future<void> createOrderHistory({
@@ -202,8 +188,7 @@ class OrderRepository {
     required double totalSum,
     required OrderStatus status,
   }) async {
-    final connection = _transactionConnection ?? _connection;
-    await connection.execute(
+    await _connection.execute(
       '''
       INSERT INTO order_history (
         order_id, point_id, user_id, order_date, total_sum, status
@@ -228,8 +213,7 @@ class OrderRepository {
     required String actionDescription,
     required ActionType actionType,
   }) async {
-    final connection = _transactionConnection ?? _connection;
-    await connection.execute(
+    await _connection.execute(
       '''
       INSERT INTO order_actions (
         order_id, partner_id, action_description, action_type
@@ -279,7 +263,6 @@ class OrderRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => Order.fromJson(row.values.first)).toList();
     } catch (e) {
-      print('Ошибка получения списка заказов: $e');
       rethrow;
     }
   }

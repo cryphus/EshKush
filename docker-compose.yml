@@ -59,7 +59,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    command: dart run bin/migrate.dart
+    command: dart run bin/Migrate.dart
     working_dir: /app/backend
     environment:
       - DB_HOST=postgres

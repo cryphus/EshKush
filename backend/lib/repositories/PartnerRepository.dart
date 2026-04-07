@@ -13,7 +13,6 @@ class PartnerRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -23,7 +22,6 @@ class PartnerRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -49,22 +47,12 @@ class PartnerRepository {
       );
       return result == null ? null : Partner.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска партнера по ID: $e');
       rethrow;
     }
   }
 
   Future<Partner> create(Partner partner) async {
     try {
-      print('Создаем партнера в базе данных:');
-      print('user_id: ${partner.userId}');
-      print('name: ${partner.name}');
-      print('contact_person: ${partner.contactPerson}');
-      print('contact_email: ${partner.contactEmail}');
-      print('contact_phone: ${partner.contactPhone}');
-      print('contact_document: ${partner.contactDocument}');
-      print('max_discount: ${partner.maxDiscount}');
-      print('created_at: ${partner.createdAt}');
 
       final result = await queryOne(
         '''
@@ -108,7 +96,6 @@ class PartnerRepository {
       }
       
       final safeResult = SafeLoggingUtils.sanitizeData(result);
-      print('Результат запроса: $safeResult');
 
       // Добавляем created_at, если его нет в результате
       if (!result.containsKey('created_at')) {
@@ -117,7 +104,6 @@ class PartnerRepository {
       
       return Partner.fromJson(result);
     } catch (e) {
-      print('Ошибка создания партнера: $e');
       rethrow;
     }
   }
@@ -173,8 +159,6 @@ class PartnerRepository {
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
       ''';
 
-      print('SQL запрос: $updateQuery');
-      print('Параметры: $params');
 
       final result = await queryOne(updateQuery, params: params);
 
@@ -182,10 +166,8 @@ class PartnerRepository {
         throw Exception('Партнер не найден');
       }
 
-      print('Некорректный ID');
       return Partner.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления партнера: $e');
       rethrow;
     }
   }
@@ -200,7 +182,6 @@ class PartnerRepository {
         throw Exception('Партнер не найден');
       }
     } catch (e) {
-      print('Ошибка удаления партнера: $e');
       rethrow;
     }
   }
@@ -224,7 +205,6 @@ class PartnerRepository {
       );
       return results.map((map) => Partner.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения списка партнеров: $e');
       rethrow;
     }
   }

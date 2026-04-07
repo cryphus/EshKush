@@ -46,7 +46,7 @@ class PromoCodes {
       endDate: DateTime.parse(json['end_date'] as String? ?? DateTime.now().add(Duration(days: 30)).toIso8601String()),
       minOrderSum: double.tryParse(json['min_order_sum']?.toString() ?? '0') ?? 0.0,
       discountType: DiscountType.values.firstWhere(
-        (e) => e.toString() == 'DiscountType.${json['discount_type']}',
+        (e) => e.name == json['discount_type']?.toString(),
         orElse: () => DiscountType.percentage,
       ),
       discountValue: double.tryParse(json['discount_value']?.toString() ?? '0') ?? 0.0,

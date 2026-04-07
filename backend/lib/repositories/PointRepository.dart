@@ -26,7 +26,6 @@ class PointRepository {
 
       return result.map((row) => Point.fromJson(row['points']!)).toList();
     } catch (e) {
-      print('Ошибка получения списка точек: $e');
       rethrow;
     }
   }
@@ -53,7 +52,6 @@ class PointRepository {
 
       return Point.fromJson(result.first['points']!);
     } catch (e) {
-      print('Ошибка получения точки: $e');
       rethrow;
     }
   }
@@ -70,7 +68,6 @@ class PointRepository {
 
       return results.map((row) => Point.fromJson(row['points']!)).toList();
     } catch (e) {
-      print('Ошибка поиска точек по категории: $e');
       rethrow;
     }
   }
@@ -85,7 +82,6 @@ class PointRepository {
       
       return results.map((row) => PointCategory.fromJson(row['point_categories']!)).toList();
     } catch (e) {
-      print('Ошибка получения категорий для точки: $e');
       rethrow;
     }
   }
@@ -117,7 +113,6 @@ class PointRepository {
       
       return Point.fromJson(result.first['points']!);
     } catch (e) {
-      print('Ошибка создания точки: $e');
       rethrow;
     }
   }
@@ -149,7 +144,6 @@ class PointRepository {
       
       return Point.fromJson(result.first['points']!);
     } catch (e) {
-      print('Ошибка обновления точки: $e');
       rethrow;
     }
   }
@@ -167,7 +161,6 @@ class PointRepository {
       
       return Point.fromJson(result.first['points']!);
     } catch (e) {
-      print('Ошибка удаления точки: $e');
       rethrow;
     }
   }
@@ -193,7 +186,6 @@ class PointRepository {
       
       return Point.fromJson(result.first['points']!);
     } catch (e) {
-      print('Ошибка обновления рейтинга: $e');
       rethrow;
     }
   }
@@ -226,7 +218,6 @@ class PointRepository {
       
       return results.map((row) => PointReview.fromJson(row['point_reviews']!)).toList();
     } catch (e) {
-      print('Ошибка получения отзывов точки: $e');
       rethrow;
     }
   }
@@ -251,7 +242,6 @@ class PointRepository {
       
       return PointReview.fromJson(result.first['point_reviews']!);
     } catch (e) {
-      print('Ошибка создания отзыва: $e');
       rethrow;
     }
   }
@@ -272,7 +262,6 @@ class PointRepository {
         'point_id': pointId,
       });
     } catch (e) {
-      print('Ошибка обновления рейтинга точки: $e');
       rethrow;
     }
   }

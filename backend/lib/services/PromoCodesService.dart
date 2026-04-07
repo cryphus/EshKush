@@ -15,7 +15,6 @@ class PromoCodesService {
       }
       return promoCode;
     } catch (e) {
-      print('Ошибка получения промокода: $e');
       rethrow;
     }
   }
@@ -28,7 +27,6 @@ class PromoCodesService {
       }
       return promoCode;
     } catch (e) {
-      print('Ошибка получения промокода: $e');
       rethrow;
     }
   }
@@ -37,7 +35,6 @@ class PromoCodesService {
     try {
       return await _promoCodesRepository.getActivePromoCodes();
     } catch (e) {
-      print('Ошибка получения активных промокодов: $e');
       rethrow;
     }
   }
@@ -73,7 +70,6 @@ class PromoCodesService {
       );
       return await _promoCodesRepository.create(promoCode);
     } catch (e) {
-      print('Ошибка создания промокода: $e');
       rethrow;
     }
   }
@@ -82,7 +78,6 @@ class PromoCodesService {
     try {
       return await _promoCodesRepository.update(promoCode);
     } catch (e) {
-      print('Ошибка обновления промокода: $e');
       rethrow;
     }
   }
@@ -91,7 +86,6 @@ class PromoCodesService {
     try {
       await _promoCodesRepository.delete(id);
     } catch (e) {
-      print('Ошибка удаления промокода: $e');
       rethrow;
     }
   }
@@ -121,7 +115,6 @@ class PromoCodesService {
       
       return discount;
     } catch (e) {
-      print('Ошибка расчета скидки: $e');
       rethrow;
     }
   }

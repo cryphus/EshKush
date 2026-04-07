@@ -5,7 +5,6 @@ import '../utils/SafeLoggingUtils.dart';
 import '../repositories/UserRepository.dart';
 import '../repositories/PointRepository.dart';
 import '../repositories/ProductsRepository.dart';
-import '../model/enums/ActionType.dart';
 import '../model/entities/Product.dart';
 
 class OrderService {
@@ -29,7 +28,6 @@ class OrderService {
       }
       return result;
     } catch (e) {
-      print('Ошибка получения заказа: $e');
       rethrow;
     }
   }
@@ -46,7 +44,6 @@ class OrderService {
         offset: offset,
       );
     } catch (e) {
-      print('Ошибка получения списка заказов: $e');
       rethrow;
     }
   }
@@ -59,7 +56,6 @@ class OrderService {
       );
       return results.map((map) => Order.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения заказов пользователя: $e');
       rethrow;
     }
   }
@@ -80,28 +76,10 @@ class OrderService {
         'date': data['date'] ?? DateTime.now().toIso8601String(),
       };
 
-      print('Преобразованные данные: $orderData');
 
       await _validateOrderData(orderData);
-      
-      // Начинаем транзакцию
-      await _orderRepository.beginTransaction();
-      
-      try {
-        // Создаем заказ
-        final order = await _orderRepository.createOrder(orderData);
-        
-        // Подтверждаем транзакцию
-        await _orderRepository.commitTransaction();
-        
-        return order;
-      } catch (e) {
-        // Откатываем транзакцию в случае ошибки
-        await _orderRepository.rollbackTransaction();
-        rethrow;
-      }
+      return await _orderRepository.createWithPayment(orderData);
     } catch (e) {
-      print('Ошибка создания заказа: $e');
       rethrow;
     }
   }
@@ -114,7 +92,6 @@ class OrderService {
       }
       return result;
     } catch (e) {
-      print('Ошибка обновления статуса заказа: $e');
       rethrow;
     }
   }
@@ -126,7 +103,6 @@ class OrderService {
         throw Exception('Заказ не найден');
       }
     } catch (e) {
-      print('Ошибка удаления заказа: $e');
       rethrow;
     }
   }

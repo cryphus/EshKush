@@ -30,7 +30,6 @@ class PointService {
       
       return result;
     } catch (e) {
-      print('Ошибка получения точки: $e');
       rethrow;
     }
   }
@@ -49,7 +48,6 @@ class PointService {
       }
       return await _pointRepository.findAll(limit: limit, offset: offset);
     } catch (e) {
-      print('Ошибка получения списка точек: $e');
       rethrow;
     }
   }
@@ -68,7 +66,6 @@ class PointService {
       }
       return await _pointRepository.findByCategory(categoryId, limit: limit, offset: offset);
     } catch (e) {
-      print('Ошибка получения точек по категории: $e');
       rethrow;
     }
   }
@@ -77,7 +74,6 @@ class PointService {
     try {
       return await _pointRepository.getCategoriesForPoint(pointId);
     } catch (e) {
-      print('Ошибка получения категорий точки: $e');
       rethrow;
     }
   }
@@ -93,7 +89,6 @@ class PointService {
       
       return result;
     } catch (e) {
-      print('Ошибка создания точки: $e');
       rethrow;
     }
   }
@@ -112,7 +107,6 @@ class PointService {
       
       return result;
     } catch (e) {
-      print('Ошибка обновления точки: $e');
       rethrow;
     }
   }
@@ -127,7 +121,6 @@ class PointService {
       // Инвалидируем кеш
       await _invalidatePointCache(id);
     } catch (e) {
-      print('Ошибка удаления точки: $e');
       rethrow;
     }
   }
@@ -143,7 +136,6 @@ class PointService {
         throw Exception('Точка не найдена');
       }
     } catch (e) {
-      print('Ошибка обновления рейтинга: $e');
       rethrow;
     }
   }
@@ -152,7 +144,6 @@ class PointService {
     try {
       await _pointRepository.updatePointCategories(pointId, categoryIds);
     } catch (e) {
-      print('Ошибка обновления категорий точки: $e');
       rethrow;
     }
   }
@@ -161,7 +152,6 @@ class PointService {
     try {
       return await _pointRepository.getPointReviews(pointId);
     } catch (e) {
-      print('Ошибка получения отзывов точки: $e');
       rethrow;
     }
   }
@@ -171,7 +161,6 @@ class PointService {
       final result = await _pointRepository.createPointReview(data);
       return result;
     } catch (e) {
-      print('Ошибка создания отзыва: $e');
       rethrow;
     }
   }
@@ -211,7 +200,6 @@ class PointService {
       await _cacheService.deleteByPattern('points:city:*');
       await _cacheService.deleteByPattern('points:partner:*');
     } catch (e) {
-      print('Ошибка инвалидации кеша точек: $e');
       // Не пробрасываем ошибку, так как это не критично
     }
   }

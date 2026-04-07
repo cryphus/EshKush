@@ -14,7 +14,6 @@ class ActionLogRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -24,7 +23,6 @@ class ActionLogRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -67,7 +65,6 @@ class ActionLogRepository {
 
       return ActionLog.fromJson(result);
     } catch (e) {
-      print('Ошибка создания лога действия: $e');
       rethrow;
     }
   }
@@ -80,7 +77,6 @@ class ActionLogRepository {
       );
       return results.map((map) => ActionLog.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по ID пользователя: $e');
       rethrow;
     }
   }
@@ -101,7 +97,6 @@ class ActionLogRepository {
       );
       return results.map((map) => ActionLog.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по сущности: $e');
       rethrow;
     }
   }
@@ -114,7 +109,6 @@ class ActionLogRepository {
       );
       return results.map((map) => ActionLog.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по типу действия: $e');
       rethrow;
     }
   }
@@ -127,7 +121,6 @@ class ActionLogRepository {
       );
       return results.map((map) => ActionLog.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения последних логов: $e');
       rethrow;
     }
   }

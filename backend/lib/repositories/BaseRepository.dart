@@ -19,7 +19,6 @@ abstract class BaseRepository {
         return merged;
       }).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -35,7 +34,6 @@ abstract class BaseRepository {
       }
       return merged;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }

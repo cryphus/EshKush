@@ -12,7 +12,6 @@ class UserRepository {
 
   Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
     try {
-      print('Выполняем запрос: $query');
       // Не логируем параметры для безопасности
       
       final results = await _connection.mappedResultsQuery(
@@ -26,7 +25,6 @@ class UserRepository {
       // Не логируем результат для безопасности
       return result.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -36,7 +34,6 @@ class UserRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -61,27 +58,21 @@ class UserRepository {
       );
       return result == null ? null : User.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска пользователя по ID: $e');
       rethrow;
     }
   }
 
   Future<User?> findByUsername(String username) async {
     try {
-      print('Поиск пользователя по имени: $username');
       final result = await queryOne(
         'SELECT * FROM users WHERE username = @username',
         params: {'username': username},
       );
-      print('Результат поиска: $result');
       if (result == null) {
-        print('Пользователь не найден');
         return null;
       }
-      print('Преобразование результата в User');
       return User.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска пользователя по имени: $e');
       rethrow;
     }
   }
@@ -120,7 +111,6 @@ class UserRepository {
       }
       return User.fromJson(result);
     } catch (e) {
-      print('Ошибка создания пользователя: $e');
       rethrow;
     }
   }
@@ -153,7 +143,6 @@ class UserRepository {
       
       return user;
     } catch (e) {
-      print('Ошибка аутентификации: $e');
       rethrow;
     }
   }
@@ -196,10 +185,8 @@ class UserRepository {
         throw Exception('Ошибка создания пользователя');
       }
 
-      print('Преобразование результата в User');
       return User.fromJson(result);
     } catch (e) {
-      print('Ошибка создания пользователя: $e');
       rethrow;
     }
   }
@@ -215,7 +202,6 @@ class UserRepository {
         params: {'email': email},
       ).then((result) => result != null ? User.fromJson(result) : null);
     } catch (e) {
-      print('Ошибка поиска пользователя по email: $e');
       rethrow;
     }
   }
@@ -231,7 +217,6 @@ class UserRepository {
         params: {'number': number},
       ).then((result) => result != null ? User.fromJson(result) : null);
     } catch (e) {
-      print('Ошибка поиска пользователя по номеру: $e');
       rethrow;
     }
   }
@@ -250,7 +235,6 @@ class UserRepository {
       final List<dynamic> favoriteIds = result['favorite_ids'] ?? [];
       return favoriteIds.map((id) => id as int).toList();
     } catch (e) {
-      print('Ошибка получения избранных точек: $e');
       rethrow;
     }
   }
@@ -273,7 +257,6 @@ class UserRepository {
         },
       );
     } catch (e) {
-      print('Ошибка добавления точки в избранное: $e');
       rethrow;
     }
   }
@@ -296,7 +279,6 @@ class UserRepository {
         },
       );
     } catch (e) {
-      print('Ошибка удаления точки из избранного: $e');
       rethrow;
     }
   }
@@ -356,8 +338,6 @@ class UserRepository {
           to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
       ''';
 
-      print('SQL запрос: $updateQuery');
-      print('Параметры: $params');
 
       final result = await queryOne(updateQuery, params: params);
 
@@ -365,10 +345,8 @@ class UserRepository {
         throw Exception('Пользователь не найден');
       }
 
-      print('Некорректный ID');
       return User.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления пользователя: $e');
       rethrow;
     }
   }
@@ -394,7 +372,6 @@ class UserRepository {
       );
       return results.map((map) => User.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения списка пользователей: $e');
       rethrow;
     }
   }

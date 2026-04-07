@@ -14,7 +14,6 @@ class PartnerStatisticsService {
       }
       return statistics;
     } catch (e) {
-      print('Ошибка получения статистики: $e');
       rethrow;
     }
   }
@@ -27,7 +26,6 @@ class PartnerStatisticsService {
       }
       return statistics;
     } catch (e) {
-      print('Ошибка получения статистики партнера: $e');
       rethrow;
     }
   }
@@ -40,7 +38,6 @@ class PartnerStatisticsService {
       }
       return statistics;
     } catch (e) {
-      print('Ошибка получения статистики точки: $e');
       rethrow;
     }
   }
@@ -63,7 +60,6 @@ class PartnerStatisticsService {
 
       return await _repository.create(statistics);
     } catch (e) {
-      print('Ошибка создания статистики: $e');
       rethrow;
     }
   }
@@ -87,7 +83,6 @@ class PartnerStatisticsService {
 
       return await _repository.update(updatedStatistics);
     } catch (e) {
-      print('Ошибка обновления статистики: $e');
       rethrow;
     }
   }
@@ -102,7 +97,6 @@ class PartnerStatisticsService {
       statistics.addOrder(revenue);
       await _repository.update(statistics);
     } catch (e) {
-      print('Ошибка добавления заказа в статистику: $e');
       rethrow;
     }
   }
@@ -117,7 +111,6 @@ class PartnerStatisticsService {
       statistics.addCancel();
       await _repository.update(statistics);
     } catch (e) {
-      print('Ошибка добавления отмены в статистику: $e');
       rethrow;
     }
   }
@@ -132,7 +125,6 @@ class PartnerStatisticsService {
       statistics.updateRating(rating);
       await _repository.update(statistics);
     } catch (e) {
-      print('Ошибка обновления рейтинга: $e');
       rethrow;
     }
   }
@@ -141,7 +133,6 @@ class PartnerStatisticsService {
     try {
       await _repository.deactivate(id);
     } catch (e) {
-      print('Ошибка деактивации статистики: $e');
       rethrow;
     }
   }
@@ -150,7 +141,6 @@ class PartnerStatisticsService {
     try {
       await _repository.activate(id);
     } catch (e) {
-      print('Ошибка активации статистики: $e');
       rethrow;
     }
   }

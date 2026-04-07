@@ -15,7 +15,6 @@ class OrderHistoryService {
       }
       return orderHistory;
     } catch (e) {
-      print('Ошибка получения истории заказа: $e');
       rethrow;
     }
   }
@@ -24,7 +23,6 @@ class OrderHistoryService {
     try {
       return await _orderHistoryRepository.findByUserId(userId);
     } catch (e) {
-      print('Ошибка получения истории заказов пользователя: $e');
       rethrow;
     }
   }
@@ -33,7 +31,6 @@ class OrderHistoryService {
     try {
       return await _orderHistoryRepository.findByPointId(pointId);
     } catch (e) {
-      print('Ошибка получения истории заказов точки: $e');
       rethrow;
     }
   }
@@ -58,7 +55,6 @@ class OrderHistoryService {
       );
       return await _orderHistoryRepository.create(orderHistory);
     } catch (e) {
-      print('Ошибка создания истории заказа: $e');
       rethrow;
     }
   }
@@ -84,7 +80,6 @@ class OrderHistoryService {
       );
       return await _orderHistoryRepository.update(orderHistory);
     } catch (e) {
-      print('Ошибка завершения заказа: $e');
       rethrow;
     }
   }
@@ -95,7 +90,6 @@ class OrderHistoryService {
       orderHistory.cancelOrder(reason);
       return await _orderHistoryRepository.update(orderHistory);
     } catch (e) {
-      print('Ошибка отмены заказа: $e');
       rethrow;
     }
   }
@@ -104,7 +98,6 @@ class OrderHistoryService {
     try {
       return await _orderHistoryRepository.getByStatus(status);
     } catch (e) {
-      print('Ошибка получения заказов по статусу: $e');
       rethrow;
     }
   }
@@ -113,7 +106,6 @@ class OrderHistoryService {
     try {
       return await _orderHistoryRepository.getByDateRange(startDate, endDate);
     } catch (e) {
-      print('Ошибка получения заказов по диапазону дат: $e');
       rethrow;
     }
   }

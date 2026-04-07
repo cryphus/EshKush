@@ -32,20 +32,18 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    print('Преобразование JSON в Product:');
     final safeJson = SafeLoggingUtils.sanitizeData(json);
-    print('JSON данные: $safeJson');
     
     try {
       // Преобразуем числовые поля
-      final id = json['id'] == null ? 0 :
-          (json['id'] is String ? int.parse(json['id']) : json['id'] as int);
-          
-      final partnerId = json['partner_id'] == null ? 0 :
-          (json['partner_id'] is String ? int.parse(json['partner_id']) : json['partner_id'] as int);
-          
-      final pointId = json['point_id'] == null ? 0 :
-          (json['point_id'] is String ? int.parse(json['point_id']) : json['point_id'] as int);
+      if (json['id'] == null) throw ArgumentError('Product.fromJson: поле id обязательно');
+      final id = json['id'] is String ? int.parse(json['id']) : json['id'] as int;
+
+      if (json['partner_id'] == null) throw ArgumentError('Product.fromJson: поле partner_id обязательно');
+      final partnerId = json['partner_id'] is String ? int.parse(json['partner_id']) : json['partner_id'] as int;
+
+      if (json['point_id'] == null) throw ArgumentError('Product.fromJson: поле point_id обязательно');
+      final pointId = json['point_id'] is String ? int.parse(json['point_id']) : json['point_id'] as int;
 
       // Преобразуем строковые поля
       final name = json['name']?.toString() ?? '';
@@ -89,11 +87,8 @@ class Product {
         updatedAt: updatedAt,
       );
       
-      print('Product успешно создан');
       return product;
     } catch (e) {
-      print('Ошибка при создании Product: $e');
-      print('Проблемные данные: $json');
       rethrow;
     }
   }

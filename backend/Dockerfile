@@ -9,8 +9,6 @@ COPY backend/pubspec.* ./
 RUN dart pub get
 
 COPY backend/ .
-# Тестовый файл лежит рядом с backend/ на уровне проекта
-COPY test/ApiTest.dart test/ApiTest.dart
 
 RUN dart pub get --offline
 

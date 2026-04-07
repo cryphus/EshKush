@@ -13,7 +13,6 @@ class PromoCodesRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -23,7 +22,6 @@ class PromoCodesRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -54,7 +52,6 @@ class PromoCodesRepository {
       );
       return result == null ? null : PromoCodes.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска промокода по ID: $e');
       rethrow;
     }
   }
@@ -85,7 +82,6 @@ class PromoCodesRepository {
       );
       return result == null ? null : PromoCodes.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска промокода по коду: $e');
       rethrow;
     }
   }
@@ -117,7 +113,6 @@ class PromoCodesRepository {
       );
       return results.map((map) => PromoCodes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения активных промокодов: $e');
       rethrow;
     }
   }
@@ -175,7 +170,6 @@ class PromoCodesRepository {
       }
       return PromoCodes.fromJson(result);
     } catch (e) {
-      print('Ошибка создания промокода: $e');
       rethrow;
     }
   }
@@ -232,7 +226,6 @@ class PromoCodesRepository {
       }
       return PromoCodes.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления промокода: $e');
       rethrow;
     }
   }
@@ -247,7 +240,6 @@ class PromoCodesRepository {
         throw Exception('Промокод не найден');
       }
     } catch (e) {
-      print('Ошибка удаления промокода: $e');
       rethrow;
     }
   }
@@ -263,7 +255,6 @@ class PromoCodesRepository {
         params: {'id': id},
       );
     } catch (e) {
-      print('Ошибка увеличения счетчика использования: $e');
       rethrow;
     }
   }

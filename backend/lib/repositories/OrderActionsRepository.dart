@@ -13,7 +13,6 @@ class OrderActionsRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -23,7 +22,6 @@ class OrderActionsRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -36,7 +34,6 @@ class OrderActionsRepository {
       );
       return result == null ? null : OrderActions.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска действия по ID: $e');
       rethrow;
     }
   }
@@ -49,7 +46,6 @@ class OrderActionsRepository {
       );
       return results.map((map) => OrderActions.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска действий заказа: $e');
       rethrow;
     }
   }
@@ -68,7 +64,6 @@ class OrderActionsRepository {
       );
       return results.map((map) => OrderActions.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска действий партнера: $e');
       rethrow;
     }
   }
@@ -96,7 +91,6 @@ class OrderActionsRepository {
       }
       return OrderActions.fromJson(result);
     } catch (e) {
-      print('Ошибка создания действия: $e');
       rethrow;
     }
   }
@@ -123,7 +117,6 @@ class OrderActionsRepository {
       }
       return OrderActions.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления действия: $e');
       rethrow;
     }
   }
@@ -136,7 +129,6 @@ class OrderActionsRepository {
       );
       return results.map((map) => OrderActions.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения действий по типу: $e');
       rethrow;
     }
   }
@@ -146,7 +138,6 @@ class OrderActionsRepository {
       final results = await query('SELECT * FROM order_actions');
       return results.map((map) => OrderActions.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения активных действий: $e');
       rethrow;
     }
   }

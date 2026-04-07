@@ -40,9 +40,9 @@ class SecurityMiddleware {
     final effectiveStore = store ?? InMemoryRateLimiterStore();
     return (Handler innerHandler) {
       return (Request request) async {
-        final ip = request.headers['x-forwarded-for']
+        final ip = (request.headers['x-forwarded-for']?.split(',').first
             ?? request.headers['x-real-ip']
-            ?? 'unknown';
+            ?? 'unknown').trim();
         final count = await effectiveStore.increment(ip, window);
         if (count > maxRequests) {
           return Response(

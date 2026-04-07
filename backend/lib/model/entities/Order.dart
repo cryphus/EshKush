@@ -25,9 +25,7 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
-    print('Преобразование JSON в Order:');
     final safeJson = SafeLoggingUtils.sanitizeData(json);
-    print('JSON данные: $safeJson');
     
     try {
       // Преобразуем products_id в List<int>
@@ -85,11 +83,8 @@ class Order {
         updatedAt: updatedAt,
       );
       
-      print('Order успешно создан');
       return order;
     } catch (e) {
-      print('Ошибка при создании Order: $e');
-      print('Проблемные данные: $json');
       rethrow;
     }
   }

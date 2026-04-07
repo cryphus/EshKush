@@ -12,7 +12,6 @@ class UserSessionRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -22,7 +21,6 @@ class UserSessionRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -35,7 +33,6 @@ class UserSessionRepository {
       );
       return result == null ? null : UserSessions.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска сессии по ID: $e');
       rethrow;
     }
   }
@@ -48,7 +45,6 @@ class UserSessionRepository {
       );
       return results.map((map) => UserSessions.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска сессий пользователя: $e');
       rethrow;
     }
   }
@@ -83,7 +79,6 @@ class UserSessionRepository {
       }
       return UserSessions.fromJson(result);
     } catch (e) {
-      print('Ошибка создания сессии: $e');
       rethrow;
     }
   }
@@ -116,7 +111,6 @@ class UserSessionRepository {
       }
       return UserSessions.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления сессии: $e');
       rethrow;
     }
   }
@@ -131,7 +125,6 @@ class UserSessionRepository {
         throw Exception('Сессия не найдена');
       }
     } catch (e) {
-      print('Ошибка удаления сессии: $e');
       rethrow;
     }
   }
@@ -149,7 +142,6 @@ class UserSessionRepository {
       );
       return result != null;
     } catch (e) {
-      print('Ошибка проверки blacklist: $e');
       return true;
     }
   }
@@ -166,7 +158,6 @@ class UserSessionRepository {
         params: {'jtiHash': jtiHash, 'expiresAt': expiresAt},
       );
     } catch (e) {
-      print('Ошибка добавления в blacklist: $e');
     }
   }
 
@@ -182,7 +173,6 @@ class UserSessionRepository {
         params: {'hashes': jtiHashes, 'expiresAt': expiresAt},
       );
     } catch (e) {
-      print('Ошибка пакетного добавления в blacklist: $e');
     }
   }
 
@@ -203,7 +193,6 @@ class UserSessionRepository {
       );
       return result == null ? null : UserSessions.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска сессии по refresh_jti_hash: $e');
       rethrow;
     }
   }
@@ -222,7 +211,6 @@ class UserSessionRepository {
       final blacklistExpires = DateTime.now().add(const Duration(days: 8));
       await addToBlacklist(refreshJtiHash, blacklistExpires);
     } catch (e) {
-      print('Ошибка ревокации сессии: $e');
       rethrow;
     }
   }
@@ -234,7 +222,6 @@ class UserSessionRepository {
       );
       return results.map((map) => UserSessions.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения активных сессий: $e');
       rethrow;
     }
   }
@@ -267,7 +254,6 @@ class UserSessionRepository {
         params: {'userId': userId},
       );
     } catch (e) {
-      print('Ошибка завершения всех сессий пользователя: $e');
       rethrow;
     }
   }
@@ -282,7 +268,6 @@ class UserSessionRepository {
         params: {'id': sessionId},
       );
     } catch (e) {
-      print('Ошибка обновления last_active: $e');
     }
   }
 
@@ -293,7 +278,6 @@ class UserSessionRepository {
         'DELETE FROM user_sessions WHERE expires_at < NOW()',
       );
     } catch (e) {
-      print('Ошибка очистки истёкших сессий: $e');
       return 0;
     }
   }
@@ -305,7 +289,6 @@ class UserSessionRepository {
         'DELETE FROM token_blacklist WHERE expires_at < NOW()',
       );
     } catch (e) {
-      print('Ошибка очистки blacklist: $e');
     }
   }
 } 

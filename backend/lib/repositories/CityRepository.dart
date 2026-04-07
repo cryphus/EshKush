@@ -18,7 +18,6 @@ class CityRepository {
       }
       return map;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -35,7 +34,6 @@ class CityRepository {
         return map;
       }).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -53,17 +51,14 @@ class CityRepository {
         ''',
         params: {'id': id},
       );
-      print('Результат поиска города по ID: $result');
       return result == null ? null : City.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска города по ID: $e');
       rethrow;
     }
   }
 
   Future<List<City>> findAll() async {
     try {
-      print('Получение всех городов');
       final results = await query('''
         SELECT 
           id, 
@@ -72,17 +67,14 @@ class CityRepository {
         FROM cities 
         ORDER BY name
       ''');
-      print('Результаты запроса: $results');
       return results.map((map) => City.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения всех городов: $e');
       rethrow;
     }
   }
 
   Future<City> create(City city) async {
     try {
-      print('Создание города: ${city.name}');
       final result = await queryOne(
         '''
         INSERT INTO cities (name)
@@ -102,11 +94,8 @@ class CityRepository {
       }
       
       final safeResult = SafeLoggingUtils.sanitizeData(result);
-      print('Результат создания города: $safeResult');
       return City.fromJson(result);
     } catch (e, stackTrace) {
-      print('Ошибка создания города: $e');
-      print('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -133,7 +122,6 @@ class CityRepository {
       }
       return City.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления города: $e');
       rethrow;
     }
   }
@@ -148,7 +136,6 @@ class CityRepository {
         throw Exception('Город не найден');
       }
     } catch (e) {
-      print('Ошибка удаления города: $e');
       rethrow;
     }
   }

@@ -13,7 +13,6 @@ class PointReviewRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -24,7 +23,6 @@ class PointReviewRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -47,7 +45,6 @@ class PointReviewRepository {
       );
       return result == null ? null : PointReview.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска отзыва по ID: $e');
       rethrow;
     }
   }
@@ -70,7 +67,6 @@ class PointReviewRepository {
       );
       return results.map((map) => PointReview.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска отзывов по ID точки: $e');
       rethrow;
     }
   }
@@ -93,7 +89,6 @@ class PointReviewRepository {
       );
       return results.map((map) => PointReview.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска отзывов по ID пользователя: $e');
       rethrow;
     }
   }
@@ -124,7 +119,6 @@ class PointReviewRepository {
       }
       return PointReview.fromJson(result);
     } catch (e) {
-      print('Ошибка создания отзыва: $e');
       rethrow;
     }
   }
@@ -157,7 +151,6 @@ class PointReviewRepository {
       }
       return PointReview.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления отзыва: $e');
       rethrow;
     }
   }
@@ -172,7 +165,6 @@ class PointReviewRepository {
         throw Exception('Отзыв не найден');
       }
     } catch (e) {
-      print('Ошибка удаления отзыва: $e');
       rethrow;
     }
   }

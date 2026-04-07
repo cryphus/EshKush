@@ -12,7 +12,6 @@ class UserFavoriteRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -22,7 +21,6 @@ class UserFavoriteRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -35,7 +33,6 @@ class UserFavoriteRepository {
       );
       return results.map((map) => UserFavorite.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска избранных мест пользователя: $e');
       rethrow;
     }
   }
@@ -48,7 +45,6 @@ class UserFavoriteRepository {
       );
       return results.map((map) => UserFavorite.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска пользователей, добавивших место в избранное: $e');
       rethrow;
     }
   }
@@ -72,7 +68,6 @@ class UserFavoriteRepository {
       }
       return UserFavorite.fromJson(result);
     } catch (e) {
-      print('Ошибка добавления места в избранное: $e');
       rethrow;
     }
   }
@@ -94,7 +89,6 @@ class UserFavoriteRepository {
         throw Exception('Место не найдено в избранном');
       }
     } catch (e) {
-      print('Ошибка удаления места из избранного: $e');
       rethrow;
     }
   }
@@ -115,7 +109,6 @@ class UserFavoriteRepository {
       );
       return result?['exists'] as bool? ?? false;
     } catch (e) {
-      print('Ошибка проверки существования места в избранном: $e');
       rethrow;
     }
   }

@@ -13,7 +13,6 @@ class NotificationRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -23,7 +22,6 @@ class NotificationRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -60,7 +58,6 @@ class NotificationRepository {
 
       return Notification.fromJson(result);
     } catch (e) {
-      print('Ошибка создания уведомления: $e');
       rethrow;
     }
   }
@@ -73,7 +70,6 @@ class NotificationRepository {
       );
       return results.map((map) => Notification.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска уведомлений по ID пользователя: $e');
       rethrow;
     }
   }
@@ -86,7 +82,6 @@ class NotificationRepository {
       );
       return results.map((map) => Notification.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска уведомлений по типу: $e');
       rethrow;
     }
   }
@@ -99,7 +94,6 @@ class NotificationRepository {
       );
       return results.map((map) => Notification.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска непрочитанных уведомлений: $e');
       rethrow;
     }
   }
@@ -112,7 +106,6 @@ class NotificationRepository {
       );
       return results.map((map) => Notification.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения последних уведомлений: $e');
       rethrow;
     }
   }
@@ -129,7 +122,6 @@ class NotificationRepository {
         params: {'notificationId': notificationId},
       );
     } catch (e) {
-      print('Ошибка отметки уведомления как прочитанного: $e');
       rethrow;
     }
   }
@@ -145,7 +137,6 @@ class NotificationRepository {
         params: {'notificationId': notificationId},
       );
     } catch (e) {
-      print('Ошибка отметки уведомления как отправленного: $e');
       rethrow;
     }
   }

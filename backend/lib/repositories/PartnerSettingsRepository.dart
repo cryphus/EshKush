@@ -12,7 +12,6 @@ class PartnerSettingsRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -22,7 +21,6 @@ class PartnerSettingsRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -44,7 +42,6 @@ class PartnerSettingsRepository {
       );
       return result == null ? null : PartnerSettings.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска настроек партнера: $e');
       rethrow;
     }
   }
@@ -66,7 +63,6 @@ class PartnerSettingsRepository {
       );
       return result == null ? null : PartnerSettings.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска настроек по ID партнера: $e');
       rethrow;
     }
   }
@@ -98,7 +94,6 @@ class PartnerSettingsRepository {
 
       return PartnerSettings.fromJson(result);
     } catch (e) {
-      print('Ошибка создания настроек партнера: $e');
       rethrow;
     }
   }
@@ -134,7 +129,6 @@ class PartnerSettingsRepository {
       }
       return PartnerSettings.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления настроек партнера: $e');
       rethrow;
     }
   }
@@ -149,7 +143,6 @@ class PartnerSettingsRepository {
         throw Exception('Настройки партнера не найдены');
       }
     } catch (e) {
-      print('Ошибка удаления настроек партнера: $e');
       rethrow;
     }
   }
@@ -169,7 +162,6 @@ class PartnerSettingsRepository {
       );
       return results.map((map) => PartnerSettings.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения списка настроек: $e');
       rethrow;
     }
   }

@@ -84,7 +84,6 @@ class AuthService {
         }
       };
     } catch (e) {
-      print('Ошибка регистрации: $e');
       rethrow;
     }
   }

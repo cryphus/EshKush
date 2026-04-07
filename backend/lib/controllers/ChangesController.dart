@@ -46,16 +46,10 @@ class ChangesController {
 
   Future<Response> _getUserChanges(Request request, String userId) async {
     try {
-      print('РџРѕР»СѓС‡РµРЅ Р·Р°РїСЂРѕСЃ РЅР° РїРѕР»СѓС‡РµРЅРёРµ РёР·РјРµРЅРµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ:');
-      print('User ID: $userId');
-      print('Headers: ${request.headers}');
-      print('Method: ${request.method}');
-      print('URL: ${request.url}');
       
       final id = int.parse(userId);
       final changes = await _service.getUserChanges(id);
       
-      print('РќР°Р№РґРµРЅРѕ РёР·РјРµРЅРµРЅРёР№: ${changes.length}');
       
       return Response.ok(
         jsonEncode(changes.map((change) => change.toJson()).toList()),

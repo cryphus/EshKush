@@ -5,11 +5,11 @@ import 'package:backend/middleware/RbacMiddleware.dart';
 
 // ─── Вспомогательные функции ──────────────────────────────────────────────────
 
-/// Создаёт GET-запрос с заданным путём и опциональным JWT-payload в контексте.
-Request makeRequest(String path, {Map<String, dynamic>? user}) {
+/// Создаёт запрос с заданным методом, путём и опциональным JWT-payload в контексте.
+Request makeRequest(String path, {Map<String, dynamic>? user, String method = 'GET'}) {
   final context = <String, Object>{};
   if (user != null) context['user'] = user;
-  return Request('GET', Uri.parse('http://localhost/$path'), context: context);
+  return Request(method, Uri.parse('http://localhost/$path'), context: context);
 }
 
 /// Простой innerHandler, всегда отвечающий 200.
@@ -20,15 +20,15 @@ Future<Map<String, dynamic>> decodeBody(Response resp) async =>
     jsonDecode(await resp.readAsString()) as Map<String, dynamic>;
 
 void main() {
-  // Правила, аналогичные продакшн-конфигу
-  final rules = {
-    'action-logs':       {'admin'},
-    'error-logs':        {'admin'},
-    'cache':             {'admin'},
-    'partner-statistics': {'admin', 'support'},
-    'promo-codes':       {'admin', 'support'},
-    'point-categories':  {'admin', 'support'},
-    'product-categories': {'admin', 'support'},
+  // Правила, аналогичные продакшн-конфигу (новый формат: метод → роли)
+  final rules = <String, Map<String, Set<String>>>{
+    'action-logs':         {'*': {'admin'}},
+    'error-logs':          {'*': {'admin'}},
+    'cache':               {'*': {'admin'}},
+    'partner-statistics':  {'GET': {}, '*': {'admin', 'support'}},
+    'promo-codes':         {'GET': {}, '*': {'admin', 'support'}},
+    'point-categories':    {'GET': {}, '*': {'admin', 'support'}},
+    'product-categories':  {'GET': {}, '*': {'admin', 'support'}},
   };
 
   final middleware = RbacMiddleware.withRoleRules(rules);
@@ -51,16 +51,22 @@ void main() {
     });
   });
 
-  // ─── Admin-only пути ──────────────────────────────────────────────────────
+  // ─── Admin-only пути (все методы) ────────────────────────────────────────
   group('admin-only: action-logs, error-logs, cache', () {
     for (final path in ['action-logs', 'error-logs', 'cache']) {
-      test('admin проходит: $path', () async {
+      test('admin GET проходит: $path', () async {
         final req = makeRequest(path, user: {'id': 1, 'role': 'admin'});
         final resp = await handler(req);
         expect(resp.statusCode, 200);
       });
 
-      test('user → 403: $path', () async {
+      test('admin POST проходит: $path', () async {
+        final req = makeRequest(path, user: {'id': 1, 'role': 'admin'}, method: 'POST');
+        final resp = await handler(req);
+        expect(resp.statusCode, 200);
+      });
+
+      test('user GET → 403: $path', () async {
         final req = makeRequest(path, user: {'id': 2, 'role': 'user'});
         final resp = await handler(req);
         expect(resp.statusCode, 403);
@@ -80,28 +86,43 @@ void main() {
     }
   });
 
-  // ─── Admin + support пути ─────────────────────────────────────────────────
+  // ─── Admin + support пути: GET открыт, мутирующие методы ограничены ────────
   group('admin+support: partner-statistics, promo-codes, *-categories', () {
     for (final path in [
       'partner-statistics', 'promo-codes', 'point-categories', 'product-categories'
     ]) {
-      test('admin проходит: $path', () async {
+      test('admin GET проходит: $path', () async {
         final req = makeRequest(path, user: {'id': 1, 'role': 'admin'});
         expect((await handler(req)).statusCode, 200);
       });
 
-      test('support проходит: $path', () async {
+      test('support GET проходит: $path', () async {
         final req = makeRequest(path, user: {'id': 2, 'role': 'support'});
         expect((await handler(req)).statusCode, 200);
       });
 
-      test('user → 403: $path', () async {
+      test('user GET проходит (GET открыт): $path', () async {
         final req = makeRequest(path, user: {'id': 3, 'role': 'user'});
+        expect((await handler(req)).statusCode, 200);
+      });
+
+      test('admin POST проходит: $path', () async {
+        final req = makeRequest(path, user: {'id': 1, 'role': 'admin'}, method: 'POST');
+        expect((await handler(req)).statusCode, 200);
+      });
+
+      test('support POST проходит: $path', () async {
+        final req = makeRequest(path, user: {'id': 2, 'role': 'support'}, method: 'POST');
+        expect((await handler(req)).statusCode, 200);
+      });
+
+      test('user POST → 403: $path', () async {
+        final req = makeRequest(path, user: {'id': 3, 'role': 'user'}, method: 'POST');
         expect((await handler(req)).statusCode, 403);
       });
 
-      test('partner → 403: $path', () async {
-        final req = makeRequest(path, user: {'id': 4, 'role': 'partner'});
+      test('partner DELETE → 403: $path', () async {
+        final req = makeRequest(path, user: {'id': 4, 'role': 'partner'}, method: 'DELETE');
         expect((await handler(req)).statusCode, 403);
       });
     }

@@ -36,7 +36,7 @@ class UpdateUserDto {
       if (username.length < 3) {
         errors.add('Username должен быть минимум 3 символа');
       }
-      if (!ValidationUtils.isValidName(username)) {
+      if (!UserValidationUtils.isValidUsername(username)) {
         errors.add('Некорректный username');
       }
     }
@@ -50,8 +50,10 @@ class UpdateUserDto {
 
     final password = json['password']?.toString();
     if (password != null && password.isNotEmpty) {
-      if (password.length < 6) {
-        errors.add('Пароль должен быть минимум 6 символов');
+      if (!ValidationUtils.isValidPassword(password)) {
+        errors.add(
+          'Пароль: минимум 8 символов, заглавная и строчная буквы, цифра и спецсимвол (!@#\$%^&*(),.?":{}|<>).',
+        );
       }
     }
 

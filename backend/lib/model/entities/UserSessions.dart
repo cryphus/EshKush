@@ -70,18 +70,18 @@ class UserSessions {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'userId': userId,
-      'createdAt': createdAt.toIso8601String(),
-      'expiresAt': expiresAt.toIso8601String(),
-      'lastActive': lastActive.toIso8601String(),
-      'userAgent': userAgent,
-      'ipAddress': ipAddress,
+      'user_id': userId,
+      'created_at': createdAt.toIso8601String(),
+      'expires_at': expiresAt.toIso8601String(),
+      'last_active': lastActive.toIso8601String(),
+      'device_info': userAgent,
+      'ip_address': ipAddress,
       'status': status.toString().split('.').last,
-      'deviceId': deviceId,
+      'device_id': deviceId,
       'location': location,
       'token': token,
-      'refreshJtiHash': refreshJtiHash,
-      'isActive': isActive,
+      'refresh_jti_hash': refreshJtiHash,
+      'is_active': isActive,
     };
   }
 

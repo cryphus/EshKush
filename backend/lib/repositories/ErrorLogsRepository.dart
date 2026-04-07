@@ -13,7 +13,6 @@ class ErrorLogsRepository {
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -23,7 +22,6 @@ class ErrorLogsRepository {
       final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
@@ -65,7 +63,6 @@ class ErrorLogsRepository {
 
       return ErrorLogs.fromJson(result);
     } catch (e) {
-      print('Ошибка создания лога ошибки: $e');
       rethrow;
     }
   }
@@ -78,7 +75,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по уровню серьезности: $e');
       rethrow;
     }
   }
@@ -91,7 +87,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по модулю: $e');
       rethrow;
     }
   }
@@ -104,7 +99,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по ID пользователя: $e');
       rethrow;
     }
   }
@@ -116,7 +110,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска нерешенных логов: $e');
       rethrow;
     }
   }
@@ -129,7 +122,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения последних логов: $e');
       rethrow;
     }
   }
@@ -150,7 +142,6 @@ class ErrorLogsRepository {
         },
       );
     } catch (e) {
-      print('Ошибка отметки лога как решенного: $e');
       rethrow;
     }
   }
