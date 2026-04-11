@@ -2,6 +2,7 @@ import '../repositories/PointRepository.dart';
 import '../model/entities/Point.dart';
 import '../model/entities/PointCategory.dart';
 import '../model/entities/PointReview.dart';
+import '../model/entities/NearbyPoint.dart';
 import 'CacheService.dart';
 
 class PointService {
@@ -52,7 +53,40 @@ class PointService {
     }
   }
 
-  Future<List<Point>> getPointsByCategory(int categoryId, {int limit = 20, int offset = 0}) async {
+  /// Поиск точек рядом с координатами пользователя.
+  /// [radiusM] ограничен 50 км, [limit] — 200 точек.
+  Future<List<NearbyPoint>> getPointsNearby({
+    required double lat,
+    required double lon,
+    required double radiusM,
+    int limit = 100,
+  }) async {
+    try {
+      if (lat < -90 || lat > 90) {
+        throw Exception('Некорректная широта');
+      }
+      if (lon < -180 || lon > 180) {
+        throw Exception('Некорректная долгота');
+      }
+      if (radiusM <= 0) {
+        throw Exception('Радиус должен быть положительным');
+      }
+      final safeRadius = radiusM.clamp(1.0, 50000.0);
+      final safeLimit = limit.clamp(1, 200);
+
+      return await _pointRepository.findNearby(
+        lat: lat,
+        lon: lon,
+        radiusM: safeRadius.toDouble(),
+        limit: safeLimit,
+      );
+    } catch (e) {
+      print('Ошибка геопоиска точек: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Point>> getPointsByCategory(int categoryId) async {
     try {
       if (limit == 20 && offset == 0) {
         final cacheKey = CacheKeys.pointsByCategory(categoryId);

@@ -7,7 +7,8 @@ class PaymentTransactions {
   PaymentMethod paymentMethod;
   double orderPrice;
   PaymentTransactionStatus status;
-  final int providerTransactionId;
+  final String providerTransactionId;
+  String? confirmationUrl;
   DateTime transactionDate;
   final DateTime? updatedAt;
   String? errorMessage;
@@ -20,7 +21,8 @@ class PaymentTransactions {
     this.orderPrice = 0.0,
     required this.transactionDate,
     this.paymentMethod = PaymentMethod.other,
-    this.status = PaymentTransactionStatus.completed,
+    this.status = PaymentTransactionStatus.pending,
+    this.confirmationUrl,
     this.updatedAt,
     this.errorMessage,
     this.isActive = true,
@@ -29,14 +31,14 @@ class PaymentTransactions {
   }
 
   void _validate() {
-    if (id <= 0) {
-      throw ArgumentError('ID транзакции должен быть положительным числом');
+    if (id < 0) {
+      throw ArgumentError('ID транзакции должен быть неотрицательным');
     }
     if (orderId <= 0) {
       throw ArgumentError('ID заказа должен быть положительным числом');
     }
-    if (providerTransactionId <= 0) {
-      throw ArgumentError('ID транзакции провайдера должен быть положительным числом');
+    if (providerTransactionId.isEmpty) {
+      throw ArgumentError('ID транзакции провайдера не может быть пустым');
     }
     if (orderPrice < 0) {
       throw ArgumentError('Стоимость заказа не может быть отрицательной');
@@ -73,7 +75,8 @@ class PaymentTransactions {
     return PaymentTransactions(
       id: json['id'] as int,
       orderId: json['order_id'] as int,
-      providerTransactionId: json['provider_transaction_id'] as int,
+      providerTransactionId: json['provider_transaction_id'].toString(),
+      confirmationUrl: json['confirmation_url'] as String?,
       orderPrice: (json['order_price'] as num).toDouble(),
       transactionDate: DateTime.parse(json['transaction_date'] as String),
       paymentMethod: PaymentMethod.values.firstWhere(
@@ -82,9 +85,9 @@ class PaymentTransactions {
       ),
       status: PaymentTransactionStatus.values.firstWhere(
         (e) => e.toString() == 'PaymentTransactionStatus.${json['status']}',
-        orElse: () => PaymentTransactionStatus.completed,
+        orElse: () => PaymentTransactionStatus.pending,
       ),
-      updatedAt: json['updated_at'] != null 
+      updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
       errorMessage: json['error_message'] as String?,
@@ -97,6 +100,7 @@ class PaymentTransactions {
       'id': id,
       'order_id': orderId,
       'provider_transaction_id': providerTransactionId,
+      'confirmation_url': confirmationUrl,
       'order_price': orderPrice,
       'transaction_date': transactionDate.toIso8601String(),
       'payment_method': paymentMethod.toString().split('.').last,
@@ -113,7 +117,8 @@ class PaymentTransactions {
     PaymentMethod? paymentMethod,
     double? orderPrice,
     PaymentTransactionStatus? status,
-    int? providerTransactionId,
+    String? providerTransactionId,
+    String? confirmationUrl,
     DateTime? transactionDate,
     DateTime? updatedAt,
     String? errorMessage,
@@ -126,6 +131,7 @@ class PaymentTransactions {
       orderPrice: orderPrice ?? this.orderPrice,
       status: status ?? this.status,
       providerTransactionId: providerTransactionId ?? this.providerTransactionId,
+      confirmationUrl: confirmationUrl ?? this.confirmationUrl,
       transactionDate: transactionDate ?? this.transactionDate,
       updatedAt: updatedAt ?? this.updatedAt,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -144,6 +150,7 @@ class PaymentTransactions {
           orderPrice == other.orderPrice &&
           status == other.status &&
           providerTransactionId == other.providerTransactionId &&
+          confirmationUrl == other.confirmationUrl &&
           transactionDate == other.transactionDate &&
           updatedAt == other.updatedAt &&
           errorMessage == other.errorMessage &&
@@ -157,6 +164,7 @@ class PaymentTransactions {
       orderPrice.hashCode ^
       status.hashCode ^
       providerTransactionId.hashCode ^
+      confirmationUrl.hashCode ^
       transactionDate.hashCode ^
       updatedAt.hashCode ^
       errorMessage.hashCode ^

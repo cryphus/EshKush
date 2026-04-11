@@ -22,17 +22,8 @@ class _MainScreenState extends State<MainScreen> {
     'Профиль',
   ];
 
-  final List<Widget> _pages = [
-    const MainContent(),
-    const OffersPage(),
-    const FavoritesPage(),
-    const ProfilePage(),
-  ];
-
-  void _onNavItemTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+  void _switchToTab(int index) {
+    setState(() => _currentIndex = index);
   }
 
   @override
@@ -41,13 +32,24 @@ class _MainScreenState extends State<MainScreen> {
       pageTitle: _pageTitles[_currentIndex],
       bodyContent: _buildPageContent(),
       currentNavIndex: _currentIndex,
-      onNavItemTapped: _onNavItemTapped,
+      onNavItemTapped: _switchToTab,
       showNavBar: true,
     );
   }
 
   Widget _buildPageContent() => IndexedStack(
         index: _currentIndex,
-        children: _pages,
+        children: [
+          MainContent(
+            onMoreOffers: () => _switchToTab(1),
+            onViewAllOrders: () {
+              // TODO: экран всех заказов
+            },
+            onViewAllCategories: () => _switchToTab(1),
+          ),
+          const OffersPage(),
+          const FavoritesPage(),
+          const ProfilePage(),
+        ],
       );
 }

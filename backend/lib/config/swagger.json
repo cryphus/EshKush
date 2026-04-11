@@ -486,8 +486,11 @@
             "format": "int64"
           },
           "provider_transaction_id": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string"
+          },
+          "confirmation_url": {
+            "type": "string",
+            "nullable": true
           },
           "order_price": {
             "type": "number",
@@ -1360,6 +1363,71 @@
               }
             }
           }
+        }
+      }
+    },
+    "/points/nearby": {
+      "get": {
+        "summary": "Поиск точек рядом (геопоиск)",
+        "description": "Возвращает точки в радиусе от заданных координат, отсортированные по расстоянию. Использует earthdistance.",
+        "tags": ["Точки"],
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "description": "Широта пользователя (-90..90)",
+            "schema": { "type": "number", "format": "float" }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "description": "Долгота пользователя (-180..180)",
+            "schema": { "type": "number", "format": "float" }
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Радиус поиска в метрах (макс. 50000)",
+            "schema": { "type": "number", "format": "float", "default": 5000, "maximum": 50000 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Макс. число точек в ответе (1..200)",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 100 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список ближайших точек",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "allOf": [
+                      { "$ref": "#/components/schemas/Point" },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "distance_m": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "Расстояние до пользователя в метрах"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Некорректные параметры" }
         }
       }
     },

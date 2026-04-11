@@ -1,6 +1,8 @@
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import '../services/OrderService.dart';
+import '../services/PaymentGatewayService.dart';
+import '../services/YooKassaService.dart';
 import '../model/enums/OrderStatus.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/LoggingUtils.dart';
@@ -14,8 +16,12 @@ import 'dart:convert';
 
 class OrderController {
   final OrderService _orderService;
+  final PaymentGatewayService? _paymentGatewayService;
 
-  OrderController(this._orderService);
+  OrderController(
+    this._orderService, {
+    PaymentGatewayService? paymentGatewayService,
+  }) : _paymentGatewayService = paymentGatewayService;
 
   Router get router {
     final router = Router();
@@ -25,9 +31,74 @@ class OrderController {
     router.get('/user/<userId>', _getUserOrders);
     router.post('/', _createOrder);
     router.put('/<id>/status', _updateOrderStatus);
+    router.post('/<id>/refund', _refundOrder);
     router.delete('/<id>', _deleteOrder);
 
     return router;
+  }
+
+  Future<Response> _refundOrder(Request request) async {
+    final requestId = RequestContextUtils.getRequestId(request);
+    try {
+      if (_paymentGatewayService == null) {
+        return Response(503,
+            body: jsonEncode({'error': 'Платёжный шлюз не сконфигурирован'}),
+            headers: _getCorsHeaders());
+      }
+
+      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
+      if (token == null) {
+        return Response.unauthorized(
+            jsonEncode({'error': 'Требуется авторизация'}),
+            headers: _getCorsHeaders());
+      }
+      final payload = AuthUtils.verifyToken(token);
+      final userId = payload['id'] as int;
+
+      final orderId = int.parse(request.params['id']!);
+      final raw = await request.readAsString();
+      await LoggingUtils.logRequest(
+          request.method, request.url.path, request.headers, raw,
+          requestId: requestId);
+
+      Map<String, dynamic> data = const {};
+      if (raw.isNotEmpty) {
+        data = jsonDecode(raw) as Map<String, dynamic>;
+      }
+
+      final amount = data['amount'] == null
+          ? null
+          : double.tryParse(data['amount'].toString());
+
+      final transaction = await _paymentGatewayService!.refund(
+        orderId: orderId,
+        amount: amount,
+        description: data['description'] as String?,
+        requestingUserId: userId,
+      );
+
+      final body = jsonEncode(transaction.toJson());
+      final resp = Response.ok(body, headers: _getCorsHeaders());
+      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body,
+          requestId: requestId);
+      return resp;
+    } on RefundException catch (e) {
+      await LoggingUtils.logError('Отказ в возврате', e, requestId: requestId);
+      return Response(409,
+          body: jsonEncode({'error': e.message}), headers: _getCorsHeaders());
+    } on YooKassaException catch (e) {
+      await LoggingUtils.logError('YooKassa отклонила возврат', e,
+          requestId: requestId);
+      return Response(502,
+          body: jsonEncode({'error': e.message}), headers: _getCorsHeaders());
+    } catch (e) {
+      await LoggingUtils.logError('Ошибка возврата заказа', e,
+          requestId: requestId);
+      return Response.badRequest(
+          body: jsonEncode(
+              {'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
+          headers: _getCorsHeaders());
+    }
   }
 
   Future<Response> _getAllOrders(Request request) async {

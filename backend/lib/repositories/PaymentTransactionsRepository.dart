@@ -42,14 +42,15 @@ class PaymentTransactionsRepository {
     final results = await _connection.mappedResultsQuery(
       '''
       INSERT INTO payment_transactions (
-        order_id, provider_transaction_id, order_price, payment_method, status, transaction_date, updated_at, error_message, is_active
+        order_id, provider_transaction_id, confirmation_url, order_price, payment_method, status, transaction_date, updated_at, error_message, is_active
       ) VALUES (
-        @orderId, @providerTransactionId, @orderPrice, @paymentMethod, @status, @transactionDate, @updatedAt, @errorMessage, @isActive
+        @orderId, @providerTransactionId, @confirmationUrl, @orderPrice, @paymentMethod, @status, @transactionDate, @updatedAt, @errorMessage, @isActive
       ) RETURNING *
       ''',
       substitutionValues: {
         'orderId': transaction.orderId,
         'providerTransactionId': transaction.providerTransactionId,
+        'confirmationUrl': transaction.confirmationUrl,
         'orderPrice': transaction.orderPrice,
         'paymentMethod': transaction.paymentMethod.toString().split('.').last,
         'status': transaction.status.toString().split('.').last,
@@ -68,6 +69,7 @@ class PaymentTransactionsRepository {
       UPDATE payment_transactions SET
         order_id = @orderId,
         provider_transaction_id = @providerTransactionId,
+        confirmation_url = @confirmationUrl,
         order_price = @orderPrice,
         payment_method = @paymentMethod,
         status = @status,
@@ -82,6 +84,7 @@ class PaymentTransactionsRepository {
         'id': transaction.id,
         'orderId': transaction.orderId,
         'providerTransactionId': transaction.providerTransactionId,
+        'confirmationUrl': transaction.confirmationUrl,
         'orderPrice': transaction.orderPrice,
         'paymentMethod': transaction.paymentMethod.toString().split('.').last,
         'status': transaction.status.toString().split('.').last,
@@ -94,6 +97,15 @@ class PaymentTransactionsRepository {
     if (results.isEmpty) {
       throw Exception('Транзакция не найдена');
     }
+    return PaymentTransactions.fromJson(results.first.values.first);
+  }
+
+  Future<PaymentTransactions?> findByProviderTransactionId(String providerTransactionId) async {
+    final results = await _connection.mappedResultsQuery(
+      'SELECT * FROM payment_transactions WHERE provider_transaction_id = @providerTransactionId LIMIT 1',
+      substitutionValues: {'providerTransactionId': providerTransactionId},
+    );
+    if (results.isEmpty) return null;
     return PaymentTransactions.fromJson(results.first.values.first);
   }
 

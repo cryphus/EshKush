@@ -1,6 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permissions для геолокации и Yandex MapKit (Фаза 3) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
     <application
-        android:label="temp_project"
+        android:label="EshKush"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -30,6 +36,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Yandex MapKit API key. Замените на боевой ключ перед релизом.
+             Получить: https://developer.tech.yandex.ru/services/ -->
+        <meta-data
+            android:name="com.yandex.maps.MAPKIT_API_KEY"
+            android:value="REPLACE_WITH_YANDEX_MAPKIT_API_KEY" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

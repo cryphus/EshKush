@@ -1,289 +1,210 @@
 import 'package:flutter/material.dart';
-import '../state/app_state.dart';
-import '../theme/colors.dart';
-import 'ProductPage.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/point.dart';
+import '../providers/favorites_provider.dart';
+import '../utils/snackbar.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/skeleton.dart';
 
-class FavoritesPage extends StatefulWidget {
+class FavoritesPage extends ConsumerStatefulWidget {
   const FavoritesPage({super.key});
 
   @override
-  State<FavoritesPage> createState() => _FavoritesPageState();
+  ConsumerState<FavoritesPage> createState() => _FavoritesPageState();
 }
 
-class _FavoritesPageState extends State<FavoritesPage> {
-  final _state = AppState();
+class _FavoritesPageState extends ConsumerState<FavoritesPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(favoritesProvider.notifier).load();
+    });
+  }
 
-  // Мок-список избранных (для авторизованных пользователей)
-  final List<Map<String, dynamic>> _favorites = [
-    {
-      'name': 'Суши-бар Тоо',
-      'rating': '4.9',
-      'distance': '0.8 км от вас',
-      'time': '12:00 - 23:00',
-      'price': '299 ₽',
-      'oldPrice': '500 ₽',
-      'count': '3',
-      'image': 'http://91.186.217.192/images/img_shopicon.png',
-      'logo': 'http://91.186.217.192/images/img_shopicon.png',
-      'address': 'ул. Абая, д. 24',
-      'working_hours': '12:00 - 23:00',
-      'phone': '+7 (999) 345-67-89',
-      'description': 'Наборы суши и роллов по сниженной цене.',
-    },
-    {
-      'name': 'Кофейня Уют',
-      'rating': '4.7',
-      'distance': '0.5 км от вас',
-      'time': '08:00 - 22:00',
-      'price': '150 ₽',
-      'oldPrice': '250 ₽',
-      'count': '2',
-      'image': 'http://91.186.217.192/images/img_shopicon.png',
-      'logo': 'http://91.186.217.192/images/img_shopicon.png',
-      'address': 'ул. Мира, д. 3',
-      'working_hours': '08:00 - 22:00',
-      'phone': '+7 (999) 456-78-90',
-      'description': 'Свежие кофе и выпечка по утрам.',
-    },
-  ];
+  Future<void> _refresh() => ref.read(favoritesProvider.notifier).load();
 
   @override
   Widget build(BuildContext context) {
-    if (_state.isGuest) return _buildGuestContent();
-    return _buildFavoritesContent();
-  }
+    final state = ref.watch(favoritesProvider);
 
-  // ── Гость ────────────────────────────────────────────────────────────────────
-  Widget _buildGuestContent() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.favorite_border,
-                size: 80, color: AppColors.darkGreen),
-            const SizedBox(height: 16),
-            const Text(
-              'Сохраняйте любимые точки',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Войдите в аккаунт, чтобы добавлять\nточки в избранное и быстро их находить.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () =>
-                    Navigator.of(context).pushReplacementNamed('/auth'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.darkGreen,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Войти в аккаунт',
-                  style: TextStyle(fontSize: 17, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Список избранного ────────────────────────────────────────────────────────
-  Widget _buildFavoritesContent() {
-    if (_favorites.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.favorite_border, size: 80, color: Colors.black26),
-            const SizedBox(height: 16),
-            const Text(
-              'Пока ничего нет',
-              style: TextStyle(fontSize: 18, color: Colors.black54),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Нажмите ♡ на точке продаж,\nчтобы добавить в избранное',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black38),
+    if (state.isLoading && state.favorites.isEmpty) {
+      return ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 4,
+        separatorBuilder: (_, __) => const SizedBox(height: 14),
+        itemBuilder: (_, __) => const OfferCardSkeleton(),
+      );
+    }
+    if (state.error != null && state.favorites.isEmpty) {
+      return EmptyState(
+        icon: Icons.cloud_off_outlined,
+        title: 'Не удалось загрузить избранное',
+        description: 'Проверьте подключение и попробуйте ещё раз.',
+        actionLabel: 'Повторить',
+        onAction: _refresh,
+      );
+    }
+    if (state.favorites.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 60),
+            EmptyState(
+              icon: Icons.favorite_border,
+              title: 'Нет избранных заведений',
+              description: 'Добавляйте сюда любимые места — они появятся в списке.',
             ),
           ],
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _favorites.length,
-      itemBuilder: (ctx, i) => _FavoriteCard(
-        data: _favorites[i],
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ProductPage(data: _favorites[i]),
-          ),
-        ),
-        onRemove: () => setState(() => _favorites.removeAt(i)),
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: state.favorites.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 14),
+        itemBuilder: (context, index) {
+          final point = state.favorites[index];
+          return _FavoriteCard(
+            point: point,
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/product',
+                arguments: {'point': point},
+              );
+            },
+            onRemove: () async {
+              try {
+                await ref.read(favoritesProvider.notifier).remove(point.id);
+                showSnack('Удалено из избранного', kind: SnackKind.info);
+              } catch (e) {
+                showApiError(e);
+              }
+            },
+          );
+        },
       ),
     );
   }
 }
 
-// ── Карточка избранного ───────────────────────────────────────────────────────
-
 class _FavoriteCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
+  final Point point;
+  final VoidCallback? onTap;
+  final VoidCallback? onRemove;
 
-  const _FavoriteCard({
-    required this.data,
-    required this.onTap,
-    required this.onRemove,
-  });
+  const _FavoriteCard({required this.point, this.onTap, this.onRemove});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
-              blurRadius: 6,
               offset: const Offset(0, 2),
+              blurRadius: 8,
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Логотип
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(18),
-                bottomLeft: Radius.circular(18),
-              ),
-              child: Image.network(
-                data['logo'] ?? '',
-                width: 90,
-                height: 90,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 90,
-                  height: 90,
-                  color: const Color(0xFFE8FADC),
-                  child: const Icon(Icons.store,
-                      color: AppColors.darkGreen, size: 40),
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                  child: Container(
+                    height: 100,
+                    width: double.infinity,
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.store, size: 40, color: Colors.grey),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Инфо
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data['name'] ?? '',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: onRemove,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.favorite,
+                        color: Colors.redAccent,
+                        size: 20,
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(Icons.star,
-                            color: Color(0xFFFFB800), size: 14),
-                        Text(
-                          ' ${data['rating']}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.location_on_outlined,
-                            size: 13, color: Colors.black54),
-                        Text(
-                          ' ${data['distance']}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.access_time_outlined,
-                            size: 13, color: Colors.black54),
-                        Text(
-                          ' ${data['time']}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    // Цена
-                    Row(
-                      children: [
-                        if (data['oldPrice'] != null) ...[
-                          Text(
-                            data['oldPrice'],
-                            style: const TextStyle(
-                              decoration: TextDecoration.lineThrough,
-                              color: Colors.black38,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Text(
-                          data['price'] ?? '',
-                          style: const TextStyle(
-                            color: AppColors.darkGreen,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            // Кнопка удаления из избранного
             Padding(
-              padding: const EdgeInsets.all(12),
-              child: GestureDetector(
-                onTap: onRemove,
-                child: const Icon(
-                  Icons.favorite,
-                  color: Colors.red,
-                  size: 24,
-                ),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                point.name,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.star, color: Color(0xFFFFB800), size: 15),
+                            Text(
+                              ' ${point.rating.toStringAsFixed(1)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time, size: 13, color: Colors.black54),
+                          const SizedBox(width: 3),
+                          Text(
+                            point.workingHours,
+                            style: const TextStyle(fontSize: 11, color: Colors.black54),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 16, color: Colors.black54),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          point.address,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

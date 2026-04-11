@@ -1,216 +1,318 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/product_api_service.dart';
+import '../models/point.dart';
+import '../models/product.dart';
+import '../providers/cart_provider.dart';
 import '../theme/colors.dart';
-import '../state/app_state.dart';
+import '../utils/snackbar.dart';
+import 'CartScreem.dart';
 
-/// Страница точки продаж.
-/// Показывает информацию о точке (название, адрес, рейтинг, часы, телефон)
-/// и список продуктов с возможностью добавить в корзину.
-class ProductPage extends StatefulWidget {
+class ProductPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
 
   const ProductPage({super.key, required this.data});
 
   @override
-  State<ProductPage> createState() => _ProductPageState();
+  ConsumerState<ProductPage> createState() => _ProductPageState();
 }
 
-class _ProductPageState extends State<ProductPage> {
-  final _state = AppState();
+class _ProductPageState extends ConsumerState<ProductPage> {
+  final ProductApiService _productsApi = ProductApiService();
 
-  // Мок-продукты точки (в реальном приложении — запрос к API /products/point/<id>)
-  late final List<Map<String, dynamic>> _products;
+  late final Point? _point;
+  bool _isLoadingProducts = false;
+  String? _productsError;
+  List<Product> _products = const [];
 
   @override
   void initState() {
     super.initState();
-    _products = _buildMockProducts();
+    _point = widget.data['point'] is Point ? widget.data['point'] as Point : null;
+    if (_point != null) {
+      _loadProducts(_point!.id);
+    }
   }
 
-  List<Map<String, dynamic>> _buildMockProducts() {
-    // Если в данных точки уже есть продукты — используем их
-    if (widget.data['products'] is List) {
-      return List<Map<String, dynamic>>.from(widget.data['products'] as List);
+  Future<void> _loadProducts(int pointId) async {
+    setState(() {
+      _isLoadingProducts = true;
+      _productsError = null;
+    });
+    try {
+      final list = await _productsApi.getProductsByPoint(pointId);
+      if (!mounted) return;
+      setState(() {
+        _products = list;
+        _isLoadingProducts = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _productsError = e.toString();
+        _isLoadingProducts = false;
+      });
     }
-    // Иначе генерируем мок-продукты на основе точки
-    final name = widget.data['name'] ?? 'Товар';
-    return [
-      {
-        'id': 1,
-        'name': 'Набор дня · $name',
-        'description': 'Ассорти из свежих продуктов по сниженной цене. Количество ограничено.',
-        'price': widget.data['price'] ?? '199 ₽',
-        'weight': '400 г',
-        'is_available': true,
-        'is_active': true,
-      },
-      {
-        'id': 2,
-        'name': 'Мини-набор',
-        'description': 'Небольшой набор для одной персоны.',
-        'price': '149 ₽',
-        'weight': '200 г',
-        'is_available': true,
-        'is_active': true,
-      },
-      {
-        'id': 3,
-        'name': 'Выпечка дня',
-        'description': 'Свежая выпечка, приготовленная сегодня.',
-        'price': '99 ₽',
-        'weight': '300 г',
-        'is_available': false,
-        'is_active': true,
-      },
-      {
-        'id': 4,
-        'name': 'Эко-набор',
-        'description': 'Экологически чистые продукты от местных фермеров.',
-        'price': '249 ₽',
-        'weight': '500 г',
-        'is_available': true,
-        'is_active': true,
-      },
-    ];
   }
 
   @override
   Widget build(BuildContext context) {
+    final cart = ref.watch(cartProvider);
+
     return Scaffold(
       backgroundColor: AppColors.colorBackground,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(context),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildPointInfo(),
-                  const SizedBox(height: 20),
-                  _buildInfoRow(),
-                  const Divider(height: 32),
-                  _buildProductsHeader(),
-                  const SizedBox(height: 12),
+                  _buildHeaderImage(context),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildTitleRow(),
+                        const SizedBox(height: 6),
+                        _buildInfoLine(
+                          Icons.location_on_outlined,
+                          _point?.address ?? widget.data['address']?.toString() ?? '—',
+                          subtitle: 'РЯДОМ С ВАМИ',
+                        ),
+                        const SizedBox(height: 12),
+                        _buildInfoLine(
+                          Icons.access_time,
+                          'Сегодня',
+                          subtitle: _point?.workingHours ??
+                              widget.data['time']?.toString() ??
+                              '—',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTags(),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Меню',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildProductsList(),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (ctx, i) => Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 6),
-                child: _ProductCard(
-                  product: _products[i],
-                  onAddToCart: _addToCart,
-                  isGuest: _state.isGuest,
-                ),
-              ),
-              childCount: _products.length,
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          _buildBottomBar(context, cart),
         ],
       ),
     );
   }
 
-  Widget _buildSliverAppBar(BuildContext context) {
-    final imageUrl = widget.data['image']?.toString() ?? '';
-
-    return SliverAppBar(
-      expandedHeight: 220,
-      pinned: true,
-      backgroundColor: AppColors.darkGreen,
-      leading: IconButton(
-        icon: const CircleAvatar(
-          backgroundColor: Colors.white54,
-          child: Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      actions: [
-        IconButton(
-          icon: const CircleAvatar(
-            backgroundColor: Colors.white54,
-            child: Icon(Icons.favorite_border, color: Colors.white),
-          ),
-          onPressed: () {
-            if (_state.isGuest) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text(
-                        'Войдите, чтобы добавлять в избранное')),
-              );
-            }
-          },
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
+  Widget _buildProductsList() {
+    if (_point == null) {
+      return Text(
+        widget.data['description']?.toString() ?? '',
+        style: TextStyle(fontSize: 14, color: Colors.black.withOpacity(0.7), height: 1.5),
+      );
+    }
+    if (_isLoadingProducts) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_productsError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
           children: [
-            imageUrl.isNotEmpty
-                ? Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AppColors.darkGreen.withOpacity(0.3),
-                      child: const Icon(Icons.store,
-                          size: 80, color: Colors.white30),
-                    ),
-                  )
-                : Container(
-                    color: AppColors.darkGreen.withOpacity(0.3),
-                    child: const Icon(Icons.store,
-                        size: 80, color: Colors.white30),
-                  ),
-            // Градиент снизу
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.4),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Логотип
-            Positioned(
-              bottom: 16,
-              left: 16,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.2), blurRadius: 8)
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: widget.data['logo'] != null
-                      ? Image.network(
-                          widget.data['logo'],
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const SizedBox(width: 64, height: 64),
-                        )
-                      : const SizedBox(width: 64, height: 64),
-                ),
-              ),
+            const Text('Не удалось загрузить меню'),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () => _loadProducts(_point!.id),
+              child: const Text('Повторить'),
             ),
           ],
+        ),
+      );
+    }
+    if (_products.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Text('Пока нет доступных позиций', style: TextStyle(color: Colors.black54)),
+      );
+    }
+    return Column(
+      children: [
+        for (final p in _products) ...[
+          _ProductRow(
+            product: p,
+            onAdd: () {
+              ref.read(cartProvider.notifier).addItem(
+                    p,
+                    _point!.id,
+                    _point!.name,
+                  );
+              showSnack('Добавлено в корзину', kind: SnackKind.success);
+            },
+          ),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHeaderImage(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          height: 220,
+          width: double.infinity,
+          color: Colors.grey.shade300,
+          child: const Center(child: Icon(Icons.store, size: 60, color: Colors.grey)),
+        ),
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 8,
+          left: 12,
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.chevron_left, size: 24),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTitleRow() {
+    final name = _point?.name ?? widget.data['name']?.toString() ?? 'Название';
+    final rating = _point?.rating.toStringAsFixed(1) ??
+        widget.data['rating']?.toString() ??
+        '5';
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            name,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+        const Icon(Icons.star, color: Color(0xFFFFB800), size: 20),
+        const SizedBox(width: 4),
+        Text(
+          rating,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoLine(IconData icon, String title, {String? subtitle}) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.black54),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(width: 8),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTags() {
+    final tagEntries = _point?.tags.entries.take(4).toList() ?? const [];
+    if (tagEntries.isEmpty) {
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _tag('заведение', AppColors.accentGreen),
+        ],
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final e in tagEntries)
+          _tag(
+            e.value?.toString() ?? e.key,
+            AppColors.accentGreen,
+          ),
+      ],
+    );
+  }
+
+  Widget _tag(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: color),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context, CartState cart) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: cart.isEmpty
+              ? null
+              : () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CartPage()),
+                  ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.accentGreen,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
+          ),
+          child: Text(
+            cart.isEmpty
+                ? 'Добавьте что-нибудь в корзину'
+                : 'В корзину • ${cart.totalItems} шт. • ${cart.totalPrice.toStringAsFixed(0)} ₽',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
         ),
       ),
     );
@@ -333,39 +435,77 @@ class _ProductPageState extends State<ProductPage> {
   }
 }
 
-// ── Вспомогательные виджеты ───────────────────────────────────────────────────
+class _ProductRow extends StatelessWidget {
+  final Product product;
+  final VoidCallback onAdd;
 
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-
-  const _InfoTile({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
+  const _ProductRow({required this.product, required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          Icon(icon, size: 22, color: AppColors.darkGreen),
-          const SizedBox(width: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              width: 56,
+              height: 56,
+              color: Colors.grey.shade200,
+              child: const Icon(Icons.fastfood, color: Colors.grey),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.black54)),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w500)),
+                Text(
+                  product.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (product.description.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    product.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  '${product.price.toStringAsFixed(0)} ₽',
+                  style: const TextStyle(
+                    color: AppColors.darkGreen,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
+          ),
+          ElevatedButton(
+            onPressed: product.isAvailable ? onAdd : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accentGreen,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('+'),
           ),
         ],
       ),

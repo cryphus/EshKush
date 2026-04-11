@@ -19,6 +19,7 @@ class PointController {
     final router = Router();
 
     router.get('/', _getAllPoints);
+    router.get('/nearby', _getPointsNearby);
     router.get('/<id>', _getPointById);
     router.get('/category/<categoryId>', _getPointsByCategory);
     router.get('/<id>/categories', _getPointCategories);
@@ -104,6 +105,68 @@ class PointController {
     } catch (e) {
       await LoggingUtils.logError('Ошибка получения точки', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponseWithMessage('Точка не найдена', code: ErrorCode.notFound, headers: _getCorsHeaders());
+    }
+  }
+
+  Future<Response> _getPointsNearby(Request request) async {
+    try {
+      await LoggingUtils.logRequest(
+        request.method,
+        request.url.path,
+        request.headers,
+        null,
+        requestId: RequestContextUtils.getRequestId(request),
+      );
+
+      final params = request.url.queryParameters;
+      final lat = double.tryParse(params['lat'] ?? '');
+      final lon = double.tryParse(params['lon'] ?? '');
+      final radius = double.tryParse(params['radius'] ?? '') ?? 5000.0;
+      final limit = int.tryParse(params['limit'] ?? '') ?? 100;
+
+      if (lat == null || lon == null) {
+        return _createErrorResponse(400, 'Параметры lat и lon обязательны');
+      }
+      if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        return _createErrorResponse(400, 'Некорректные координаты');
+      }
+
+      final nearby = await _pointService.getPointsNearby(
+        lat: lat,
+        lon: lon,
+        radiusM: radius,
+        limit: limit,
+      );
+
+      final json = jsonEncode(
+        nearby
+            .map((np) => PointResponseDto.fromEntity(
+                  np.point,
+                  distanceM: np.distanceM,
+                ).toJson())
+            .toList(),
+      );
+
+      final response = Response.ok(
+        json,
+        headers: _getCorsHeaders(),
+      );
+
+      await LoggingUtils.logResponse(
+        response.statusCode,
+        response.headers,
+        json,
+        requestId: RequestContextUtils.getRequestId(request),
+      );
+
+      return response;
+    } catch (e) {
+      await LoggingUtils.logError(
+        'Ошибка геопоиска точек',
+        e,
+        requestId: RequestContextUtils.getRequestId(request),
+      );
+      return _createErrorResponse(500, 'Ошибка: $e');
     }
   }
 
