@@ -3,6 +3,7 @@ import '../model/entities/Point.dart';
 import '../model/entities/PointCategory.dart';
 import '../model/entities/PointCategoryMap.dart';
 import '../model/entities/PointReview.dart';
+import '../model/entities/NearbyPoint.dart';
 
 class PointRepository {
   final PostgreSQLConnection _connection;
@@ -53,6 +54,80 @@ class PointRepository {
       return Point.fromJson(result.first['points']!);
     } catch (e) {
       print('Ошибка получения точки: $e');
+      rethrow;
+    }
+  }
+
+  /// Поиск точек в радиусе [radiusM] метров вокруг (lat, lon),
+  /// отсортированных по возрастанию расстояния.
+  /// Использует earthdistance + GIST-индекс (см. init.sql).
+  Future<List<NearbyPoint>> findNearby({
+    required double lat,
+    required double lon,
+    required double radiusM,
+    int limit = 100,
+  }) async {
+    try {
+      // Используем raw query вместо mappedResultsQuery, чтобы чисто получить
+      // distance_m (вычисляемая колонка не группируется под именем таблицы).
+      final rows = await _connection.query('''
+        WITH point_ratings AS (
+          SELECT point_id, COALESCE(AVG(rating), 0) as current_rating
+          FROM point_reviews
+          GROUP BY point_id
+        )
+        SELECT
+          p.id, p.name, p.address,
+          COALESCE(pr.current_rating, 0) AS rating,
+          p.city_id, p.products, p.opening_hours, p.closing_hours,
+          p.partner_id, p.longitude, p.latitude, p.tags,
+          p.created_at, p.updated_at,
+          earth_distance(
+            ll_to_earth(p.latitude::float8, p.longitude::float8),
+            ll_to_earth(@lat, @lon)
+          ) AS distance_m
+        FROM points p
+        LEFT JOIN point_ratings pr ON p.id = pr.point_id
+        WHERE earth_box(ll_to_earth(@lat, @lon), @radius) @>
+              ll_to_earth(p.latitude::float8, p.longitude::float8)
+          AND earth_distance(
+                ll_to_earth(p.latitude::float8, p.longitude::float8),
+                ll_to_earth(@lat, @lon)
+              ) <= @radius
+        ORDER BY distance_m ASC
+        LIMIT @limit
+      ''', substitutionValues: {
+        'lat': lat,
+        'lon': lon,
+        'radius': radiusM,
+        'limit': limit,
+      });
+
+      return rows.map((row) {
+        final pointJson = <String, dynamic>{
+          'id': row[0],
+          'name': row[1],
+          'address': row[2],
+          'rating': row[3],
+          'city_id': row[4],
+          'products': row[5],
+          'opening_hours': row[6],
+          'closing_hours': row[7],
+          'partner_id': row[8],
+          'longitude': row[9],
+          'latitude': row[10],
+          'tags': row[11],
+          'created_at': row[12],
+          'updated_at': row[13],
+        };
+        final distanceM = (row[14] as num?)?.toDouble() ?? 0.0;
+        return NearbyPoint(
+          point: Point.fromJson(pointJson),
+          distanceM: distanceM,
+        );
+      }).toList();
+    } catch (e) {
+      print('Ошибка геопоиска точек: $e');
       rethrow;
     }
   }

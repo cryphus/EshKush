@@ -1,11 +1,48 @@
 import 'package:shelf/shelf.dart';
+import '../config/AppConfig.dart';
 import '../utils/AuthUtils.dart';
 import '../repositories/UserSessionRepository.dart';
 
 class SecurityMiddleware {
   static final Map<String, List<DateTime>> _requests = {};
-  static const int maxRequests = 100;
-  static const Duration window = Duration(minutes: 1);
+
+  /// Подбирает CORS-заголовки для запроса на основе whitelist из AppConfig.
+  /// Если origin запроса отсутствует в allowedOrigins — заголовок
+  /// Access-Control-Allow-Origin не выставляется (браузер отклонит запрос).
+  /// В dev, если allowedOrigins пуст, используем зеркало origin для удобства.
+  static Map<String, String> corsHeadersFor(Request request) {
+    final config = AppConfig();
+    final origin = request.headers['origin'] ?? request.headers['Origin'];
+    final allowed = config.allowedOrigins.where((o) => o.isNotEmpty).toList();
+
+    final headers = <String, String>{
+      'Access-Control-Allow-Methods':
+          'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers':
+          'Origin, Content-Type, Accept, Authorization, X-Webhook-Secret',
+      'Access-Control-Max-Age': '86400',
+      'Vary': 'Origin',
+    };
+
+    if (origin != null && allowed.contains(origin)) {
+      headers['Access-Control-Allow-Origin'] = origin;
+      headers['Access-Control-Allow-Credentials'] = 'true';
+    }
+    return headers;
+  }
+
+  /// CORS middleware: отвечает на preflight и добавляет заголовки на ответы.
+  static Middleware corsMiddleware() {
+    return (Handler innerHandler) {
+      return (Request request) async {
+        if (request.method == 'OPTIONS') {
+          return Response.ok('', headers: corsHeadersFor(request));
+        }
+        final response = await innerHandler(request);
+        return response.change(headers: corsHeadersFor(request));
+      };
+    };
+  }
 
   static Middleware securityHeaders() {
     return (Handler innerHandler) {
@@ -15,21 +52,57 @@ class SecurityMiddleware {
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'DENY',
           'X-XSS-Protection': '1; mode=block',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-          'Content-Type': 'application/json',
+          'Strict-Transport-Security':
+              'max-age=31536000; includeSubDomains',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
         });
       };
     };
   }
 
-  static Middleware rateLimiter() {
+  /// Лимит размера тела запроса. Проверяет Content-Length и отклоняет
+  /// запросы больше [maxBytes] с 413 Payload Too Large.
+  static Middleware requestSizeLimit({int? maxBytes}) {
+    final limit = maxBytes ?? AppConfig().maxRequestBodyBytes;
     return (Handler innerHandler) {
       return (Request request) async {
-        final ip = request.headers['x-forwarded-for'] ?? 'unknown';
-        if (!_isAllowed(ip)) {
-          return Response(429, body: 'Too many requests');
+        final contentLengthHeader = request.headers['content-length'];
+        if (contentLengthHeader != null) {
+          final len = int.tryParse(contentLengthHeader);
+          if (len != null && len > limit) {
+            return Response(
+              413,
+              body:
+                  '{"error":"Тело запроса превышает лимит","limit":$limit}',
+              headers: {'content-type': 'application/json'},
+            );
+          }
+        }
+        return innerHandler(request);
+      };
+    };
+  }
+
+  /// Rate-limiter per IP. Читает `maxRequests` и `window` из AppConfig.
+  /// Ожидается точечное применение (e.g. к /auth/* и /login), не глобально.
+  static Middleware rateLimiter({int? maxRequests, Duration? window}) {
+    final config = AppConfig();
+    final limit = maxRequests ?? config.rateLimitRequests;
+    final windowDuration = window ?? config.rateLimitWindow;
+    return (Handler innerHandler) {
+      return (Request request) async {
+        final ip = request.headers['x-forwarded-for'] ??
+            request.headers['x-real-ip'] ??
+            'unknown';
+        if (!_isAllowed(ip, limit, windowDuration)) {
+          return Response(
+            429,
+            body: '{"error":"Слишком много запросов, повторите позже"}',
+            headers: {
+              'content-type': 'application/json',
+              'retry-after': '${windowDuration.inSeconds}',
+            },
+          );
         }
         return innerHandler(request);
       };
@@ -40,11 +113,7 @@ class SecurityMiddleware {
     return (Handler innerHandler) {
       return (Request request) async {
         if (request.method == 'OPTIONS') {
-          return Response.ok('', headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-          });
+          return Response.ok('', headers: corsHeadersFor(request));
         }
 
         final path = request.url.path;

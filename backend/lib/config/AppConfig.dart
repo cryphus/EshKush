@@ -23,6 +23,18 @@ class AppConfig {
   late final int redisDb;
   late final Duration redisConnectionTimeout;
 
+  // YooKassa configuration
+  late final String yookassaShopId;
+  late final String yookassaSecretKey;
+  late final String yookassaApiBaseUrl;
+  late final String yookassaReturnUrl;
+  late final String yookassaWebhookSecret;
+  bool get isYookassaConfigured =>
+      yookassaShopId.isNotEmpty && yookassaSecretKey.isNotEmpty;
+
+  /// Сколько часов после создания заказа можно вернуть деньги.
+  late final Duration refundWindow;
+
   Future<void> initialize() async {
     final env = DotEnv(includePlatformEnvironment: true)..load();
 
@@ -52,6 +64,19 @@ class AppConfig {
     redisDb = int.tryParse(env['REDIS_DB'] ?? '0') ?? 0;
     redisConnectionTimeout = Duration(
       seconds: int.tryParse(env['REDIS_CONNECTION_TIMEOUT'] ?? '5') ?? 5
+    );
+
+    // YooKassa configuration
+    yookassaShopId = env['YOOKASSA_SHOP_ID'] ?? '';
+    yookassaSecretKey = env['YOOKASSA_SECRET_KEY'] ?? '';
+    yookassaApiBaseUrl =
+        env['YOOKASSA_API_BASE_URL'] ?? 'https://api.yookassa.ru/v3';
+    yookassaReturnUrl =
+        env['YOOKASSA_RETURN_URL'] ?? 'https://eshkush.app/payments/return';
+    yookassaWebhookSecret = env['YOOKASSA_WEBHOOK_SECRET'] ?? '';
+
+    refundWindow = Duration(
+      hours: int.tryParse(env['REFUND_WINDOW_HOURS'] ?? '24') ?? 24,
     );
 
     _validateConfig();

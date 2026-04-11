@@ -15,6 +15,9 @@ class PointResponseDto {
   final Map<String, dynamic> tags;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  /// Расстояние до запрошенной точки в метрах.
+  /// Заполняется только для ответа /points/nearby.
+  final double? distanceM;
 
   PointResponseDto({
     required this.id,
@@ -31,9 +34,10 @@ class PointResponseDto {
     required this.tags,
     required this.createdAt,
     this.updatedAt,
+    this.distanceM,
   });
 
-  factory PointResponseDto.fromEntity(Point point) {
+  factory PointResponseDto.fromEntity(Point point, {double? distanceM}) {
     return PointResponseDto(
       id: point.id,
       name: point.name,
@@ -49,6 +53,7 @@ class PointResponseDto {
       tags: point.tags,
       createdAt: point.createdAt,
       updatedAt: point.updatedAt,
+      distanceM: distanceM,
     );
   }
 
@@ -68,6 +73,7 @@ class PointResponseDto {
       'tags': tags,
       'created_at': createdAt.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
+      if (distanceM != null) 'distance_m': distanceM,
     };
   }
 }

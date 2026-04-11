@@ -81,6 +81,9 @@ import 'package:backend/repositories/NotificationRepository.dart';
 import 'package:backend/controllers/PaymentTransactionsController.dart';
 import 'package:backend/services/PaymentTransactionsService.dart';
 import 'package:backend/repositories/PaymentTransactionsRepository.dart';
+import 'package:backend/controllers/PaymentGatewayController.dart';
+import 'package:backend/services/PaymentGatewayService.dart';
+import 'package:backend/services/YooKassaService.dart';
 import 'package:backend/middleware/LoggingMiddleware.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 
@@ -150,7 +153,7 @@ void main() async {
       pointRepository,
       productsRepository
     );
-    final orderController = OrderController(orderService);
+    // OrderController получает PaymentGatewayService ниже (см. блок payments).
     final orderActionsController = OrderActionsController(
       OrderActionsService(
         OrderActionsRepository(db.connection),
@@ -188,10 +191,25 @@ void main() async {
       ),
     );
 
+    final paymentTransactionsRepository = PaymentTransactionsRepository(db.connection);
     final paymentTransactionsController = PaymentTransactionsController(
-      PaymentTransactionsService(
-        PaymentTransactionsRepository(db.connection),
-      ),
+      PaymentTransactionsService(paymentTransactionsRepository),
+    );
+
+    final yooKassaService = YooKassaService(config);
+    final paymentGatewayService = PaymentGatewayService(
+      yooKassaService: yooKassaService,
+      transactionsRepository: paymentTransactionsRepository,
+      orderRepository: orderRepository,
+      orderService: orderService,
+      config: config,
+    );
+    final paymentGatewayController =
+        PaymentGatewayController(paymentGatewayService);
+
+    final orderController = OrderController(
+      orderService,
+      paymentGatewayService: paymentGatewayService,
     );
 
     final swaggerController = SwaggerController();
@@ -474,6 +492,8 @@ void main() async {
     app.mount('/notifications', notificationController.router);
     // Подключаем маршруты PaymentTransactionsController
     app.mount('/payment-transactions', paymentTransactionsController.router);
+    // Подключаем маршруты PaymentGatewayController (интеграция с YooKassa)
+    app.mount('/payments', paymentGatewayController.router);
 
     // Подключаем маршруты Swagger
     app.mount('/swagger', swaggerController.router);
@@ -482,7 +502,7 @@ void main() async {
         .addMiddleware(corsHandler)
         .addMiddleware(SecurityMiddleware.checkJWT(
           userSessionRepository,
-          openPaths: ['auth', 'login', 'swagger'],
+          openPaths: ['auth', 'login', 'swagger', 'payments/webhook'],
         ))
         .addMiddleware(LoggingMiddleware.requestResponseLogger())
         .addHandler(app.call);

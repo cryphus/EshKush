@@ -30,7 +30,8 @@ class PaymentTransactionsService {
     final transaction = PaymentTransactions(
       id: 0, // временный ID, будет заменён базой
       orderId: data['order_id'] as int,
-      providerTransactionId: data['provider_transaction_id'] as int,
+      providerTransactionId: data['provider_transaction_id'].toString(),
+      confirmationUrl: data['confirmation_url'] as String?,
       orderPrice: double.parse(data['order_price'].toString()),
       paymentMethod: PaymentMethod.values.firstWhere(
         (e) => e.toString().split('.').last == data['payment_method'],
@@ -38,9 +39,11 @@ class PaymentTransactionsService {
       ),
       status: PaymentTransactionStatus.values.firstWhere(
         (e) => e.toString().split('.').last == data['status'],
-        orElse: () => PaymentTransactionStatus.completed,
+        orElse: () => PaymentTransactionStatus.pending,
       ),
-      transactionDate: DateTime.parse(data['transaction_date'] as String),
+      transactionDate: data['transaction_date'] != null
+          ? DateTime.parse(data['transaction_date'] as String)
+          : now,
       updatedAt: now,
       errorMessage: data['error_message'] as String?,
       isActive: data['is_active'] ?? true,
@@ -56,7 +59,8 @@ class PaymentTransactionsService {
     final existingTransaction = await getTransactionById(id);
     final updatedTransaction = existingTransaction.copyWith(
       orderId: data['order_id'] as int?,
-      providerTransactionId: data['provider_transaction_id'] as int?,
+      providerTransactionId: data['provider_transaction_id']?.toString(),
+      confirmationUrl: data['confirmation_url'] as String?,
       orderPrice: data['order_price'] != null ? double.parse(data['order_price'].toString()) : null,
       paymentMethod: data['payment_method'] != null
         ? PaymentMethod.values.firstWhere(
@@ -120,9 +124,6 @@ class PaymentTransactionsService {
     }
     if (data['status'] == null) {
       throw Exception('Статус обязателен');
-    }
-    if (data['transaction_date'] == null) {
-      throw Exception('Дата транзакции обязательна');
     }
   }
 } 

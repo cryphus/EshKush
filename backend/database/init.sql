@@ -1,4 +1,9 @@
-DO $$ 
+-- Расширения для геопоиска: cube + earthdistance (Фаза 3)
+-- Даёт earth_distance / ll_to_earth / earth_box для поиска точек в радиусе
+CREATE EXTENSION IF NOT EXISTS cube;
+CREATE EXTENSION IF NOT EXISTS earthdistance;
+
+DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
         CREATE TYPE user_role AS ENUM ('admin', 'partner', 'support', 'user', 'guest');
@@ -292,18 +297,22 @@ CREATE TABLE partner_statistics (
 );
 
 -- Создаем таблицу payment_transactions (под модель PaymentTransactions)
+-- provider_transaction_id хранится как TEXT, потому что YooKassa и большинство
+-- провайдеров используют UUID-строки в качестве идентификаторов.
 CREATE TABLE payment_transactions (
     id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     order_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
-    status payment_transaction_status NOT NULL DEFAULT 'completed',
+    status payment_transaction_status NOT NULL DEFAULT 'pending',
     payment_method payment_method NOT NULL DEFAULT 'other',
-    provider_transaction_id INTEGER NOT NULL,
-    transaction_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    provider_transaction_id TEXT NOT NULL,
+    confirmation_url TEXT,
+    transaction_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE,
     error_message TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
+CREATE INDEX IF NOT EXISTS payment_transactions_provider_id_idx ON payment_transactions(provider_transaction_id);
 
 CREATE TABLE action_logs (
     id SERIAL PRIMARY KEY,
@@ -412,6 +421,9 @@ CREATE INDEX IF NOT EXISTS users_username_idx ON users(username);
 CREATE INDEX IF NOT EXISTS users_email_idx ON users(email);
 CREATE INDEX IF NOT EXISTS points_city_id_idx ON points(city_id);
 CREATE INDEX IF NOT EXISTS points_partner_id_idx ON points(partner_id);
+-- GIST-индекс для геопоиска по (lat, lon) через earthdistance
+CREATE INDEX IF NOT EXISTS points_earth_idx
+    ON points USING gist (ll_to_earth(latitude::float8, longitude::float8));
 CREATE INDEX IF NOT EXISTS orders_user_id_idx ON orders(user_id);
 CREATE INDEX IF NOT EXISTS orders_point_id_idx ON orders(point_id);
 CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);
