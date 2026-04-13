@@ -131,7 +131,7 @@ class PointRepository {
     }
   }
 
-  Future<List<Point>> findByCategory(int categoryId) async {
+  Future<List<Point>> findByCategory(int categoryId, {int limit = 20, int offset = 0}) async {
     try {
       final results = await _connection.mappedResultsQuery('''
         SELECT p.* FROM points p

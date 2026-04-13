@@ -44,14 +44,6 @@ class _OffersPageState extends ConsumerState<OffersPage> {
     'Кофейни',
   ];
 
-  List<Map<String, dynamic>> get _filtered {
-    if (_searchQuery.isEmpty) return _points;
-    return _points
-        .where((p) =>
-            (p['name'] as String).toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
-  }
-
   @override
   void initState() {
     super.initState();

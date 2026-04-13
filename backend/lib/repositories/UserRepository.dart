@@ -10,19 +10,35 @@ class UserRepository {
 
   UserRepository(this._connection);
 
+  /// Единый список колонок users, который должен возвращаться во всех SELECT.
+  /// Дублируется в `fromJson`, поэтому синхронизируется при расширении схемы.
+  static const String _userColumns = '''
+    id,
+    username,
+    password,
+    email,
+    number,
+    telegram_id,
+    telegram_username,
+    first_name,
+    last_name,
+    role,
+    to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+    CASE WHEN updated_at IS NOT NULL
+         THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+         ELSE NULL END as updated_at
+  ''';
+
   Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
     try {
-      // Не логируем параметры для безопасности
-      
       final results = await _connection.mappedResultsQuery(
         query,
         substitutionValues: params,
         allowReuse: true,
       );
-      
+
       if (results.isEmpty) return null;
       final result = results.first;
-      // Не логируем результат для безопасности
       return result.values.first;
     } catch (e) {
       rethrow;
@@ -39,42 +55,27 @@ class UserRepository {
   }
 
   Future<User?> findById(int id) async {
-    try {
-      final result = await queryOne(
-        '''
-        SELECT 
-          id,
-          username,
-          password,
-          email,
-          number,
-          role,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
-        FROM users
-        WHERE id = @id
-        ''',
-        params: {'id': id},
-      );
-      return result == null ? null : User.fromJson(result);
-    } catch (e) {
-      rethrow;
-    }
+    final result = await queryOne(
+      'SELECT $_userColumns FROM users WHERE id = @id',
+      params: {'id': id},
+    );
+    return result == null ? null : User.fromJson(result);
   }
 
   Future<User?> findByUsername(String username) async {
-    try {
-      final result = await queryOne(
-        'SELECT * FROM users WHERE username = @username',
-        params: {'username': username},
-      );
-      if (result == null) {
-        return null;
-      }
-      return User.fromJson(result);
-    } catch (e) {
-      rethrow;
-    }
+    final result = await queryOne(
+      'SELECT $_userColumns FROM users WHERE username = @username',
+      params: {'username': username},
+    );
+    return result == null ? null : User.fromJson(result);
+  }
+
+  Future<User?> findByTelegramId(int telegramId) async {
+    final result = await queryOne(
+      'SELECT $_userColumns FROM users WHERE telegram_id = @tid',
+      params: {'tid': telegramId},
+    );
+    return result == null ? null : User.fromJson(result);
   }
 
   Future<User> create(User user) async {
@@ -83,19 +84,7 @@ class UserRepository {
         '''
         INSERT INTO users (username, password, email, number, role, created_at)
         VALUES (@username, @password, @email, @number, @role::user_role, @created_at)
-        RETURNING 
-          id,
-          username,
-          password,
-          email,
-          number,
-          role,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          CASE 
-            WHEN updated_at IS NOT NULL 
-            THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-            ELSE NULL 
-          END as updated_at
+        RETURNING $_userColumns
         ''',
         params: {
           'username': user.username,
@@ -116,59 +105,33 @@ class UserRepository {
   }
 
   Future<User?> authenticate(String username, String password) async {
-    try {
-      final result = await queryOne(
-        '''
-        SELECT 
-          id,
-          username,
-          password,
-          email,
-          number,
-          role,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
-        FROM users 
-        WHERE username = @username
-        ''',
-        params: {'username': username},
-      );
-      
-      if (result == null) return null;
-      
-      final user = User.fromJson(result);
-      if (!AuthUtils.verifyPassword(password, user.passwordHash)) {
-        return null;
-      }
-      
-      return user;
-    } catch (e) {
-      rethrow;
+    final result = await queryOne(
+      'SELECT $_userColumns FROM users WHERE username = @username',
+      params: {'username': username},
+    );
+
+    if (result == null) return null;
+
+    final user = User.fromJson(result);
+    final hash = user.passwordHash;
+    if (hash == null || hash.isEmpty) return null;
+    if (!AuthUtils.verifyPassword(password, hash)) {
+      return null;
     }
+
+    return user;
   }
 
   Future<User> createUser(Map<String, dynamic> data) async {
     try {
       SafeLoggingUtils.logData('Создание пользователя с данными', data);
       _validateUserData(data);
-      
+
       final result = await queryOne(
         '''
         INSERT INTO users (username, password, email, number, role, created_at)
         VALUES (@username, @password, @email, @number, @role::user_role, CURRENT_TIMESTAMP)
-        RETURNING 
-          id,
-          username,
-          password,
-          email,
-          number,
-          role,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          CASE 
-            WHEN updated_at IS NOT NULL 
-            THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-            ELSE NULL 
-          END as updated_at
+        RETURNING $_userColumns
         ''',
         params: {
           'username': data['username'],
@@ -178,8 +141,6 @@ class UserRepository {
           'role': (data['role'] as String? ?? 'user').toLowerCase(),
         },
       );
-
-      // Не логируем результат для безопасности
 
       if (result == null) {
         throw Exception('Ошибка создания пользователя');
@@ -191,34 +152,98 @@ class UserRepository {
     }
   }
 
-  Future<User?> findByEmail(String email) async {
-    try {
-      if (!UserValidationUtils.isValidEmail(email)) {
-        throw Exception('Некорректный email');
-      }
+  /// Создаёт пользователя на основе данных из Телеграма.
+  /// Пароль/email не задаются — их пользователь выставит позже.
+  /// Username генерируется из telegram_id, чтобы удовлетворить NOT NULL + UNIQUE.
+  Future<User> createTelegramUser({
+    required int telegramId,
+    String? telegramUsername,
+    String? firstName,
+    String? lastName,
+    String? phone,
+  }) async {
+    final generatedUsername = 'tg_$telegramId';
 
-      return await queryOne(
-        'SELECT * FROM users WHERE email = @email',
-        params: {'email': email},
-      ).then((result) => result != null ? User.fromJson(result) : null);
-    } catch (e) {
-      rethrow;
+    final result = await queryOne(
+      '''
+      INSERT INTO users (
+        username, telegram_id, telegram_username, first_name, last_name, number, role, created_at
+      ) VALUES (
+        @username, @tid, @tusername, @first, @last, @phone, 'user'::user_role, CURRENT_TIMESTAMP
+      )
+      RETURNING $_userColumns
+      ''',
+      params: {
+        'username': generatedUsername,
+        'tid': telegramId,
+        'tusername': telegramUsername,
+        'first': firstName,
+        'last': lastName,
+        'phone': phone,
+      },
+    );
+
+    if (result == null) {
+      throw Exception('Ошибка создания Telegram-пользователя');
     }
+    return User.fromJson(result);
+  }
+
+  /// Обновляет номер телефона существующего пользователя.
+  /// Используется ботом после получения контакта через request_contact.
+  Future<User> updatePhone(int userId, String phone) async {
+    final result = await queryOne(
+      '''
+      UPDATE users
+      SET number = @phone, updated_at = CURRENT_TIMESTAMP
+      WHERE id = @id
+      RETURNING $_userColumns
+      ''',
+      params: {'id': userId, 'phone': phone},
+    );
+    if (result == null) {
+      throw Exception('Пользователь не найден');
+    }
+    return User.fromJson(result);
+  }
+
+  /// Устанавливает пароль пользователя (для Telegram-юзеров, которые
+  /// хотят дополнительно входить через логин/пароль).
+  Future<void> setPassword(int userId, String password) async {
+    await queryOne(
+      '''
+      UPDATE users
+      SET password = @password, updated_at = CURRENT_TIMESTAMP
+      WHERE id = @id
+      RETURNING id
+      ''',
+      params: {
+        'id': userId,
+        'password': AuthUtils.hashPassword(password),
+      },
+    );
+  }
+
+  Future<User?> findByEmail(String email) async {
+    if (!UserValidationUtils.isValidEmail(email)) {
+      throw Exception('Некорректный email');
+    }
+    final result = await queryOne(
+      'SELECT $_userColumns FROM users WHERE email = @email',
+      params: {'email': email},
+    );
+    return result == null ? null : User.fromJson(result);
   }
 
   Future<User?> findByNumber(String number) async {
-    try {
-      if (!UserValidationUtils.isValidPhoneNumber(number)) {
-        throw Exception('Некорректный номер телефона');
-      }
-
-      return await queryOne(
-        'SELECT * FROM users WHERE number = @number',
-        params: {'number': number},
-      ).then((result) => result != null ? User.fromJson(result) : null);
-    } catch (e) {
-      rethrow;
+    if (!UserValidationUtils.isValidPhoneNumber(number)) {
+      throw Exception('Некорректный номер телефона');
     }
+    final result = await queryOne(
+      'SELECT $_userColumns FROM users WHERE number = @number',
+      params: {'number': number},
+    );
+    return result == null ? null : User.fromJson(result);
   }
 
   Future<List<int>> getFavoritePoints(int userId) async {
@@ -227,7 +252,7 @@ class UserRepository {
         'SELECT favorite_ids FROM users WHERE id = @id',
         params: {'id': userId},
       );
-      
+
       if (result == null) {
         throw Exception('Пользователь не найден');
       }
@@ -247,7 +272,7 @@ class UserRepository {
 
       await queryOne(
         '''
-        UPDATE users 
+        UPDATE users
         SET favorite_ids = array_append(favorite_ids, @pointId)
         WHERE id = @userId AND NOT @pointId = ANY(favorite_ids)
         ''',
@@ -269,7 +294,7 @@ class UserRepository {
 
       await queryOne(
         '''
-        UPDATE users 
+        UPDATE users
         SET favorite_ids = array_remove(favorite_ids, @pointId)
         WHERE id = @userId
         ''',
@@ -284,7 +309,6 @@ class UserRepository {
   }
 
   void _validateUserData(Map<String, dynamic> data) {
-    // Используем централизованную валидацию
     final validationErrors = UserValidationUtils.validateUserRegistrationData(data);
     if (validationErrors.isNotEmpty) {
       final errorMessages = validationErrors.values.join(', ');
@@ -294,7 +318,6 @@ class UserRepository {
 
   Future<User> update(int id, Map<String, dynamic> data) async {
     try {
-      // Строим динамический SQL-запрос
       final updateFields = <String>[];
       final params = <String, dynamic>{'id': id};
 
@@ -324,18 +347,10 @@ class UserRepository {
       }
 
       final updateQuery = '''
-        UPDATE users 
+        UPDATE users
         SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
         WHERE id = @id
-        RETURNING 
-          id,
-          username,
-          password,
-          email,
-          number,
-          role,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
+        RETURNING $_userColumns
       ''';
 
 
@@ -352,27 +367,15 @@ class UserRepository {
   }
 
   Future<List<User>> findAll({int limit = 20, int offset = 0}) async {
-    try {
-      final results = await query(
-        '''
-        SELECT
-          id,
-          username,
-          password,
-          email,
-          number,
-          role,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
-        FROM users
-        ORDER BY id
-        LIMIT @limit OFFSET @offset
-        ''',
-        params: {'limit': limit, 'offset': offset},
-      );
-      return results.map((map) => User.fromJson(map)).toList();
-    } catch (e) {
-      rethrow;
-    }
+    final results = await query(
+      '''
+      SELECT $_userColumns
+      FROM users
+      ORDER BY id
+      LIMIT @limit OFFSET @offset
+      ''',
+      params: {'limit': limit, 'offset': offset},
+    );
+    return results.map((map) => User.fromJson(map)).toList();
   }
-} 
+}

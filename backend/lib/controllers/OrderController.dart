@@ -10,6 +10,7 @@ import '../utils/RequestContextUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
 import '../utils/PaginationUtils.dart';
+import '../utils/AuthUtils.dart';
 import '../model/dto/responses/OrderResponseDto.dart';
 import '../model/dto/requests/CreateOrderDto.dart';
 import 'dart:convert';

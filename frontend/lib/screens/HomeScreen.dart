@@ -168,16 +168,16 @@ class _MainContentState extends ConsumerState<MainContent> {
                     height: 1.3,
                   ),
                 ),
-                if (!state.isGuest) ...[
+                if (!ref.read(authProvider).isGuest) ...[
                   const SizedBox(height: 4),
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(Icons.savings_outlined,
+                      Icon(Icons.savings_outlined,
                           color: Colors.blue, size: 18),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
-                        'Сэкономлено: ${state.moneySaved.toInt()} ₽',
-                        style: const TextStyle(
+                        'Начните экономить с EshKush!',
+                        style: TextStyle(
                           fontSize: 14,
                           color: Colors.black87,
                         ),

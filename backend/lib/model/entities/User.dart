@@ -9,28 +9,37 @@ import 'package:email_validator/email_validator.dart';
 class User {
   final int id;
   String username;
-  String _password;
-  String number;
-  String email;
+  String? _password;
+  String? number;
+  String? email;
+  int? telegramId;
+  String? telegramUsername;
+  String? firstName;
+  String? lastName;
   final DateTime createdAt;
   final DateTime? updatedAt;
   UserRole role;
-  
+
   User({
-    required this.id,        
-    required this.username,  
-    required String password,
-    required this.number,
-    required this.email,
+    required this.id,
+    required this.username,
+    String? password,
+    this.number,
+    this.email,
+    this.telegramId,
+    this.telegramUsername,
+    this.firstName,
+    this.lastName,
     required this.createdAt,
     this.updatedAt,
     this.role = UserRole.user,
   }) : _password = password {
-    // Валидация данных при создании объекта
-    if (!UserValidationUtils.isValidEmail(email)) {
+    // Валидация только если значение задано — пустые колонки допустимы
+    // для Telegram-only пользователей (email/password/number заполняются позже).
+    if (email != null && email!.isNotEmpty && !UserValidationUtils.isValidEmail(email!)) {
       throw ArgumentError('Invalid email format: $email');
     }
-    if (!UserValidationUtils.isValidPhoneNumber(number)) {
+    if (number != null && number!.isNotEmpty && !UserValidationUtils.isValidPhoneNumber(number!)) {
       throw ArgumentError('Invalid phone number format: $number');
     }
     if (!UserValidationUtils.isValidUsername(username)) {
@@ -39,10 +48,12 @@ class User {
   }
 
 
-  String get passwordHash => _password;
-  
+  String? get passwordHash => _password;
+
   bool verifyPassword(String password) {
-    return AuthUtils.verifyPassword(password, _password);
+    final hash = _password;
+    if (hash == null || hash.isEmpty) return false;
+    return AuthUtils.verifyPassword(password, hash);
   }
 
   bool get isAdmin => role == UserRole.admin;
@@ -51,23 +62,27 @@ class User {
   bool get isGuest => role == UserRole.guest;
 
   factory User.fromJson(Map<String, dynamic> json) {
-    // Не логируем JSON данные для безопасности
-    
     try {
       final user = User(
         id: json['id'] as int,
         username: json['username'] as String,
-        password: json['password'] as String,
-        number: json['number'] as String,
-        email: json['email'] as String,
-        createdAt: json['created_at'] != null 
-            ? (json['created_at'] is DateTime 
-                ? json['created_at'] as DateTime 
+        password: json['password'] as String?,
+        number: json['number'] as String?,
+        email: json['email'] as String?,
+        telegramId: json['telegram_id'] is int
+            ? json['telegram_id'] as int
+            : (json['telegram_id'] == null ? null : int.tryParse(json['telegram_id'].toString())),
+        telegramUsername: json['telegram_username'] as String?,
+        firstName: json['first_name'] as String?,
+        lastName: json['last_name'] as String?,
+        createdAt: json['created_at'] != null
+            ? (json['created_at'] is DateTime
+                ? json['created_at'] as DateTime
                 : DateTime.parse(json['created_at'] as String))
             : DateTime.now(),
-        updatedAt: json['updated_at'] != null 
-            ? (json['updated_at'] is DateTime 
-                ? json['updated_at'] as DateTime 
+        updatedAt: json['updated_at'] != null
+            ? (json['updated_at'] is DateTime
+                ? json['updated_at'] as DateTime
                 : DateTime.parse(json['updated_at'] as String))
             : null,
         role: UserRole.values.firstWhere(
@@ -88,6 +103,10 @@ class User {
       // Пароль НЕ включается в JSON для безопасности
       'number': number,
       'email': email,
+      'telegramId': telegramId,
+      'telegramUsername': telegramUsername,
+      'firstName': firstName,
+      'lastName': lastName,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'role': role.name.toLowerCase(),
@@ -104,6 +123,7 @@ class User {
           _password == other._password &&
           number == other.number &&
           email == other.email &&
+          telegramId == other.telegramId &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt &&
           role == other.role;
@@ -115,6 +135,7 @@ class User {
       _password.hashCode ^
       number.hashCode ^
       email.hashCode ^
+      telegramId.hashCode ^
       createdAt.hashCode ^
       updatedAt.hashCode ^
       role.hashCode;
@@ -122,6 +143,6 @@ class User {
   @override
   String toString() =>
       'User(id: $id, username: $username, number: $number, '
-      'email: $email, role: $role, createdAt: $createdAt, '
-      'updatedAt: $updatedAt)';
+      'email: $email, telegramId: $telegramId, role: $role, '
+      'createdAt: $createdAt, updatedAt: $updatedAt)';
 }

@@ -86,7 +86,7 @@ class PointService {
     }
   }
 
-  Future<List<Point>> getPointsByCategory(int categoryId) async {
+  Future<List<Point>> getPointsByCategory(int categoryId, {int limit = 20, int offset = 0}) async {
     try {
       if (limit == 20 && offset == 0) {
         final cacheKey = CacheKeys.pointsByCategory(categoryId);

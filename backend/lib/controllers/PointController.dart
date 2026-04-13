@@ -625,6 +625,14 @@ class PointController {
   }
 
 
+  Response _createErrorResponse(int statusCode, String message) {
+    return Response(
+      statusCode,
+      body: jsonEncode({'error': message}),
+      headers: _getCorsHeaders(),
+    );
+  }
+
   Map<String, String> _getCorsHeaders() {
     return {'Content-Type': 'application/json'};
   }

@@ -15,6 +15,7 @@ class AppConfig {
   late final Duration rateLimitWindow;
   late final String logLevel; // debug|info|warn|error
   late final bool logJson;
+  late final int maxRequestBodyBytes;
   
   // Redis configuration
   late final String redisHost;
@@ -56,6 +57,7 @@ class AppConfig {
 
     logLevel = (env['LOG_LEVEL'] ?? 'info').toLowerCase();
     logJson = (env['LOG_JSON'] ?? 'true').toLowerCase() == 'true';
+    maxRequestBodyBytes = int.tryParse(env['MAX_REQUEST_BODY_BYTES'] ?? '10485760') ?? 10485760;
     
     // Redis configuration
     redisHost = env['REDIS_HOST'] ?? 'localhost';

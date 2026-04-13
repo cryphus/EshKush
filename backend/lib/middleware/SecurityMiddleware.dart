@@ -112,6 +112,15 @@ class SecurityMiddleware {
     };
   }
 
+  static bool _isAllowed(String ip, int limit, Duration window) {
+    final now = DateTime.now();
+    final times = _requests[ip] ?? [];
+    final filtered = times.where((t) => now.difference(t) < window).toList();
+    filtered.add(now);
+    _requests[ip] = filtered;
+    return filtered.length <= limit;
+  }
+
   static Middleware checkJWT(UserSessionRepository sessionRepository, {List<String> openPaths = const []}) {
     return (Handler innerHandler) {
       return (Request request) async {

@@ -86,16 +86,24 @@ DROP TABLE IF EXISTS cities CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Создаем таблицу users
+-- email/password/number nullable — для Telegram-only пользователей они
+-- заполняются позже (номер через бота, пароль через экран "Задать пароль").
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    number VARCHAR(20) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255),
+    number VARCHAR(20),
+    email VARCHAR(100) UNIQUE,
+    telegram_id BIGINT UNIQUE,
+    telegram_username VARCHAR(64),
+    first_name VARCHAR(64),
+    last_name VARCHAR(64),
     role user_role NOT NULL DEFAULT 'user',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
 );
+
+CREATE INDEX users_telegram_id_idx ON users(telegram_id);
 
 -- Создаем таблицу cities
 CREATE TABLE cities (
@@ -272,6 +280,28 @@ CREATE TABLE token_blacklist (
 );
 
 CREATE INDEX IF NOT EXISTS token_blacklist_expires_at_idx ON token_blacklist(expires_at);
+
+-- Одноразовые токены Telegram-авторизации:
+-- создаются на /auth/telegram/initiate, завершаются ботом через
+-- /auth/telegram/complete, фронт поллит статус через /auth/telegram/status.
+CREATE TABLE telegram_auth_tokens (
+    token             VARCHAR(128) PRIMARY KEY,
+    status            VARCHAR(20)  NOT NULL DEFAULT 'pending',
+    user_id           INTEGER      REFERENCES users(id) ON DELETE SET NULL,
+    telegram_id       BIGINT,
+    telegram_username VARCHAR(64),
+    first_name        VARCHAR(64),
+    last_name         VARCHAR(64),
+    phone             VARCHAR(20),
+    access_token      TEXT,
+    refresh_token     TEXT,
+    created_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at        TIMESTAMP WITH TIME ZONE NOT NULL,
+    completed_at      TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX telegram_auth_tokens_status_idx     ON telegram_auth_tokens(status);
+CREATE INDEX telegram_auth_tokens_expires_at_idx ON telegram_auth_tokens(expires_at);
 
 CREATE TABLE partner_settings (
     id SERIAL PRIMARY KEY,

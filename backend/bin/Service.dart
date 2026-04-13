@@ -85,6 +85,12 @@ import 'package:backend/middleware/LoggingMiddleware.dart';
 import 'package:backend/middleware/RbacMiddleware.dart';
 import 'package:backend/utils/RateLimiterStore.dart';
 import 'package:backend/utils/LoggingUtils.dart';
+import 'package:backend/utils/AuthUtils.dart';
+import 'package:backend/repositories/UserRepository.dart';
+import 'package:backend/services/AuthService.dart';
+import 'package:backend/config/Routes.dart';
+import 'package:backend/model/entities/UserSessions.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 void main() async {
   try {
@@ -232,10 +238,6 @@ void main() async {
         headers: {'content-type': 'application/json'},
       );
     });
-
-    for (var i = 0; i < Routes.mountPathsInOrder.length; i++) {
-      app.mount(Routes.mountPathsInOrder[i], deps.routers[i]);
-    }
 
     app.post('/auth/google', (Request request) async {
       try {
@@ -488,17 +490,11 @@ void main() async {
     app.mount('/swagger', swaggerController.router);
 
     final handler = const Pipeline()
-        .addMiddleware(corsHandler)
+        .addMiddleware(corsMiddleware)
         .addMiddleware(SecurityMiddleware.checkJWT(
           userSessionRepository,
-          openPaths: ['auth', 'login', 'swagger', 'payments/webhook'],
+          openPaths: Routes.openPathSegments + ['payments/webhook'],
         ))
-        .addMiddleware(
-          SecurityMiddleware.checkJWT(
-            deps.userSessionRepository,
-            openPaths: Routes.openPathSegments,
-          ),
-        )
         .addMiddleware(RbacMiddleware.withRoleRules(Routes.rbacRoleRules))
         .addMiddleware(LoggingMiddleware.requestResponseLogger())
         .addHandler(app.call);
@@ -512,8 +508,8 @@ void main() async {
 
     Timer.periodic(const Duration(minutes: 15), (_) async {
       try {
-        final n = await deps.userSessionRepository.cleanupExpiredSessions();
-        await deps.userSessionRepository.cleanupExpiredBlacklist();
+        final n = await userSessionRepository.cleanupExpiredSessions();
+        await userSessionRepository.cleanupExpiredBlacklist();
         if (n > 0) await LoggingUtils.logInfo('Очистка сессий: удалено $n истёкших записей');
       } catch (e, st) {
         await LoggingUtils.logError('Ошибка периодической очистки сессий', e, stackTrace: st);
