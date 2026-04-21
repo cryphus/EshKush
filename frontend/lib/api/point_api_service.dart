@@ -9,7 +9,9 @@ class PointApiService {
   Future<List<Point>> getAllPoints() async {
     try {
       final response = await _dio.get('/points/');
-      return (response.data as List).map((j) => Point.fromJson(j)).toList();
+      final data = response.data;
+      final list = data is Map ? (data['data'] as List? ?? []) : (data as List);
+      return list.map((j) => Point.fromJson(j as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

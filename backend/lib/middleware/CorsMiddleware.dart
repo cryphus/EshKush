@@ -8,16 +8,27 @@ class CorsMiddleware {
   static const String _allowHeaders = 'Origin, Content-Type, Accept, Authorization';
 
   final List<String> allowedOrigins;
+  final bool devMode;
 
-  CorsMiddleware({required this.allowedOrigins});
+  CorsMiddleware({required this.allowedOrigins, this.devMode = false});
+
+  bool _isAllowed(String? origin) {
+    if (origin == null || origin.isEmpty) return false;
+    if (allowedOrigins.any((o) => o == origin)) return true;
+    if (devMode) {
+      final uri = Uri.tryParse(origin);
+      if (uri != null && (uri.host == 'localhost' || uri.host == '127.0.0.1')) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   Middleware call() {
     return (Handler innerHandler) {
       return (Request request) async {
         final origin = request.headers['origin'];
-        final allowed = origin != null &&
-            origin.isNotEmpty &&
-            allowedOrigins.any((o) => o == origin);
+        final allowed = _isAllowed(origin);
 
         if (request.method == 'OPTIONS') {
           final headers = <String, String>{

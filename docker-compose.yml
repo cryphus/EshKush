@@ -11,7 +11,7 @@ services:
       - "${DB_EXTERNAL_PORT:-5433}:5432"
     volumes:
       - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
     healthcheck:
@@ -56,6 +56,12 @@ services:
       - YOOKASSA_RETURN_URL=${YOOKASSA_RETURN_URL:-https://eshkush.app/payments/return}
       - YOOKASSA_WEBHOOK_SECRET=${YOOKASSA_WEBHOOK_SECRET:-}
       - REFUND_WINDOW_HOURS=${REFUND_WINDOW_HOURS:-24}
+      - YANDEX_CLIENT_ID=${YANDEX_CLIENT_ID:-}
+      - YANDEX_CLIENT_SECRET=${YANDEX_CLIENT_SECRET:-}
+      - VK_CLIENT_ID=${VK_CLIENT_ID:-}
+      - VK_CLIENT_SECRET=${VK_CLIENT_SECRET:-}
+      - OAUTH_CALLBACK_BASE_URL=${OAUTH_CALLBACK_BASE_URL:-http://localhost:8080}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
     networks:
       - app-network
     depends_on:

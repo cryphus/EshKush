@@ -24,6 +24,24 @@ class AppConfig {
   late final int redisDb;
   late final Duration redisConnectionTimeout;
 
+  // OAuth — Yandex
+  late final String yandexClientId;
+  late final String yandexClientSecret;
+
+  // OAuth — VK
+  late final String vkClientId;
+  late final String vkClientSecret;
+
+  // OAuth — URLs
+  late final String oauthCallbackBaseUrl;
+  late final String frontendUrl;
+
+  String get yandexRedirectUri => '$oauthCallbackBaseUrl/auth/yandex/callback';
+  String get vkRedirectUri     => '$oauthCallbackBaseUrl/auth/vk/callback';
+
+  bool get isYandexConfigured => yandexClientId.isNotEmpty && yandexClientSecret.isNotEmpty;
+  bool get isVkConfigured     => vkClientId.isNotEmpty && vkClientSecret.isNotEmpty;
+
   // YooKassa configuration
   late final String yookassaShopId;
   late final String yookassaSecretKey;
@@ -67,6 +85,18 @@ class AppConfig {
     redisConnectionTimeout = Duration(
       seconds: int.tryParse(env['REDIS_CONNECTION_TIMEOUT'] ?? '5') ?? 5
     );
+
+    // OAuth — Yandex
+    yandexClientId     = env['YANDEX_CLIENT_ID']     ?? '';
+    yandexClientSecret = env['YANDEX_CLIENT_SECRET'] ?? '';
+
+    // OAuth — VK
+    vkClientId     = env['VK_CLIENT_ID']     ?? '';
+    vkClientSecret = env['VK_CLIENT_SECRET'] ?? '';
+
+    // OAuth — URLs
+    oauthCallbackBaseUrl = env['OAUTH_CALLBACK_BASE_URL'] ?? 'http://localhost:8080';
+    frontendUrl          = env['FRONTEND_URL']            ?? 'http://localhost:3000';
 
     // YooKassa configuration
     yookassaShopId = env['YOOKASSA_SHOP_ID'] ?? '';

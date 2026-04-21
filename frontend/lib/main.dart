@@ -1,34 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:eshkush/screens/MainScreen.dart';
 import 'package:eshkush/screens/ProductPage.dart';
-import 'package:eshkush/screens/PhoneLoginScreen.dart';
 import 'package:eshkush/theme/colors.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
+import 'providers/auth_provider.dart';
 import 'screens/AuthScreen.dart';
+import 'screens/SimpleRegisterScreen.dart';
 import 'state/app_state.dart';
 import 'utils/snackbar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Yandex MapKit: сам API-ключ задаётся в нативных файлах
-  // (AndroidManifest.xml meta-data com.yandex.maps.MAPKIT_API_KEY и
-  // iOS Info.plist YandexMapkitApiKey). Здесь мы только отключаем
-  // отрисовку через Android View Surface (по рекомендации плагина).
-  // См. memory: project/map_provider_yandex (yandex_mapkit, free tier).
-  AndroidYandexMap.useAndroidViewSurface = false;
+  // Обрабатываем OAuth callback: бэкенд редиректит на /?access_token=...&refresh_token=...
+  if (kIsWeb) {
+    final uri = Uri.base;
+    final oauthToken = uri.queryParameters['access_token'];
+    final oauthRefresh = uri.queryParameters['refresh_token'];
+    if (oauthToken != null && oauthToken.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('access_token', oauthToken);
+      if (oauthRefresh != null && oauthRefresh.isNotEmpty) {
+        await prefs.setString('refresh_token', oauthRefresh);
+      }
+    }
+  }
 
-  runApp(const ProviderScope(child: EshKush()));
+  await AppState().initialize();
+
+  if (!kIsWeb) {
+    AndroidYandexMap.useAndroidViewSurface = false;
+  }
+
+  final container = ProviderContainer();
+  await container.read(authProvider.notifier).loadSavedAuth();
+
+  runApp(UncontrolledProviderScope(container: container, child: const EshKush()));
 }
 
-class EshKush extends StatelessWidget {
+class EshKush extends ConsumerWidget {
   const EshKush({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final initialRoute = AppState().accessToken != null ? '/main' : '/auth';
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authProvider);
+    final initialRoute = auth.accessToken != null ? '/main' : '/auth';
 
     return MaterialApp(
       title: 'EshKush',
@@ -61,20 +80,11 @@ class EshKush extends StatelessWidget {
       routes: {
         '/auth': (context) => const AuthScreen(),
         '/main': (context) => const MainScreen(),
-        '/phone-login': (context) => const PhoneLoginScreen(),
+        '/register': (context) => const SimpleRegisterScreen(),
         '/product': (context) => ProductPage(
               data: ModalRoute.of(context)?.settings.arguments
                   as Map<String, dynamic>,
             ),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name?.startsWith('eshkush://auth/telegram') ?? false) {
-          return MaterialPageRoute(
-            builder: (context) => const AuthScreen(),
-            settings: settings,
-          );
-        }
-        return null;
       },
     );
   }

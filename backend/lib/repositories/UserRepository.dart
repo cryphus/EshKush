@@ -22,6 +22,8 @@ class UserRepository {
     telegram_username,
     first_name,
     last_name,
+    yandex_id,
+    vk_id,
     role,
     to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
     CASE WHEN updated_at IS NOT NULL
@@ -104,10 +106,16 @@ class UserRepository {
     }
   }
 
-  Future<User?> authenticate(String username, String password) async {
-    final result = await queryOne(
-      'SELECT $_userColumns FROM users WHERE username = @username',
-      params: {'username': username},
+  Future<User?> authenticate(String identifier, String password) async {
+    // Ищем по username, если не найдено — по номеру телефона
+    var result = await queryOne(
+      'SELECT $_userColumns FROM users WHERE username = @id',
+      params: {'id': identifier},
+    );
+
+    result ??= await queryOne(
+      'SELECT $_userColumns FROM users WHERE number = @id',
+      params: {'id': identifier},
     );
 
     if (result == null) return null;
@@ -115,11 +123,66 @@ class UserRepository {
     final user = User.fromJson(result);
     final hash = user.passwordHash;
     if (hash == null || hash.isEmpty) return null;
-    if (!AuthUtils.verifyPassword(password, hash)) {
-      return null;
-    }
+    if (!AuthUtils.verifyPassword(password, hash)) return null;
 
     return user;
+  }
+
+  Future<User?> findByYandexId(String yandexId) async {
+    final result = await queryOne(
+      'SELECT $_userColumns FROM users WHERE yandex_id = @yid',
+      params: {'yid': yandexId},
+    );
+    return result == null ? null : User.fromJson(result);
+  }
+
+  Future<User?> findByVkId(String vkId) async {
+    final result = await queryOne(
+      'SELECT $_userColumns FROM users WHERE vk_id = @vid',
+      params: {'vid': vkId},
+    );
+    return result == null ? null : User.fromJson(result);
+  }
+
+  /// Создаёт пользователя на основе данных OAuth провайдера.
+  /// Username генерируется из данных провайдера, при конфликте добавляется суффикс.
+  Future<User> createOAuthUser({
+    required String baseUsername,
+    String? email,
+    String? yandexId,
+    String? vkId,
+    String? firstName,
+    String? lastName,
+  }) async {
+    var username = baseUsername.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
+    if (username.length < 3) username = 'user_$username';
+    if (username.length > 28) username = username.substring(0, 28);
+
+    var finalUsername = username;
+    var suffix = 1;
+    while (await findByUsername(finalUsername) != null) {
+      finalUsername = '${username}_$suffix';
+      suffix++;
+    }
+
+    final result = await queryOne(
+      '''
+      INSERT INTO users (username, email, yandex_id, vk_id, first_name, last_name, role, created_at)
+      VALUES (@username, @email, @yandex_id, @vk_id, @first_name, @last_name, 'user'::user_role, CURRENT_TIMESTAMP)
+      RETURNING $_userColumns
+      ''',
+      params: {
+        'username': finalUsername,
+        'email': email,
+        'yandex_id': yandexId,
+        'vk_id': vkId,
+        'first_name': firstName,
+        'last_name': lastName,
+      },
+    );
+
+    if (result == null) throw Exception('Ошибка создания OAuth пользователя');
+    return User.fromJson(result);
   }
 
   Future<User> createUser(Map<String, dynamic> data) async {
@@ -221,6 +284,20 @@ class UserRepository {
         'id': userId,
         'password': AuthUtils.hashPassword(password),
       },
+    );
+  }
+
+  Future<void> linkYandexId(int userId, String yandexId) async {
+    await queryOne(
+      'UPDATE users SET yandex_id = @yid, updated_at = CURRENT_TIMESTAMP WHERE id = @id RETURNING id',
+      params: {'id': userId, 'yid': yandexId},
+    );
+  }
+
+  Future<void> linkVkId(int userId, String vkId) async {
+    await queryOne(
+      'UPDATE users SET vk_id = @vid, updated_at = CURRENT_TIMESTAMP WHERE id = @id RETURNING id',
+      params: {'id': userId, 'vid': vkId},
     );
   }
 

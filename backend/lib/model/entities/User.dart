@@ -16,6 +16,8 @@ class User {
   String? telegramUsername;
   String? firstName;
   String? lastName;
+  String? yandexId;
+  String? vkId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   UserRole role;
@@ -30,6 +32,8 @@ class User {
     this.telegramUsername,
     this.firstName,
     this.lastName,
+    this.yandexId,
+    this.vkId,
     required this.createdAt,
     this.updatedAt,
     this.role = UserRole.user,
@@ -75,6 +79,8 @@ class User {
         telegramUsername: json['telegram_username'] as String?,
         firstName: json['first_name'] as String?,
         lastName: json['last_name'] as String?,
+        yandexId: json['yandex_id'] as String?,
+        vkId: json['vk_id'] as String?,
         createdAt: json['created_at'] != null
             ? (json['created_at'] is DateTime
                 ? json['created_at'] as DateTime

@@ -1,100 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../services/FrontendAuthService.dart';
-import '../services/TelegramAuthService.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../config/app_config.dart';
 import '../theme/colors.dart';
-import 'PhoneLoginScreen.dart';
-import 'RegistrationScreen.dart';
-import 'dart:async';
+import 'LoginPasswordScreen.dart';
+import 'SimpleRegisterScreen.dart';
 
-class AuthScreen extends StatefulWidget {
+class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
 
-  @override
-  State<AuthScreen> createState() => _AuthScreenState();
-}
-
-class _AuthScreenState extends State<AuthScreen> {
-  final FrontendAuthService authService = FrontendAuthService();
-  final TelegramAuthService _telegramAuthService = TelegramAuthService();
-  Timer? _checkTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _startDeepLinkChecking();
-  }
-
-  @override
-  void dispose() {
-    _checkTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startDeepLinkChecking() {
-    _checkDeepLink();
-    _checkTimer = Timer.periodic(
-      const Duration(seconds: 2),
-      (_) => _checkDeepLink(),
-    );
-  }
-
-  Future<void> _checkDeepLink() async {
-    try {
-      final uri = Uri.base;
-      if (uri.scheme == 'eshkush' &&
-          uri.host == 'auth' &&
-          uri.pathSegments.isNotEmpty &&
-          uri.pathSegments[0] == 'telegram') {
-        await _telegramAuthService.handleDeepLink(context, uri.toString());
-      }
-    } catch (e) {
-      debugPrint('Deep link check error: $e');
-    }
-  }
-
-  Future<void> _handleGoogleSignIn() async {
-    try {
-      final result = await authService.signInWithGoogle();
-      if (result == null || !context.mounted) return;
-
-      if (result['needsRegistration'] == true) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => RegistrationScreen(
-              email: result['email'] ?? '',
-              displayName: result['displayName'] ?? '',
-            ),
-          ),
-        );
-      } else {
-        Navigator.of(context).pushReplacementNamed('/main');
-      }
-    } catch (e) {
-      _showError(e.toString());
-    }
-  }
-
-  Future<void> _handleTelegramAuth() async {
-    try {
-      await _telegramAuthService.openTelegramBot();
-    } catch (e) {
-      _showError(e.toString());
-    }
-  }
-
-  void _handlePhoneLogin() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const PhoneLoginScreen()),
-    );
-  }
-
-  void _showError(String message) {
-    if (context.mounted) {
+  Future<void> _openOAuth(BuildContext context, String provider) async {
+    final url = Uri.parse('${AppConfig.apiBaseUrl}/auth/$provider');
+    final launched = await launchUrl(url, webOnlyWindowName: '_self');
+    if (!launched && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка: $message'),
+          content: Text('Не удалось открыть $provider OAuth'),
           backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -110,7 +33,6 @@ class _AuthScreenState extends State<AuthScreen> {
           child: Column(
             children: [
               const SizedBox(height: 60),
-              // Заголовок
               const Text(
                 'Еда с разумным\nвыбором',
                 textAlign: TextAlign.center,
@@ -122,44 +44,47 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-              // Изображение пакета с продуктами
               Expanded(
                 child: Center(
                   child: Image.network(
                     'http://91.186.217.192/images/img_start.png',
                     fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.shopping_bag, size: 120, color: AppColors.accentGreen),
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.shopping_bag,
+                      size: 120,
+                      color: AppColors.accentGreen,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 30),
-              // Кнопки авторизации (Google, VK, Телефон)
+
+              // Социальные кнопки: Яндекс и ВК
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _SocialButton(
-                    iconPath: 'assets/icons/google.svg',
-                    onTap: _handleGoogleSignIn,
+                    iconPath: 'assets/icons/yandex.svg',
+                    label: 'Яндекс',
+                    onTap: () => _openOAuth(context, 'yandex'),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 20),
                   _SocialButton(
                     iconPath: 'assets/icons/vk.svg',
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 16),
-                  _SocialButton(
-                    iconPath: 'assets/icons/phone.svg',
-                    onTap: _handlePhoneLogin,
+                    label: 'ВКонтакте',
+                    onTap: () => _openOAuth(context, 'vk'),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-              // Кнопка "Войти как гость"
+
+              // Кнопка "Войти" (логин/телефон + пароль)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pushReplacementNamed('/main'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const LoginPasswordScreen()),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accentGreen,
                     foregroundColor: Colors.white,
@@ -170,15 +95,49 @@ class _AuthScreenState extends State<AuthScreen> {
                     elevation: 0,
                   ),
                   child: const Text(
-                    'Войти как гость',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    'Войти',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 12),
+
+              // Кнопка "Зарегистрироваться"
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SimpleRegisterScreen()),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.accentGreen,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: AppColors.accentGreen, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: const Text(
+                    'Зарегистрироваться',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Войти как гость
+              TextButton(
+                onPressed: () => Navigator.of(context).pushReplacementNamed('/main'),
+                child: const Text(
+                  'Войти как гость',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black54,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -188,31 +147,58 @@ class _AuthScreenState extends State<AuthScreen> {
 }
 
 class _SocialButton extends StatelessWidget {
-  final String iconPath;
+  final String? iconPath;
+  final String label;
   final VoidCallback onTap;
 
-  const _SocialButton({required this.iconPath, required this.onTap});
+  const _SocialButton({
+    this.iconPath,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.accentGreen, width: 1.5),
-        ),
-        child: Center(
-          child: SvgPicture.asset(
-            iconPath,
-            width: 32,
-            height: 32,
-            colorFilter: const ColorFilter.mode(AppColors.accentGreen, BlendMode.srcIn),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.accentGreen, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: iconPath != null
+                  ? SvgPicture.asset(
+                      iconPath!,
+                      width: 36,
+                      height: 36,
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.accentGreen,
+                        BlendMode.srcIn,
+                      ),
+                    )
+                  : const Icon(Icons.login, size: 36, color: AppColors.accentGreen),
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+        ],
       ),
     );
   }

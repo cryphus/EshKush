@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
@@ -47,13 +48,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('access_token');
       final refresh = prefs.getString('refresh_token');
-      if (token != null) {
+      final userJson = prefs.getString('user_json');
+      if (token != null && userJson != null) {
+        final user = User.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
         state = state.copyWith(
+          user: user,
           accessToken: token,
           refreshToken: refresh,
           isLoading: false,
         );
-        // TODO: fetch user profile with token
       } else {
         state = state.copyWith(isLoading: false);
       }
@@ -70,6 +73,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('access_token', accessToken);
     await prefs.setString('refresh_token', refreshToken);
+    await prefs.setString('user_json', jsonEncode(user.toJson()));
     state = AuthState(
       user: user,
       accessToken: accessToken,
@@ -91,6 +95,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('access_token');
     await prefs.remove('refresh_token');
+    await prefs.remove('user_json');
     state = const AuthState();
   }
 

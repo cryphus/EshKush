@@ -980,11 +980,11 @@ class UserValidationUtils {
       errors['password_confirm'] = 'Пароли не совпадают';
     }
     
-    // Email
-    if (data['email'] == null || data['email'].toString().isEmpty) {
-      errors['email'] = 'Email обязателен';
-    } else if (!isValidEmail(data['email'].toString())) {
-      errors['email'] = 'Некорректный формат email';
+    // Email — опционален; если передан, должен быть валидным
+    if (data['email'] != null && data['email'].toString().isNotEmpty) {
+      if (!isValidEmail(data['email'].toString())) {
+        errors['email'] = 'Некорректный формат email';
+      }
     }
     
     // Phone

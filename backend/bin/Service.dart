@@ -81,6 +81,7 @@ import 'package:backend/repositories/PaymentTransactionsRepository.dart';
 import 'package:backend/controllers/PaymentGatewayController.dart';
 import 'package:backend/services/PaymentGatewayService.dart';
 import 'package:backend/services/YooKassaService.dart';
+import 'package:backend/services/OAuthService.dart';
 import 'package:backend/middleware/LoggingMiddleware.dart';
 import 'package:backend/middleware/RbacMiddleware.dart';
 import 'package:backend/utils/RateLimiterStore.dart';
@@ -215,11 +216,13 @@ void main() async {
       paymentGatewayService: paymentGatewayService,
     );
 
+    final oauthService = OAuthService(config);
+
     final swaggerController = SwaggerController();
 
     final app = Router();
 
-    final corsMiddleware = CorsMiddleware(allowedOrigins: config.allowedOrigins).call();
+    final corsMiddleware = CorsMiddleware(allowedOrigins: config.allowedOrigins, devMode: config.isDevelopment).call();
 
     app.get('/', (Request request) {
       return Response.ok(
@@ -423,6 +426,166 @@ void main() async {
       }
     });
 
+    // ── Yandex OAuth ────────────────────────────────────────────────────────────
+
+    app.get('/auth/yandex', (Request request) {
+      if (!config.isYandexConfigured) {
+        return Response(503, body: jsonEncode({'error': 'Яндекс OAuth не настроен'}));
+      }
+      return Response.found(oauthService.buildYandexAuthUrl());
+    });
+
+    app.get('/auth/yandex/callback', (Request request) async {
+      try {
+        final code = request.url.queryParameters['code'];
+        final error = request.url.queryParameters['error'];
+
+        if (error != null || code == null) {
+          return Response.found('${config.frontendUrl}/?oauth_error=${Uri.encodeComponent(error ?? 'no_code')}');
+        }
+
+        final yandexUser = await oauthService.handleYandexCode(code);
+        final yandexId = yandexUser['id']?.toString() ?? '';
+
+        if (yandexId.isEmpty) {
+          return Response.found('${config.frontendUrl}/?oauth_error=no_id');
+        }
+
+        var user = await userRepository.findByYandexId(yandexId);
+
+        if (user == null) {
+          // Проверяем, есть ли пользователь с таким email
+          final email = yandexUser['default_email'] as String?;
+          if (email != null && email.isNotEmpty) {
+            try {
+              user = await userRepository.findByEmail(email);
+              if (user != null) {
+                // Привязываем Яндекс ID к существующему аккаунту
+                await userRepository.linkYandexId(user.id, yandexId);
+              }
+            } catch (_) {}
+          }
+
+          if (user == null) {
+            final login = (yandexUser['login'] as String?) ?? 'ya_$yandexId';
+            user = await userRepository.createOAuthUser(
+              baseUsername: login,
+              email: yandexUser['default_email'] as String?,
+              yandexId: yandexId,
+              firstName: yandexUser['first_name'] as String?,
+              lastName: yandexUser['last_name'] as String?,
+            );
+          }
+        }
+
+        final bundle = AuthUtils.generateTokenBundle(user.id, user.role.name.toLowerCase());
+        final refreshJti = bundle['refresh_jti'] as String;
+        final refreshExpiresAt = bundle['refresh_expires_at'] as DateTime;
+
+        await userSessionRepository.create(UserSessions(
+          id: 0,
+          userId: user.id,
+          createdAt: DateTime.now(),
+          expiresAt: refreshExpiresAt,
+          lastActive: DateTime.now(),
+          userAgent: request.headers['user-agent'] ?? 'unknown',
+          ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
+          token: bundle['access_token'] as String,
+          refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
+        ));
+
+        final redirectUrl = Uri.parse(config.frontendUrl).replace(queryParameters: {
+          'access_token': bundle['access_token'] as String,
+          'refresh_token': bundle['refresh_token'] as String,
+        }).toString();
+
+        return Response.found(redirectUrl);
+      } catch (e) {
+        await LoggingUtils.logError('Yandex OAuth callback error', e);
+        return Response.found('${config.frontendUrl}/?oauth_error=${Uri.encodeComponent(e.toString())}');
+      }
+    });
+
+    // ── VK OAuth ────────────────────────────────────────────────────────────────
+
+    app.get('/auth/vk', (Request request) {
+      if (!config.isVkConfigured) {
+        return Response(503, body: jsonEncode({'error': 'ВКонтакте OAuth не настроен'}));
+      }
+      return Response.found(oauthService.buildVkAuthUrl());
+    });
+
+    app.get('/auth/vk/callback', (Request request) async {
+      try {
+        final code = request.url.queryParameters['code'];
+        final error = request.url.queryParameters['error'];
+
+        if (error != null || code == null) {
+          return Response.found('${config.frontendUrl}/?oauth_error=${Uri.encodeComponent(error ?? 'no_code')}');
+        }
+
+        final vkUser = await oauthService.handleVkCode(code);
+        final vkId = vkUser['id']?.toString() ?? '';
+
+        if (vkId.isEmpty) {
+          return Response.found('${config.frontendUrl}/?oauth_error=no_id');
+        }
+
+        var user = await userRepository.findByVkId(vkId);
+
+        if (user == null) {
+          final email = vkUser['email'] as String?;
+          if (email != null && email.isNotEmpty) {
+            try {
+              user = await userRepository.findByEmail(email);
+              if (user != null) {
+                await userRepository.linkVkId(user.id, vkId);
+              }
+            } catch (_) {}
+          }
+
+          if (user == null) {
+            final firstName = vkUser['first_name'] as String? ?? '';
+            final lastName = vkUser['last_name'] as String? ?? '';
+            final baseUsername = firstName.isNotEmpty ? '${firstName.toLowerCase()}_vk' : 'vk_$vkId';
+            user = await userRepository.createOAuthUser(
+              baseUsername: baseUsername,
+              email: email,
+              vkId: vkId,
+              firstName: firstName.isNotEmpty ? firstName : null,
+              lastName: lastName.isNotEmpty ? lastName : null,
+            );
+          }
+        }
+
+        final bundle = AuthUtils.generateTokenBundle(user.id, user.role.name.toLowerCase());
+        final refreshJti = bundle['refresh_jti'] as String;
+        final refreshExpiresAt = bundle['refresh_expires_at'] as DateTime;
+
+        await userSessionRepository.create(UserSessions(
+          id: 0,
+          userId: user.id,
+          createdAt: DateTime.now(),
+          expiresAt: refreshExpiresAt,
+          lastActive: DateTime.now(),
+          userAgent: request.headers['user-agent'] ?? 'unknown',
+          ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
+          token: bundle['access_token'] as String,
+          refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
+        ));
+
+        final redirectUrl = Uri.parse(config.frontendUrl).replace(queryParameters: {
+          'access_token': bundle['access_token'] as String,
+          'refresh_token': bundle['refresh_token'] as String,
+        }).toString();
+
+        return Response.found(redirectUrl);
+      } catch (e) {
+        await LoggingUtils.logError('VK OAuth callback error', e);
+        return Response.found('${config.frontendUrl}/?oauth_error=${Uri.encodeComponent(e.toString())}');
+      }
+    });
+
     // Подключаем маршруты PointController
     app.mount('/points', pointController.router);
     
@@ -489,8 +652,29 @@ void main() async {
     // Подключаем маршруты Swagger
     app.mount('/swagger', swaggerController.router);
 
+    Middleware jsonContentType() {
+      return (Handler inner) {
+        return (Request request) async {
+          final response = await inner(request);
+          final ct = response.headers['content-type'] ?? '';
+          if (ct.isEmpty || ct.startsWith('text/plain')) {
+            final body = await response.readAsString();
+            if (body.startsWith('{') || body.startsWith('[')) {
+              return response.change(
+                body: body,
+                headers: {...response.headers, 'content-type': 'application/json'},
+              );
+            }
+            return response.change(body: body);
+          }
+          return response;
+        };
+      };
+    }
+
     final handler = const Pipeline()
         .addMiddleware(corsMiddleware)
+        .addMiddleware(jsonContentType())
         .addMiddleware(SecurityMiddleware.checkJWT(
           userSessionRepository,
           openPaths: Routes.openPathSegments + ['payments/webhook'],
