@@ -47,7 +47,7 @@ class AuthUtils {
   static int get _bcryptLogRounds {
     final raw = Platform.environment['BCRYPT_LOG_ROUNDS'];
     final parsed = raw == null ? null : int.tryParse(raw);
-    if (parsed != null && parsed >= 10 && parsed <= 14) return parsed;
+    if (parsed != null && parsed >= 4 && parsed <= 14) return parsed;
     return _defaultBcryptLogRounds;
   }
 

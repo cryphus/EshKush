@@ -45,10 +45,16 @@ class Changes {
       oldValue: json['old_value'] as String?,
       newValue: json['new_value'] as String?,
       changedBy: json['changed_by'] as int?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] is DateTime
+          ? json['created_at'] as DateTime
+          : DateTime.parse(json['created_at'] as String),
       comment: json['comment'] as String?,
       isReverted: json['is_reverted'] as bool? ?? false,
-      revertedAt: json['reverted_at'] != null ? DateTime.parse(json['reverted_at'] as String) : null,
+      revertedAt: json['reverted_at'] != null
+          ? (json['reverted_at'] is DateTime
+              ? json['reverted_at'] as DateTime
+              : DateTime.parse(json['reverted_at'] as String))
+          : null,
       revertedBy: json['reverted_by'] as int?,
     );
   }

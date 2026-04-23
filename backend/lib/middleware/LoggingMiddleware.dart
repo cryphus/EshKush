@@ -14,8 +14,11 @@ class LoggingMiddleware {
         final incomingReqId = request.headers['x-request-id'] ?? request.headers['X-Request-Id'];
         final requestId = (incomingReqId != null && incomingReqId.isNotEmpty) ? incomingReqId : _generateRequestId();
         final stopwatch = Stopwatch()..start();
-        // Игнорируем preflight
+        // Игнорируем preflight и health-пробы оркестратора
         if (request.method == 'OPTIONS') {
+          return innerHandler(request);
+        }
+        if (request.url.path == 'health' || request.url.path.startsWith('health/')) {
           return innerHandler(request);
         }
 
@@ -25,19 +28,25 @@ class LoggingMiddleware {
             ?? request.headers['x-real-ip']
             ?? 'unknown';
 
-        // Читаем тело безопасно только для методов с телом
+        // Читаем тело безопасно только для методов с телом.
+        // Если Content-Length известен и больше лимита — не читаем тело вовсе:
+        // незачем тащить 100MB в память ради лога.
         if (_hasBody(request) && !_skipBodyLoggingForPath(request.requestedUri)) {
-          final bytes = await request.read().toList();
-          final flattened = bytes.expand((b) => b).toList(growable: false);
-          final limited = flattened.length > _maxLoggedBodyBytes
-              ? flattened.sublist(0, _maxLoggedBodyBytes)
-              : flattened;
-          bodyString = utf8.decode(limited, allowMalformed: true);
-          bodyString = SafeLoggingUtils.sanitizeString(bodyString);
+          final declaredLength = int.tryParse(request.headers['content-length'] ?? '');
+          final skip = declaredLength != null && declaredLength > _maxLoggedBodyBytes;
 
-          // Восстанавливаем тело для следующего обработчика
-          final restoredStream = Stream<List<int>>.fromIterable([flattened]);
-          request = request.change(body: restoredStream);
+          if (!skip) {
+            final bytes = await request.read().toList();
+            final flattened = bytes.expand((b) => b).toList(growable: false);
+            final limited = flattened.length > _maxLoggedBodyBytes
+                ? flattened.sublist(0, _maxLoggedBodyBytes)
+                : flattened;
+            bodyString = utf8.decode(limited, allowMalformed: true);
+            bodyString = SafeLoggingUtils.sanitizeString(bodyString);
+
+            // Восстанавливаем тело для следующего обработчика
+            request = request.change(body: Stream<List<int>>.fromIterable([flattened]));
+          }
         }
 
         // Логируем без тела

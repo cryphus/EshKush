@@ -71,6 +71,7 @@ import 'package:backend/controllers/ErrorLogsController.dart';
 import 'package:backend/services/ErrorLogsService.dart';
 import 'package:backend/repositories/ErrorLogsRepository.dart';
 import 'package:backend/controllers/CacheController.dart';
+import 'package:backend/controllers/HealthController.dart';
 import 'package:backend/controllers/NotificationController.dart';
 import 'package:backend/controllers/SwaggerController.dart';
 import 'package:backend/services/NotificationService.dart';
@@ -219,6 +220,7 @@ void main() async {
     final oauthService = OAuthService(config);
 
     final swaggerController = SwaggerController();
+    final healthController = HealthController(db.connection, cacheService);
 
     final app = Router();
 
@@ -337,20 +339,22 @@ void main() async {
       try {
         final body = await request.readAsString();
         final data = jsonDecode(body);
-        
+
         final result = await authService.register(
           data,
           userAgent: request.headers['user-agent'] ?? 'unknown',
           ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
         );
-        
+
         return Response.ok(
           jsonEncode(result),
         );
       } catch (e) {
+        final msg = e.toString();
+        final statusCode = msg.contains('уже существует') ? 409 : 400;
         return Response(
-          400,
-          body: jsonEncode({'error': e.toString()}),
+          statusCode,
+          body: jsonEncode({'error': msg}),
         );
       }
     });
@@ -389,8 +393,11 @@ void main() async {
     app.post('/auth/check_user', (Request request) async {
       try {
         final body = await request.readAsString();
-        final data = jsonDecode(body);
-        final phoneNumber = data['phoneNumber'] as String;
+        final data = jsonDecode(body) as Map<String, dynamic>;
+        final phoneNumber = (data['phoneNumber'] ?? data['phone_number'] ?? data['number'])?.toString();
+        if (phoneNumber == null || phoneNumber.isEmpty) {
+          return Response(400, body: jsonEncode({'error': 'Требуется номер телефона'}));
+        }
         
         final user = await userRepository.queryOne(
           '''
@@ -651,6 +658,9 @@ void main() async {
 
     // Подключаем маршруты Swagger
     app.mount('/swagger', swaggerController.router);
+
+    // Health check endpoint
+    app.mount('/health', healthController.router);
 
     Middleware jsonContentType() {
       return (Handler inner) {

@@ -51,13 +51,14 @@ class SecurityMiddleware {
       return (Request request) async {
         final response = await innerHandler(request);
         return response.change(headers: {
-          // Оставить
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'DENY',
           'X-XSS-Protection': '1; mode=block',
-          'Strict-Transport-Security':
-              'max-age=31536000; includeSubDomains',
+          'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Content-Security-Policy': "default-src 'self'",
+          'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+          'Cross-Origin-Opener-Policy': 'same-origin',
         });
       };
     };

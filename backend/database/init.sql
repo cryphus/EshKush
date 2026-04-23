@@ -98,6 +98,8 @@ CREATE TABLE users (
     telegram_username VARCHAR(64),
     first_name VARCHAR(64),
     last_name VARCHAR(64),
+    yandex_id VARCHAR(100) UNIQUE,
+    vk_id VARCHAR(100) UNIQUE,
     role user_role NOT NULL DEFAULT 'user',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
@@ -117,10 +119,10 @@ CREATE TABLE partners (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id),
     name VARCHAR(100) NOT NULL,
-    contact_person INTEGER NOT NULL,
-    contact_email VARCHAR(100) NOT NULL,
-    contact_phone VARCHAR(20) NOT NULL,
-    contact_document VARCHAR(50) NOT NULL,
+    contact_person INTEGER,
+    contact_email VARCHAR(100),
+    contact_phone VARCHAR(20),
+    contact_document VARCHAR(50),
     max_discount DECIMAL(5,2) DEFAULT 0.0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

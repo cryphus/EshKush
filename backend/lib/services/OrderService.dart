@@ -2,6 +2,7 @@ import '../repositories/OrderRepository.dart';
 import '../model/entities/Order.dart';
 import '../model/enums/OrderStatus.dart';
 import '../utils/SafeLoggingUtils.dart';
+import '../utils/MapUtils.dart';
 import '../repositories/UserRepository.dart';
 import '../repositories/PointRepository.dart';
 import '../repositories/ProductsRepository.dart';
@@ -108,28 +109,23 @@ class OrderService {
   }
 
   Future<void> _validateOrderData(Map<String, dynamic> data) async {
-    // Проверка обязательных полей
-    if (data['user_id'] == null) {
-      throw Exception('Некорректный ID пользователя');
+    // Проверка обязательных полей с явными сообщениями через MapUtils
+    final userId = MapUtils.require<int>(data, 'user_id');
+    final pointId = MapUtils.require<int>(data, 'point_id');
+    final productsList = data['products_id'];
+    if (productsList == null || (productsList as List).isEmpty) {
+      throw ArgumentError('Список товаров не может быть пустым');
     }
-    if (data['point_id'] == null) {
-      throw Exception('Некорректный ID точки');
-    }
-    if (data['products_id'] == null || (data['products_id'] as List).isEmpty) {
-      throw Exception('Список товаров не может быть пустым');
-    }
-    if (data['total_price'] == null) {
-      throw Exception('Некорректная сумма заказа');
-    }
+    MapUtils.require<double>(data, 'total_price');
 
     // Проверка существования пользователя
-    final user = await _userRepository.findById(data['user_id']);
+    final user = await _userRepository.findById(userId);
     if (user == null) {
       throw Exception('Пользователь не найден');
     }
 
     // Проверка существования точки
-    final point = await _pointRepository.findById(data['point_id']);
+    final point = await _pointRepository.findById(pointId);
     if (point == null) {
       throw Exception('Точка не найдена');
     }

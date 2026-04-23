@@ -113,6 +113,8 @@ class User {
       'telegramUsername': telegramUsername,
       'firstName': firstName,
       'lastName': lastName,
+      'yandexId': yandexId,
+      'vkId': vkId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'role': role.name.toLowerCase(),
@@ -130,6 +132,11 @@ class User {
           number == other.number &&
           email == other.email &&
           telegramId == other.telegramId &&
+          telegramUsername == other.telegramUsername &&
+          firstName == other.firstName &&
+          lastName == other.lastName &&
+          yandexId == other.yandexId &&
+          vkId == other.vkId &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt &&
           role == other.role;
@@ -142,6 +149,8 @@ class User {
       number.hashCode ^
       email.hashCode ^
       telegramId.hashCode ^
+      yandexId.hashCode ^
+      vkId.hashCode ^
       createdAt.hashCode ^
       updatedAt.hashCode ^
       role.hashCode;

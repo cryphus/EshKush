@@ -1,31 +1,58 @@
-FROM dart:stable AS build
+# ── Stage 1: зависимости + исходный код ────────────────────────────────────
+FROM dart:stable AS deps
 
 WORKDIR /app
 
-# Копирование shared пакета (должен быть на уровень выше для path: ../shared)
+# Shared-пакет нужен для path: ../shared в pubspec.yaml
 COPY shared /shared
 COPY backend/pubspec.* ./
-
 RUN dart pub get
-
 COPY backend/ .
-
 RUN dart pub get --offline
 
-# Компиляция сервера
+# ── Stage 2: unit-тесты (без БД) ────────────────────────────────────────────
+#
+# docker-compose запускает этот stage как отдельный сервис "unit-tests".
+# Если тесты падают — контейнер завершается с ненулевым кодом,
+# и сервис "backend" (depends_on: unit-tests: service_completed_successfully)
+# не запускается.
+FROM deps AS test
+
+CMD ["dart", "test", "test/unit", "--reporter", "expanded"]
+
+# ── Stage 2b: интеграционные тесты репозиториев (нужен postgres-test) ────────
+#
+# docker-compose: сервис "repo-tests". Зависит от postgres-test: healthy.
+# Переменные: TEST_DB_HOST, TEST_DB_PORT, TEST_DB_NAME, TEST_DB_USER, TEST_DB_PASSWORD.
+FROM deps AS repo-tests
+
+CMD ["dart", "test", "test/integration/repositories", "test/integration/services", "--reporter", "expanded", "--concurrency=1"]
+
+# ── Stage 2c: e2e-тесты HTTP-уровня (нужен запущенный backend) ───────────────
+#
+# docker-compose: сервис "e2e-tests". Зависит от backend: healthy.
+# Сначала сидирует admin-пользователя в основную БД, затем гоняет тесты.
+# Переменные: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD,
+#             TEST_BASE_URL, JWT_SECRET, JWT_REFRESH_SECRET.
+FROM deps AS e2e-tests
+
+CMD ["sh", "-c", "dart run bin/SeedE2eData.dart && dart test test/integration/RbacAccessTest.dart test/integration/http --reporter expanded --concurrency=1"]
+
+# ── Stage 3: компиляция бинарников ──────────────────────────────────────────
+FROM deps AS build
+
 RUN dart compile exe bin/Service.dart -o bin/server
+RUN dart compile exe bin/Migrate.dart -o bin/migrate
 
-# Компиляция тест-бинарника (только dart:io + dart:convert — внешние пакеты не нужны)
-RUN dart compile exe test/ApiTest.dart -o bin/api_test
+# ── Stage 4: финальный runtime-образ ────────────────────────────────────────
+FROM debian:stable-slim AS runtime
 
-FROM debian:stable-slim
+RUN apt-get update && apt-get install -y ca-certificates curl && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-
-COPY --from=build /app/bin/server /app/server
-COPY --from=build /app/bin/api_test /app/api_test
+COPY --from=build /app/bin/server  /app/server
+COPY --from=build /app/bin/migrate /app/migrate
 COPY --from=build /app/lib/config/swagger.json /app/lib/config/swagger.json
 
 EXPOSE 8080
 
-CMD ["/app/server"] 
+CMD ["/app/server"]

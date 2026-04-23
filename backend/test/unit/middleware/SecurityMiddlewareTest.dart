@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:test/test.dart';
 import 'package:shelf/shelf.dart';
+import 'package:backend/config/AppConfig.dart';
 import 'package:backend/middleware/SecurityMiddleware.dart';
 import 'package:backend/utils/AuthUtils.dart';
 import '../../helpers/FakeSessionRepo.dart';
@@ -79,7 +80,10 @@ void main() {
     String uniqueIp() => '10.0.${_ipCounter ~/ 256}.${_ipCounter++ % 256}';
 
     late Handler handler;
-    setUpAll(() => handler = SecurityMiddleware.rateLimiter()(okHandler));
+    setUpAll(() {
+      AppConfig.initForTesting();
+      handler = SecurityMiddleware.rateLimiter()(okHandler);
+    });
 
     test('первые 100 запросов с одного IP проходят', () async {
       final ip = uniqueIp();

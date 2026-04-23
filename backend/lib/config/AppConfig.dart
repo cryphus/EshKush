@@ -5,6 +5,8 @@ class AppConfig {
   factory AppConfig() => _instance;
   AppConfig._internal();
 
+  static bool _initialized = false;
+
   late final String jwtSecret;
   late final String jwtRefreshSecret;
   late final String databaseUrl;
@@ -16,13 +18,14 @@ class AppConfig {
   late final String logLevel; // debug|info|warn|error
   late final bool logJson;
   late final int maxRequestBodyBytes;
-  
+
+
   // Redis configuration
-  late final String redisHost;
-  late final int redisPort;
-  late final String redisPassword;
-  late final int redisDb;
-  late final Duration redisConnectionTimeout;
+  late String redisHost;
+  late int redisPort;
+  late String redisPassword;
+  late int redisDb;
+  late Duration redisConnectionTimeout;
 
   // OAuth — Yandex
   late final String yandexClientId;
@@ -55,19 +58,21 @@ class AppConfig {
   late final Duration refundWindow;
 
   Future<void> initialize() async {
+    if (_initialized) return;
     final env = DotEnv(includePlatformEnvironment: true)..load();
 
     jwtSecret = env['JWT_SECRET'] ?? '';
     jwtRefreshSecret = env['JWT_REFRESH_SECRET'] ?? '';
-    databaseUrl = env['DATABASE_URL'] ?? '';
+    final rawDatabaseUrl = env['DATABASE_URL'] ?? '';
+    databaseUrl = rawDatabaseUrl.isNotEmpty ? rawDatabaseUrl : _buildDatabaseUrl(env);
     port = int.tryParse(env['PORT'] ?? '3000') ?? 3000;
     environment = env['ENVIRONMENT'] ?? 'development';
-    
+
     allowedOrigins = (env['ALLOWED_ORIGINS'] ?? 'http://localhost:3000')
         .split(',')
         .map((e) => e.trim())
         .toList();
-    
+
     rateLimitRequests = int.tryParse(env['RATE_LIMIT_REQUESTS'] ?? '100') ?? 100;
     rateLimitWindow = Duration(
       minutes: int.tryParse(env['RATE_LIMIT_WINDOW_MINUTES'] ?? '1') ?? 1
@@ -76,7 +81,8 @@ class AppConfig {
     logLevel = (env['LOG_LEVEL'] ?? 'info').toLowerCase();
     logJson = (env['LOG_JSON'] ?? 'true').toLowerCase() == 'true';
     maxRequestBodyBytes = int.tryParse(env['MAX_REQUEST_BODY_BYTES'] ?? '10485760') ?? 10485760;
-    
+
+
     // Redis configuration
     redisHost = env['REDIS_HOST'] ?? 'localhost';
     redisPort = int.tryParse(env['REDIS_PORT'] ?? '6379') ?? 6379;
@@ -112,6 +118,42 @@ class AppConfig {
     );
 
     _validateConfig();
+    _initialized = true;
+  }
+
+  /// Инициализирует конфигурацию значениями по умолчанию для юнит-тестов.
+  /// Безопасно вызывать несколько раз — повторные вызовы игнорируются.
+  static void initForTesting() {
+    if (_initialized) return;
+    _instance.jwtSecret = 'testsecretforjwttestingatleast32chars';
+    _instance.jwtRefreshSecret = 'testrefreshsecretforjwttests32chars__';
+    _instance.databaseUrl = 'postgres://test:test@localhost/test';
+    _instance.port = 3000;
+    _instance.environment = 'test';
+    _instance.allowedOrigins = ['http://localhost:3000'];
+    _instance.rateLimitRequests = 100;
+    _instance.rateLimitWindow = const Duration(minutes: 1);
+    _instance.logLevel = 'error'; // подавляем логи в тестах
+    _instance.logJson = false;
+    _instance.redisHost = 'localhost';
+    _instance.redisPort = 6379;
+    _instance.redisPassword = '';
+    _instance.redisDb = 0;
+    _instance.redisConnectionTimeout = const Duration(seconds: 5);
+    _instance.maxRequestBodyBytes = 10485760;
+    _instance.yandexClientId = '';
+    _instance.yandexClientSecret = '';
+    _instance.vkClientId = '';
+    _instance.vkClientSecret = '';
+    _instance.oauthCallbackBaseUrl = 'http://localhost:8080';
+    _instance.frontendUrl = 'http://localhost:3000';
+    _instance.yookassaShopId = '';
+    _instance.yookassaSecretKey = '';
+    _instance.yookassaApiBaseUrl = 'https://api.yookassa.ru/v3';
+    _instance.yookassaReturnUrl = 'https://eshkush.app/payments/return';
+    _instance.yookassaWebhookSecret = '';
+    _instance.refundWindow = const Duration(hours: 24);
+    _initialized = true;
   }
 
   void _validateConfig() {
@@ -150,4 +192,13 @@ class AppConfig {
   bool get isDevelopment => environment == 'development';
   bool get isProduction => environment == 'production';
   bool get isTest => environment == 'test';
-} 
+
+  static String _buildDatabaseUrl(dynamic env) {
+    final host = env['DB_HOST'] ?? 'localhost';
+    final port = env['DB_PORT'] ?? '5432';
+    final name = env['DB_NAME'] ?? 'flutter_auth';
+    final user = env['DB_USER'] ?? 'postgres';
+    final pass = env['DB_PASSWORD'] ?? '';
+    return 'postgresql://$user:$pass@$host:$port/$name';
+  }
+}

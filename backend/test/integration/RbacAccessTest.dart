@@ -93,7 +93,7 @@ void main() {
     );
   });
 
-  bool get _ok => adminToken != null && userToken != null;
+  bool ok() => adminToken != null && userToken != null;
 
   // ─── Открытые маршруты (без токена) ──────────────────────────────────────
   group('Открытые маршруты', () {
@@ -133,10 +133,10 @@ void main() {
 
   // ─── Роль user → 403 на admin/support путях ───────────────────────────────
   group('Роль user → 403 на ограниченных маршрутах', () {
+    // partner-statistics, promo-codes, point-categories, product-categories
+    // разрешены для GET любому аутентифицированному пользователю (RBAC: 'GET': {})
     const restricted = [
       '/action-logs', '/error-logs', '/cache',
-      '/partner-statistics', '/promo-codes',
-      '/point-categories', '/product-categories',
     ];
     for (final path in restricted) {
       test('GET $path (user) → 403', () async {
