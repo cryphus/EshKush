@@ -47,7 +47,7 @@ class PromoCodesController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРјРѕРєРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения промокода', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -61,7 +61,7 @@ class PromoCodesController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р°РєС‚РёРІРЅС‹С… РїСЂРѕРјРѕРєРѕРґРѕРІ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения активных промокодов', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -104,7 +104,7 @@ class PromoCodesController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРѕРјРѕРєРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка создания промокода', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -155,7 +155,7 @@ class PromoCodesController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕРјРѕРєРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка обновления промокода', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -175,12 +175,12 @@ class PromoCodesController {
       }
 
       await _promoCodesService.deletePromoCode(id);
-      final body = jsonEncode({'message': 'РџСЂРѕРјРѕРєРѕРґ СѓРґР°Р»РµРЅ'});
+      final body = jsonEncode({'message': 'Промокод удален'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕРјРѕРєРѕРґР°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка удаления промокода', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -207,7 +207,7 @@ class PromoCodesController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЂР°СЃС‡С‘С‚Р° СЃРєРёРґРєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка расчёта скидки', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }

@@ -35,7 +35,7 @@ class UserController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕС„РёР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения профиля пользователя', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -51,7 +51,7 @@ class UserController {
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, SafeLoggingUtils.sanitizeString(body), requestId: RequestContextUtils.getRequestId(request));
       final data = jsonDecode(body);
-      SafeLoggingUtils.logData('Ошибка очистки кеша', data);
+      SafeLoggingUtils.logData('Данные для обновления профиля', data);
       
       try {
         final updateDto = UpdateUserDto.fromJson(data);
@@ -64,7 +64,7 @@ class UserController {
           return ErrorResponseUtils.errorResponseWithMessage('Нет прав на изменение этого профиля', code: ErrorCode.forbidden, headers: _getCorsHeaders());
         }
 
-        // РљРѕРЅРІРµСЂС‚РёСЂСѓРµРј DTO РІ РґР°РЅРЅС‹Рµ РґР»СЏ СЃРµСЂРІРёСЃР°
+        // Конвертируем DTO в данные для сервиса
         final updateData = updateDto.toEntityData();
         final user = await _userService.updateUser(payload['id'], updateData);
         
@@ -77,68 +77,7 @@ class UserController {
          return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
        }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
-    }
-  }
-
-  Future<Response> addToFavorites(Request request) async {
-    try {
-      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
-      if (unauthorized != null) return unauthorized;
-      final payload = RequestContextUtils.getUser(request)!;
-      final data = jsonDecode(await request.readAsString());
-      if (data['point_id'] == null || data['point_id'] <= 0) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный идентификатор точки', headers: _getCorsHeaders());
-      }
-      await _userService.addToFavorites(payload['id'], data['point_id']);
-      final body = jsonEncode({'message': 'Точка добавлена в избранное'});
-      final resp = Response.ok(body, headers: _getCorsHeaders());
-      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
-      return resp;
-    } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
-    }
-  }
-
-  Future<Response> removeFromFavorites(Request request) async {
-    try {
-      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
-      if (unauthorized != null) return unauthorized;
-      final payload = RequestContextUtils.getUser(request)!;
-      final data = jsonDecode(await request.readAsString());
-      if (data['point_id'] == null || data['point_id'] <= 0) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный идентификатор точки', headers: _getCorsHeaders());
-      }
-      await _userService.removeFromFavorites(payload['id'], data['point_id']);
-      final body = jsonEncode({'message': 'Точка удалена из избранного'});
-      final resp = Response.ok(body, headers: _getCorsHeaders());
-      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
-      return resp;
-    } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
-    }
-  }
-
-  Future<Response> updateBalance(Request request) async {
-    try {
-      await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
-      if (unauthorized != null) return unauthorized;
-      final payload = RequestContextUtils.getUser(request)!;
-      final data = jsonDecode(await request.readAsString());
-      if (data['amount'] == null || data['amount'].abs() > 1000000) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректная сумма', headers: _getCorsHeaders());
-      }
-
-      await _userService.updateBalance(payload['id'], data['amount']);
-      final body = jsonEncode({'message': 'Некорректный ID'});
-      final resp = Response.ok(body, headers: _getCorsHeaders());
-      await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
-      return resp;
-    } catch (e) {
+      await LoggingUtils.logError('Ошибка обновления профиля', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }

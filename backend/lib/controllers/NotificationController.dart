@@ -34,7 +34,7 @@ class NotificationController {
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
       
       if (userId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID пользователя', headers: _getCorsHeaders());
       }
 
       final notifications = await _service.getUserNotifications(userId);
@@ -43,7 +43,7 @@ class NotificationController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СѓРІРµРґРѕРјР»РµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения уведомлений пользователя', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -70,7 +70,7 @@ class NotificationController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СѓРІРµРґРѕРјР»РµРЅРёР№ РїРѕ С‚РёРїСѓ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения уведомлений по типу', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -83,7 +83,7 @@ class NotificationController {
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
       
       if (userId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID пользователя', headers: _getCorsHeaders());
       }
 
       final notifications = await _service.getUnreadNotifications(userId);
@@ -109,7 +109,7 @@ class NotificationController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕСЃР»РµРґРЅРёС… СѓРІРµРґРѕРјР»РµРЅРёР№', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения последних уведомлений', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -149,12 +149,12 @@ class NotificationController {
       final notificationId = int.tryParse(request.url.queryParameters['notificationId'] ?? '');
       
       if (notificationId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID СѓРІРµРґРѕРјР»РµРЅРёСЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID уведомления', headers: _getCorsHeaders());
       }
 
       await _service.markNotificationAsRead(notificationId);
       return Response.ok(
-        jsonEncode({'message': 'РЈРІРµРґРѕРјР»РµРЅРёРµ РѕС‚РјРµС‡РµРЅРѕ РєР°Рє РїСЂРѕС‡РёС‚Р°РЅРЅРѕРµ'}),
+        jsonEncode({'message': 'Уведомление отмечено как прочитанное'}),
         headers: _getCorsHeaders(),
       );
     } catch (e) {
@@ -169,12 +169,12 @@ class NotificationController {
       final notificationId = int.tryParse(request.url.queryParameters['notificationId'] ?? '');
       
       if (notificationId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID СѓРІРµРґРѕРјР»РµРЅРёСЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID уведомления', headers: _getCorsHeaders());
       }
 
       await _service.markNotificationAsSent(notificationId);
       return Response.ok(
-        jsonEncode({'message': 'РЈРІРµРґРѕРјР»РµРЅРёРµ РѕС‚РјРµС‡РµРЅРѕ РєР°Рє РѕС‚РїСЂР°РІР»РµРЅРЅРѕРµ'}),
+        jsonEncode({'message': 'Уведомление отмечено как отправленное'}),
         headers: _getCorsHeaders(),
       );
     } catch (e) {

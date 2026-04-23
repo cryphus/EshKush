@@ -298,7 +298,6 @@ void main() async {
               lastActive: DateTime.now(),
               userAgent: request.headers['user-agent'] ?? 'unknown',
               ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
-              token: bundle['access_token'] as String,
               refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
             ),
           );
@@ -420,16 +419,31 @@ void main() async {
         );
         
         return Response.ok(
-          jsonEncode({
-            'exists': user != null,
-            'user': user
-          }),
+          jsonEncode({'exists': user != null}),
         );
       } catch (e) {
         return Response(
           400,
           body: jsonEncode({'error': e.toString()}),
         );
+      }
+    });
+
+    app.post('/logout', (Request request) async {
+      try {
+        final context = request.context['user'] as Map<String, dynamic>?;
+        if (context == null) {
+          return Response(401, body: jsonEncode({'error': 'Требуется авторизация'}));
+        }
+        final refreshJti = context['rtj']?.toString() ?? '';
+        if (refreshJti.isEmpty) {
+          return Response(401, body: jsonEncode({'error': 'Недействительный токен'}));
+        }
+        final refreshJtiHash = AuthUtils.hashRefreshJti(refreshJti);
+        await userSessionRepository.revokeByRefreshJtiHash(refreshJtiHash);
+        return Response.ok(jsonEncode({'message': 'Выход выполнен'}));
+      } catch (e) {
+        return Response(500, body: jsonEncode({'error': e.toString()}));
       }
     });
 
@@ -497,7 +511,6 @@ void main() async {
           lastActive: DateTime.now(),
           userAgent: request.headers['user-agent'] ?? 'unknown',
           ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
-          token: bundle['access_token'] as String,
           refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
         ));
 
@@ -577,7 +590,6 @@ void main() async {
           lastActive: DateTime.now(),
           userAgent: request.headers['user-agent'] ?? 'unknown',
           ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
-          token: bundle['access_token'] as String,
           refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
         ));
 
@@ -642,7 +654,6 @@ void main() async {
     // Подключаем маршруты OrderHistoryController
     app.mount('/order-history', orderHistoryController.router);
     app.mount('/partner-statistics', partnerStatisticsController.router);
-    app.mount('/order-history', orderHistoryController.router);
     // Подключаем маршруты ActionLogController
     app.mount('/action-logs', actionLogController.router);
     // Подключаем маршруты ErrorLogsController

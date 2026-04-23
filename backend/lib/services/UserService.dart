@@ -86,8 +86,32 @@ class UserService {
         throw Exception('Ошибки валидации: $errorMessages');
       }
       
-      if (data['password'] != null) {
-        data['password'] = AuthUtils.hashPassword(data['password']);
+      if (data.containsKey('password')) {
+        final oldPassword = data.remove('old_password') as String?;
+        if (oldPassword == null || oldPassword.isEmpty) {
+          throw ValidationException('Для смены пароля необходим текущий пароль (old_password)');
+        }
+        final currentUser = await _userRepository.findById(id);
+        if (currentUser == null) throw Exception('Пользователь не найден');
+        if (currentUser.passwordHash == null || !AuthUtils.verifyPassword(oldPassword, currentUser.passwordHash!)) {
+          throw ValidationException('Неверный текущий пароль');
+        }
+        data['password'] = AuthUtils.hashPassword(data['password'] as String);
+      } else {
+        data.remove('old_password');
+      }
+
+      if (data['username'] != null) {
+        final existing = await _userRepository.findByUsername(data['username'] as String);
+        if (existing != null && existing.id != id) {
+          throw ValidationException('Имя пользователя уже занято');
+        }
+      }
+      if (data['email'] != null) {
+        final existing = await _userRepository.findByEmail(data['email'] as String);
+        if (existing != null && existing.id != id) {
+          throw ValidationException('Email уже используется');
+        }
       }
 
       final result = await _userRepository.update(id, data);

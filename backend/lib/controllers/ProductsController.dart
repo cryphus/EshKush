@@ -64,7 +64,7 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃРїРёСЃРєР° РїСЂРѕРґСѓРєС‚РѕРІ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения списка продуктов', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -81,7 +81,7 @@ class ProductsController {
 
       final productId = int.tryParse(id);
       if (productId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения транзакций по методу оплаты', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID продукта', code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
 
       final product = await _productsService.getProductById(productId);
@@ -102,7 +102,7 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponseWithMessage('Продукт не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
     }
   }
@@ -125,14 +125,14 @@ class ProductsController {
       }
 
              final data = jsonDecode(body);
-       SafeLoggingUtils.logData('РџРѕР»СѓС‡РµРЅРЅС‹Рµ РґР°РЅРЅС‹Рµ', data);
+       SafeLoggingUtils.logData('Полученные данные', data);
        
        try {
          final createDto = CreateProductDto.fromJson(data);
          
          final product = await _productsService.createProduct(createDto.toEntityData());
         await LoggingUtils.logInfo(
-          'Некорректная сумма',
+          'Продукт успешно создан',
           context: {
             'productId': product.id,
             'name': product.name,
@@ -159,7 +159,7 @@ class ProductsController {
         return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка создания продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -183,7 +183,7 @@ class ProductsController {
 
       final productId = int.tryParse(id);
       if (productId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения транзакций по методу оплаты', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID продукта', code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
 
              final data = jsonDecode(body);
@@ -193,7 +193,7 @@ class ProductsController {
          final product = await _productsService.updateProduct(productId, updateDto.toEntityData());
         
         await LoggingUtils.logInfo(
-          'Некорректный ID',
+          'Продукт успешно обновлён',
           context: {
             'productId': product.id,
             'name': product.name,
@@ -220,7 +220,7 @@ class ProductsController {
         return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка обновления продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -243,13 +243,13 @@ class ProductsController {
 
       final productId = int.tryParse(id);
       if (productId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения транзакций по методу оплаты', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID продукта', code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
 
       await _productsService.deleteProduct(productId);
       
       await LoggingUtils.logInfo(
-        'TTL в секундах',
+        'Продукт успешно удалён',
         context: {'productId': productId},
         requestId: RequestContextUtils.getRequestId(request),
       );
@@ -269,7 +269,7 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка удаления продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -310,7 +310,7 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРґСѓРєС‚РѕРІ РїРѕ РєР°С‚РµРіРѕСЂРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения продуктов по категории', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -325,7 +325,10 @@ class ProductsController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final productId = int.parse(id);
+      final productId = int.tryParse(id);
+      if (productId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID продукта', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final categories = await _productsService.getProductCategories(productId);
       final responseBody = jsonEncode(categories.map((c) => c.toJson()).toList());
       return Response.ok(
@@ -333,7 +336,7 @@ class ProductsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёР№ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения категорий продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -354,7 +357,10 @@ class ProductsController {
         return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа', code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
-      final productId = int.parse(id);
+      final productId = int.tryParse(id);
+      if (productId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID продукта', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final body = await request.readAsString();
       final data = jsonDecode(body) as Map<String, dynamic>;
       final categoryIds = (data['categoryIds'] as List).cast<int>();
@@ -366,7 +372,7 @@ class ProductsController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёР№ РїСЂРѕРґСѓРєС‚Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка обновления категорий продукта', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -407,7 +413,7 @@ class ProductsController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРґСѓРєС‚РѕРІ РїРѕ ID С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения продуктов по ID точки', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }

@@ -22,7 +22,10 @@ class ProductCategoryController {
 
   Future<Response> _getById(Request request, String id) async {
     try {
-      final categoryId = int.parse(id);
+      final categoryId = int.tryParse(id);
+      if (categoryId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final category = await _service.getById(categoryId);
       if (category == null) {
         return ErrorResponseUtils.errorResponseWithMessage('Категория не найдена', code: ErrorCode.notFound, headers: _getCorsHeaders());
@@ -72,7 +75,10 @@ class ProductCategoryController {
 
   Future<Response> _update(Request request, String id) async {
     try {
-      final categoryId = int.parse(id);
+      final categoryId = int.tryParse(id);
+      if (categoryId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final data = jsonDecode(await request.readAsString());
       final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
       
@@ -95,10 +101,13 @@ class ProductCategoryController {
 
   Future<Response> _delete(Request request, String id) async {
     try {
-      final categoryId = int.parse(id);
+      final categoryId = int.tryParse(id);
+      if (categoryId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       await _service.delete(categoryId);
       return Response.ok(
-        jsonEncode({'message': 'РљР°С‚РµРіРѕСЂРёСЏ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅР°'}),
+        jsonEncode({'message': 'Категория успешно удалена'}),
         headers: _getCorsHeaders(),
       );
     } catch (e) {

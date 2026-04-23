@@ -95,10 +95,19 @@ class SecurityMiddleware {
     final windowDuration = window ?? config.rateLimitWindow;
     return (Handler innerHandler) {
       return (Request request) async {
-        final ip = request.headers['x-forwarded-for'] ??
-            request.headers['x-real-ip'] ??
-            'unknown';
-        if (!_isAllowed(ip, limit, windowDuration)) {
+        // For authenticated requests use user_id to prevent IP spoofing
+        final userPayload = request.context['user'] as Map<String, dynamic>?;
+        final String key;
+        if (userPayload != null) {
+          key = 'user:${userPayload['id']}';
+        } else {
+          final forwarded = request.headers['x-forwarded-for'];
+          final ip = forwarded != null
+              ? forwarded.split(',').first.trim()
+              : (request.headers['x-real-ip'] ?? 'unknown');
+          key = 'ip:$ip';
+        }
+        if (!_isAllowed(key, limit, windowDuration)) {
           return Response(
             429,
             body: '{"error":"Слишком много запросов, повторите позже"}',

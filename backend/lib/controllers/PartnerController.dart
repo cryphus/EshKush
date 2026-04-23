@@ -28,14 +28,17 @@ class PartnerController {
   Future<Response> _getPartner(Request request, String id) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final partnerId = int.parse(id);
+      final partnerId = int.tryParse(id);
+      if (partnerId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final partner = await _partnerService.getPartner(partnerId);
       
       if (partner == null) {
         return ErrorResponseUtils.errorResponseWithMessage('Партнёр не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
-      // Р”Р»СЏ Р°РґРјРёРЅРѕРІ РёСЃРїРѕР»СЊР·СѓР№С‚Рµ РѕС‚РґРµР»СЊРЅС‹Р№ endpoint СЃ PartnerAdminDto
+      // Для админов используйте отдельный endpoint с PartnerAdminDto
       final partnerDto = PartnerResponseDto.fromEntity(partner);
       final body = jsonEncode(partnerDto.toJson());
       final resp = Response.ok(body, headers: _getCorsHeaders());
@@ -65,7 +68,7 @@ class PartnerController {
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
       final data = jsonDecode(body);
-      SafeLoggingUtils.logData('РџРѕР»СѓС‡РµРЅРЅС‹Рµ РґР°РЅРЅС‹Рµ', data);
+      SafeLoggingUtils.logData('Полученные данные', data);
       final sanitized = ValidationUtils.validateAndSanitizePartnerData(data);
 
       final partner = Partner(
@@ -97,7 +100,10 @@ class PartnerController {
   Future<Response> _updatePartner(Request request, String id) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final partnerId = int.parse(id);
+      final partnerId = int.tryParse(id);
+      if (partnerId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final body = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
       final data = jsonDecode(body);
@@ -117,7 +123,10 @@ class PartnerController {
   Future<Response> _deletePartner(Request request, String id) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final partnerId = int.parse(id);
+      final partnerId = int.tryParse(id);
+      if (partnerId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       await _partnerService.deletePartner(partnerId);
       final body = jsonEncode({'message': 'Партнёр успешно удалён'});
       final resp = Response.ok(body, headers: _getCorsHeaders());

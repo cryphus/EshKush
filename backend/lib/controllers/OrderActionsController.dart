@@ -43,7 +43,7 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения действия', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -65,7 +65,7 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения действий заказа', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -91,7 +91,7 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ РїР°СЂС‚РЅРµСЂР°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения действий партнера', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -129,7 +129,7 @@ class OrderActionsController {
         return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка создания действия', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -165,7 +165,7 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚РёРїР° РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка обновления типа действия', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -184,7 +184,7 @@ class OrderActionsController {
       }
 
       if (!ValidationUtils.isValidDescription(data['description'])) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅРѕРµ РѕРїРёСЃР°РЅРёРµ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректное описание', headers: _getCorsHeaders());
       }
 
       final action = await _orderActionsService.updateActionDescription(
@@ -199,7 +199,7 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РѕРїРёСЃР°РЅРёСЏ РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка обновления описания действия', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -229,7 +229,7 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РґРµР°РєС‚РёРІР°С†РёРё РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка деактивации действия', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -259,7 +259,7 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° Р°РєС‚РёРІР°С†РёРё РґРµР№СЃС‚РІРёСЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка активации действия', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -291,7 +291,7 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ РїРѕ С‚РёРїСѓ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения действий по типу', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -318,7 +318,7 @@ class OrderActionsController {
       await LoggingUtils.logResponse(200, headers, responseBody, requestId: RequestContextUtils.getRequestId(request));
       return Response.ok(responseBody, headers: headers);
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р°РєС‚РёРІРЅС‹С… РґРµР№СЃС‚РІРёР№', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения активных действий', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }

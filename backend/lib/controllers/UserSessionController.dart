@@ -55,7 +55,7 @@ class UserSessionController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃРїРёСЃРєР° СЃРµСЃСЃРёР№', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения списка сессий', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -89,7 +89,7 @@ class UserSessionController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка создания сессии', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -106,12 +106,12 @@ class UserSessionController {
       }
       await _sessionService.terminateSession(session);
 
-      final body = jsonEncode({'message': 'РЎРµСЃСЃРёСЏ Р·Р°РІРµСЂС€РµРЅР°'});
+      final body = jsonEncode({'message': 'Сессия завершена'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка завершения сессии', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -124,12 +124,12 @@ class UserSessionController {
       final payload = RequestContextUtils.getUser(request)!;
       await _sessionService.terminateAllUserSessions(payload['id']);
 
-      final body = jsonEncode({'message': 'Р’СЃРµ СЃРµСЃСЃРёРё Р·Р°РІРµСЂС€РµРЅС‹'});
+      final body = jsonEncode({'message': 'Все сессии завершены'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ РІСЃРµС… СЃРµСЃСЃРёР№', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка завершения всех сессий', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -154,12 +154,12 @@ class UserSessionController {
       }
       await _sessionService.extendSession(session, Duration(days: data['duration'] as int));
 
-      final out = jsonEncode({'message': 'РЎРµСЃСЃРёСЏ РїСЂРѕРґР»РµРЅР°'});
+      final out = jsonEncode({'message': 'Сессия продлена'});
       final resp = Response.ok(out, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, out, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїСЂРѕРґР»РµРЅРёСЏ СЃРµСЃСЃРёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка продления сессии', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }

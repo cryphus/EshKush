@@ -43,7 +43,7 @@ class ProfileController {
       final profile = await _profileService.getProfile(payload['id']);
 
       if (profile == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.notFound, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Профиль не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       final profileDto = ProfileResponseDto.fromEntity(profile);
@@ -65,7 +65,7 @@ class ProfileController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения профиля', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -83,11 +83,15 @@ class ProfileController {
       final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
 
-      final profile = await _profileService.getProfileById(int.parse(id));
-      await LoggingUtils.logInfo('Р РµР·СѓР»СЊС‚Р°С‚ РїРѕРёСЃРєР° РїСЂРѕС„РёР»СЏ', context: {'found': profile != null}, requestId: RequestContextUtils.getRequestId(request));
+      final profileId = int.tryParse(id);
+      if (profileId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
+      final profile = await _profileService.getProfileById(profileId);
+      await LoggingUtils.logInfo('Результат поиска профиля', context: {'found': profile != null}, requestId: RequestContextUtils.getRequestId(request));
 
       if (profile == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.notFound, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Профиль не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       final profileDto = ProfileResponseDto.fromEntity(profile);
@@ -109,7 +113,7 @@ class ProfileController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕС„РёР»СЏ РїРѕ ID', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения профиля по ID', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -182,16 +186,20 @@ class ProfileController {
       final data = jsonDecode(body);
       final sanitizedData = ValidationUtils.validateAndSanitizeProfileData(data);
       
+      final profileId = int.tryParse(id);
+      if (profileId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final profile = Profile(
-        id: int.parse(id),
+        id: profileId,
         userId: payload['id'],
         firstName: sanitizedData['first_name'] ?? '',
         lastName: sanitizedData['last_name'] ?? '',
         avatarUrl: sanitizedData['avatar_url'],
         bio: sanitizedData['bio'],
-        sumCO2: 0, // Р—РЅР°С‡РµРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
-        savedMoney: 0.0, // Р—РЅР°С‡РµРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
-        countBuy: 0, // Р—РЅР°С‡РµРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
+        sumCO2: 0, // Значение по умолчанию
+        savedMoney: 0.0, // Значение по умолчанию
+        countBuy: 0, // Значение по умолчанию
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -225,26 +233,26 @@ class ProfileController {
       await _profileService.deleteProfile(payload['id']);
 
       await LoggingUtils.logInfo(
-        'РЈРґР°Р»РµРЅ РїСЂРѕС„РёР»СЊ',
+        'Удален профиль',
         context: {'userId': payload['id']},
         requestId: RequestContextUtils.getRequestId(request),
       );
 
       final response = Response.ok(
-        jsonEncode({'message': 'РџСЂРѕС„РёР»СЊ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'}),
+        jsonEncode({'message': 'Профиль успешно удален'}),
         headers: _getCorsHeaders(),
       );
 
       await LoggingUtils.logResponse(
         response.statusCode,
         response.headers,
-        jsonEncode({'message': 'РџСЂРѕС„РёР»СЊ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'}),
+        jsonEncode({'message': 'Профиль успешно удален'}),
         requestId: RequestContextUtils.getRequestId(request),
       );
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РїСЂРѕС„РёР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка удаления профиля', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }

@@ -28,7 +28,10 @@ class ChangesController {
         (e) => e.toString().split('.').last == entityType,
         orElse: () => EntityType.other,
       );
-      final id = int.parse(entityId);
+      final id = int.tryParse(entityId);
+      if (id == null) {
+        return Response(400, body: '{"error":"Некорректный ID"}', headers: {'content-type': 'application/json'});
+      }
       
       final changes = await _service.getEntityChanges(type, id);
       return Response.ok(
@@ -46,8 +49,10 @@ class ChangesController {
 
   Future<Response> _getUserChanges(Request request, String userId) async {
     try {
-      
-      final id = int.parse(userId);
+      final id = int.tryParse(userId);
+      if (id == null) {
+        return Response(400, body: '{"error":"Некорректный ID"}', headers: {'content-type': 'application/json'});
+      }
       final changes = await _service.getUserChanges(id);
       
       
@@ -104,15 +109,18 @@ class ChangesController {
 
   Future<Response> _revertChange(Request request, String changeId) async {
     try {
-      final id = int.parse(changeId);
+      final id = int.tryParse(changeId);
+      if (id == null) {
+        return Response(400, body: '{"error":"Некорректный ID"}', headers: {'content-type': 'application/json'});
+      }
       final body = await request.readAsString();
       final data = jsonDecode(body);
-      final revertedBy = int.parse(request.headers['user-id'] ?? '0');
+      final revertedBy = RequestContextUtils.getUser(request)?['id'] as int? ?? 0;
       final comment = data['comment'] as String?;
-      
+
       await _service.revertChange(id, revertedBy, comment: comment);
       return Response.ok(
-        jsonEncode({'message': 'РР·РјРµРЅРµРЅРёРµ СѓСЃРїРµС€РЅРѕ РѕС‚РјРµРЅРµРЅРѕ'}),
+        jsonEncode({'message': 'Изменение успешно отменено'}),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {

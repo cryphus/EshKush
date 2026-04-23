@@ -32,7 +32,11 @@ class CityController {
     router.get('/<id>', (Request request, String id) async {
       try {
         await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-        final city = await _service.getById(int.parse(id));
+        final cityId = int.tryParse(id);
+        if (cityId == null) {
+          return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        }
+        final city = await _service.getById(cityId);
         if (city == null) {
           return ErrorResponseUtils.errorResponseWithMessage('Город не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
         }
@@ -51,7 +55,7 @@ class CityController {
         final body = await request.readAsString();
         await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
         
-        // Р”РµРєРѕРґРёСЂСѓРµРј С‚РµР»Рѕ Р·Р°РїСЂРѕСЃР° СЃ СѓС‡РµС‚РѕРј РєРѕРґРёСЂРѕРІРєРё
+        // Декодируем тело запроса с учетом кодировки
         final bytes = utf8.encode(body);
         final decodedBody = utf8.decode(bytes);
         final json = jsonDecode(decodedBody) as Map<String, dynamic>;
@@ -84,7 +88,11 @@ class CityController {
         final body = await request.readAsString();
         await LoggingUtils.logRequest(request.method, request.url.path, request.headers, body, requestId: RequestContextUtils.getRequestId(request));
         final json = jsonDecode(body) as Map<String, dynamic>;
-        json['id'] = int.parse(id);
+        final cityId = int.tryParse(id);
+        if (cityId == null) {
+          return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        }
+        json['id'] = cityId;
         final city = City.fromJson(json);
         final updated = await _service.update(city);
         final out = jsonEncode(updated.toJson());
@@ -100,7 +108,11 @@ class CityController {
     router.delete('/<id>', (Request request, String id) async {
       try {
         await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-        await _service.delete(int.parse(id));
+        final cityId = int.tryParse(id);
+        if (cityId == null) {
+          return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        }
+        await _service.delete(cityId);
         final body = jsonEncode({'message': 'Город успешно удалён'});
         final resp = Response.ok(body, headers: _getCorsHeaders());
         await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));

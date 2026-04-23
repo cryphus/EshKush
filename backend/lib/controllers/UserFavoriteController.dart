@@ -41,7 +41,7 @@ class UserFavoriteController {
       final payload = RequestContextUtils.getUser(request)!;
       final pid = int.tryParse(pointId) ?? 0;
       if (pid <= 0) {
-        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения списка сессий', headers: {'Content-Type': 'application/json'});
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID точки', code: ErrorCode.badRequest, headers: {'Content-Type': 'application/json'});
       }
       final result = await _service.isFavorite(payload['id'] as int, pid);
       return Response.ok(jsonEncode({'isFavorite': result}), headers: {'content-type': 'application/json'});
@@ -59,7 +59,7 @@ class UserFavoriteController {
       final data = jsonDecode(body) as Map<String, dynamic>;
       final pointId = int.tryParse(data['point_id']?.toString() ?? '') ?? 0;
       if (pointId <= 0) {
-        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения списка сессий', headers: {'Content-Type': 'application/json'});
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID точки', code: ErrorCode.badRequest, headers: {'Content-Type': 'application/json'});
       }
       final favorite = UserFavorite(userId: payload['id'] as int, pointId: pointId, createdAt: DateTime.now());
       final result = await _service.addToFavorites(favorite);
@@ -76,23 +76,10 @@ class UserFavoriteController {
       final payload = RequestContextUtils.getUser(request)!;
       final pid = int.tryParse(pointId) ?? 0;
       if (pid <= 0) {
-        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения списка сессий', headers: {'Content-Type': 'application/json'});
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID точки', code: ErrorCode.badRequest, headers: {'Content-Type': 'application/json'});
       }
       await _service.removeFromFavorites(payload['id'] as int, pid);
-      return Response.ok(jsonEncode({'message': 'РњРµСЃС‚Рѕ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅРѕ РёР· РёР·Р±СЂР°РЅРЅРѕРіРѕ'}), headers: {'content-type': 'application/json'});
-    } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'content-type': 'application/json'});
-    }
-  }
-
-  Future<Response> getByUserId(Request request) async {
-    try {
-      final userId = int.parse(request.url.queryParameters['userId']!);
-      final favorites = await _service.getByUserId(userId);
-      return Response.ok(
-        favorites.map((f) => f.toJson()).toList().toString(),
-        headers: {'content-type': 'application/json'},
-      );
+      return Response.ok(jsonEncode({'message': 'Место успешно удалено из избранного'}), headers: {'content-type': 'application/json'});
     } catch (e) {
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'content-type': 'application/json'});
     }
@@ -102,7 +89,7 @@ class UserFavoriteController {
     try {
       final pid = int.tryParse(pointId) ?? 0;
       if (pid <= 0) {
-        return ErrorResponseUtils.errorResponseWithMessage('Ошибка получения списка сессий', headers: {'Content-Type': 'application/json'});
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID точки', code: ErrorCode.badRequest, headers: {'Content-Type': 'application/json'});
       }
       final favorites = await _service.getByPointId(pid);
       return Response.ok(
@@ -114,46 +101,5 @@ class UserFavoriteController {
     }
   }
 
-  Future<Response> addToFavorites(Request request) async {
-    try {
-      final body = await request.readAsString();
-      final json = jsonDecode(body) as Map<String, dynamic>;
-      final favorite = UserFavorite.fromJson(json);
-      final result = await _service.addToFavorites(favorite);
-      return Response.ok(
-        result.toJson().toString(),
-        headers: {'content-type': 'application/json'},
-      );
-    } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'content-type': 'application/json'});
-    }
-  }
+}
 
-  Future<Response> removeFromFavorites(Request request) async {
-    try {
-      final userId = int.parse(request.url.queryParameters['userId']!);
-      final pointId = int.parse(request.url.queryParameters['pointId']!);
-      await _service.removeFromFavorites(userId, pointId);
-      return Response.ok(
-        {'message': 'РњРµСЃС‚Рѕ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅРѕ РёР· РёР·Р±СЂР°РЅРЅРѕРіРѕ'}.toString(),
-        headers: {'content-type': 'application/json'},
-      );
-    } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'content-type': 'application/json'});
-    }
-  }
-
-  Future<Response> isFavorite(Request request) async {
-    try {
-      final userId = int.parse(request.url.queryParameters['userId']!);
-      final pointId = int.parse(request.url.queryParameters['pointId']!);
-      final result = await _service.isFavorite(userId, pointId);
-      return Response.ok(
-        {'isFavorite': result}.toString(),
-        headers: {'content-type': 'application/json'},
-      );
-    } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'content-type': 'application/json'});
-    }
-  }
-} 

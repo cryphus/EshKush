@@ -56,7 +56,10 @@ class OrderController {
       final payload = AuthUtils.verifyToken(token);
       final userId = payload['id'] as int;
 
-      final orderId = int.parse(request.params['id']!);
+      final orderId = int.tryParse(request.params['id'] ?? '');
+      if (orderId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID заказа', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final raw = await request.readAsString();
       await LoggingUtils.logRequest(
           request.method, request.url.path, request.headers, raw,
@@ -132,7 +135,10 @@ class OrderController {
   Future<Response> _getOrderById(Request request) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final id = int.parse(request.params['id']!);
+      final id = int.tryParse(request.params['id'] ?? '');
+      if (id == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID заказа', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final order = await _orderService.getOrderById(id);
       final orderDto = OrderResponseDto.fromEntity(order);
       final body = jsonEncode(orderDto.toJson());
@@ -148,14 +154,21 @@ class OrderController {
   Future<Response> _getUserOrders(Request request) async {
     try {
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final userId = int.parse(request.params['userId']!);
-      final orders = await _orderService.getUserOrders(userId);
+      final pathUserId = int.tryParse(request.params['userId'] ?? '');
+      if (pathUserId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID пользователя', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
+      final requestUserId = RequestContextUtils.getUserId(request);
+      if (!RequestContextUtils.isAdmin(request) && requestUserId != pathUserId) {
+        return ErrorResponseUtils.errorResponseWithMessage('Доступ запрещён', code: ErrorCode.forbidden, headers: _getCorsHeaders());
+      }
+      final orders = await _orderService.getUserOrders(pathUserId);
       final body = jsonEncode(orders.map((o) => OrderResponseDto.fromEntity(o).toJson()).toList());
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°РєР°Р·РѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения заказов пользователя', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
@@ -182,7 +195,7 @@ class OrderController {
         return ErrorResponseUtils.errorResponseWithMessage(e.message, code: ErrorCode.validationError, headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка создания заказа', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
@@ -192,7 +205,10 @@ class OrderController {
       final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
 
-      final id = int.parse(request.params['id']!);
+      final id = int.tryParse(request.params['id'] ?? '');
+      if (id == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID заказа', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final data = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, data, requestId: RequestContextUtils.getRequestId(request));
       final jsonData = jsonDecode(data) as Map<String, dynamic>;
@@ -219,14 +235,17 @@ class OrderController {
       if (unauthorized != null) return unauthorized;
 
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
-      final id = int.parse(request.params['id']!);
+      final id = int.tryParse(request.params['id'] ?? '');
+      if (id == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID заказа', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       await _orderService.deleteOrder(id);
       final body = jsonEncode({'message': 'Заказ успешно удалён'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка удаления заказа', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }

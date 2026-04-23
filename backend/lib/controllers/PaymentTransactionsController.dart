@@ -48,7 +48,7 @@ class PaymentTransactionsController {
       final id = int.tryParse(request.url.queryParameters['id'] ?? '');
       
       if (id == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', headers: _getCorsHeaders());
       }
 
       final transaction = await _transactionsService.getTransactionById(id);
@@ -71,7 +71,7 @@ class PaymentTransactionsController {
       final userId = int.tryParse(request.url.queryParameters['user_id'] ?? '');
       
       if (userId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID пользователя', headers: _getCorsHeaders());
       }
 
       final transactions = await _transactionsService.getTransactionsByUserId(userId);
@@ -93,7 +93,7 @@ class PaymentTransactionsController {
       final orderId = int.tryParse(request.url.queryParameters['order_id'] ?? '');
       
       if (orderId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID Р·Р°РєР°Р·Р°', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID заказа', headers: _getCorsHeaders());
       }
 
       final transactions = await _transactionsService.getTransactionsByOrderId(orderId);
@@ -135,7 +135,7 @@ class PaymentTransactionsController {
       final id = int.tryParse(request.url.queryParameters['id'] ?? '');
       
       if (id == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', headers: _getCorsHeaders());
       }
 
       final raw = await request.readAsString();
@@ -149,7 +149,7 @@ class PaymentTransactionsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка обновления транзакции', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -172,7 +172,7 @@ class PaymentTransactionsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕ РґР°С‚Р°Рј', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения транзакций по датам', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -194,7 +194,7 @@ class PaymentTransactionsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕ СЃС‚Р°С‚СѓСЃСѓ', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения транзакций по статусу', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -218,7 +218,7 @@ class PaymentTransactionsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚СЂР°РЅР·Р°РєС†РёР№ РїРѕ РјРµС‚РѕРґСѓ РѕРїР»Р°С‚С‹', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения транзакций по методу оплаты', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }

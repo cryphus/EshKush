@@ -37,6 +37,7 @@ class AuthController {
     router.post('/auth/refresh', _refreshToken);
     router.post('/login', _login);
     router.post('/auth/check_user', _checkUser);
+    router.post('/logout', _logout);
 
     return router;
   }
@@ -83,7 +84,6 @@ class AuthController {
             lastActive: DateTime.now(),
             userAgent: request.headers['user-agent'] ?? 'unknown',
             ipAddress: request.headers['x-forwarded-for'] ?? request.headers['x-real-ip'] ?? 'unknown',
-            token: bundle['access_token'] as String,
             refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
           ),
         );
@@ -153,10 +153,7 @@ class AuthController {
       );
 
       return Response.ok(
-        jsonEncode({
-          'exists': user != null,
-          'user': user,
-        }),
+        jsonEncode({'exists': user != null}),
         headers: _getCorsHeaders(),
       );
     } catch (e) {
@@ -284,6 +281,24 @@ class AuthController {
     } catch (e) {
       await LoggingUtils.logError('Ошибка обновления токена', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
+    }
+  }
+
+  Future<Response> _logout(Request request) async {
+    try {
+      final payload = RequestContextUtils.getUser(request);
+      if (payload == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Требуется авторизация', code: ErrorCode.unauthorized, headers: _getCorsHeaders());
+      }
+      final refreshJti = payload['rtj']?.toString() ?? '';
+      if (refreshJti.isEmpty) {
+        return ErrorResponseUtils.errorResponseWithMessage('Недействительный токен', code: ErrorCode.unauthorized, headers: _getCorsHeaders());
+      }
+      final refreshJtiHash = AuthUtils.hashRefreshJti(refreshJti);
+      await _userSessionRepository.revokeByRefreshJtiHash(refreshJtiHash);
+      return Response.ok(jsonEncode({'message': 'Выход выполнен'}), headers: _getCorsHeaders());
+    } catch (e) {
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 

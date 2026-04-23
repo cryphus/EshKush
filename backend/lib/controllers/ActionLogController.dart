@@ -31,7 +31,7 @@ class ActionLogController {
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
       
       if (userId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID пользователя', headers: _getCorsHeaders());
       }
 
       final logs = await _service.getUserLogs(userId);
@@ -55,7 +55,7 @@ class ActionLogController {
       final entityId = int.tryParse(request.url.queryParameters['entityId'] ?? '');
       
       if (entityId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID СЃСѓС‰РЅРѕСЃС‚Рё', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID сущности', headers: _getCorsHeaders());
       }
       
       final logs = await _service.getEntityLogs(entityType, entityId);
@@ -111,7 +111,7 @@ class ActionLogController {
       if (data['userId'] == null || data['actionType'] == null || 
           data['targetEntity'] == null || data['targetId'] == null ||
           data['details'] == null || data['ipAddress'] == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Отсутствуют обязательные поля', headers: _getCorsHeaders());
       }
 
       final actionType = ActionType.values.firstWhere(

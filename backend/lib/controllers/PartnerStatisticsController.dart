@@ -47,7 +47,7 @@ class PartnerStatisticsController {
       final id = int.tryParse(request.url.queryParameters['id'] ?? '');
       
       if (id == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', headers: _getCorsHeaders());
       }
 
       final statistics = await _statisticsService.getStatisticsById(id);
@@ -56,7 +56,7 @@ class PartnerStatisticsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения статистики', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -69,7 +69,7 @@ class PartnerStatisticsController {
       final partnerId = int.tryParse(request.url.queryParameters['partner_id'] ?? '');
       
       if (partnerId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїР°СЂС‚РЅРµСЂР°', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID партнера', headers: _getCorsHeaders());
       }
 
       final statistics = await _statisticsService.getStatisticsByPartnerId(partnerId);
@@ -100,7 +100,7 @@ class PartnerStatisticsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка получения статистики точки', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -120,7 +120,7 @@ class PartnerStatisticsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка создания статистики', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -133,7 +133,7 @@ class PartnerStatisticsController {
       final id = int.tryParse(request.url.queryParameters['id'] ?? '');
       
       if (id == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', headers: _getCorsHeaders());
       }
 
       final raw = await request.readAsString();
@@ -146,7 +146,7 @@ class PartnerStatisticsController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка обновления статистики', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -161,16 +161,16 @@ class PartnerStatisticsController {
       final data = jsonDecode(raw);
       
       if (data['id'] == null || data['revenue'] == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Отсутствуют обязательные поля', headers: _getCorsHeaders());
       }
 
       await _statisticsService.addOrder(data['id'], data['revenue'].toDouble());
-      final body = jsonEncode({'message': 'Р—Р°РєР°Р· РґРѕР±Р°РІР»РµРЅ РІ СЃС‚Р°С‚РёСЃС‚РёРєСѓ'});
+      final body = jsonEncode({'message': 'Заказ добавлен в статистику'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка добавления заказа', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -185,16 +185,16 @@ class PartnerStatisticsController {
       final data = jsonDecode(raw);
       
       if (data['id'] == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РћС‚СЃСѓС‚СЃС‚РІСѓРµС‚ ID СЃС‚Р°С‚РёСЃС‚РёРєРё', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Отсутствует ID статистики', headers: _getCorsHeaders());
       }
 
       await _statisticsService.addCancel(data['id']);
-      final body = jsonEncode({'message': 'РћС‚РјРµРЅР° РґРѕР±Р°РІР»РµРЅР° РІ СЃС‚Р°С‚РёСЃС‚РёРєСѓ'});
+      final body = jsonEncode({'message': 'Отмена добавлена в статистику'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РѕС‚РјРµРЅС‹', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка добавления отмены', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -209,11 +209,11 @@ class PartnerStatisticsController {
       final data = jsonDecode(raw);
       
       if (data['id'] == null || data['rating'] == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Отсутствуют обязательные поля', headers: _getCorsHeaders());
       }
 
       await _statisticsService.updateRating(data['id'], data['rating'].toDouble());
-      final body = jsonEncode({'message': 'Р РµР№С‚РёРЅРі РѕР±РЅРѕРІР»РµРЅ'});
+      final body = jsonEncode({'message': 'Рейтинг обновлен'});
       final resp = Response.ok(body, headers: _getCorsHeaders());
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;

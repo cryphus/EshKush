@@ -497,7 +497,7 @@ class PointController {
       await _pointService.updatePointCategories(id, categoryIds);
 
       await LoggingUtils.logInfo(
-        'РћР±РЅРѕРІР»РµРЅС‹ РєР°С‚РµРіРѕСЂРёРё С‚РѕС‡РєРё',
+        'Обновлены категории точки',
         context: {
           'pointId': id,
           'categoryIds': categoryIds,
@@ -505,7 +505,7 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final responseJson = jsonEncode({'message': 'РљР°С‚РµРіРѕСЂРёРё СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅС‹'});
+      final responseJson = jsonEncode({'message': 'Категории успешно обновлены'});
       final response = Response.ok(
         responseJson,
         headers: _getCorsHeaders(),

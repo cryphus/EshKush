@@ -66,7 +66,7 @@ class ErrorLogsController {
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
       
       if (userId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID пользователя', headers: _getCorsHeaders());
       }
 
       final errors = await _service.getUserErrors(userId);
@@ -116,7 +116,7 @@ class ErrorLogsController {
       final resolvedBy = request.url.queryParameters['resolvedBy'] ?? '';
       
       if (errorId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РѕС€РёР±РєРё', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID ошибки', headers: _getCorsHeaders());
       }
       
       await _service.markErrorAsResolved(errorId, resolvedBy);
@@ -137,7 +137,7 @@ class ErrorLogsController {
       
       if (data['errorMessage'] == null || data['errorCode'] == null || 
           data['stackTrace'] == null || data['severity'] == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Отсутствуют обязательные поля', headers: _getCorsHeaders());
       }
 
       final severity = ErrorSeverity.values.firstWhere(

@@ -40,11 +40,11 @@ class UserSessions {
   }
 
   factory UserSessions.fromJson(Map<String, dynamic> json) {
-    final createdRaw = json['createdAt'] ?? json['created_at'];
-    final expiresRaw = json['expiresAt'] ?? json['expires_at'];
-    final lastRaw = json['lastActive'] ?? json['last_active'] ?? createdRaw;
-    final ua = json['userAgent'] ?? json['device_info'] ?? '';
-    final ip = json['ipAddress'] ?? json['ip_address'] ?? '';
+    final createdRaw = json['created_at'];
+    final expiresRaw = json['expires_at'];
+    final lastRaw = json['last_active'] ?? createdRaw;
+    final ua = json['device_info'] ?? '';
+    final ip = json['ip_address'] ?? '';
     final statusStr = (json['status'] ?? 'active').toString();
     final statusEnum = SessionStatus.values.firstWhere(
       (e) => e.toString().split('.').last == statusStr,
@@ -52,18 +52,18 @@ class UserSessions {
     );
     return UserSessions(
       id: int.parse(json['id'].toString()),
-      userId: int.parse((json['userId'] ?? json['user_id']).toString()),
+      userId: int.parse(json['user_id'].toString()),
       createdAt: DateTime.parse(createdRaw.toString()),
       expiresAt: DateTime.parse(expiresRaw.toString()),
       lastActive: DateTime.parse(lastRaw.toString()),
       userAgent: ua.toString(),
       ipAddress: ip.toString(),
       status: statusEnum,
-      deviceId: (json['deviceId'] ?? json['device_id']) as String?,
+      deviceId: json['device_id'] as String?,
       location: json['location'] as String?,
       token: json['token'] as String?,
-      refreshJtiHash: (json['refreshJtiHash'] ?? json['refresh_jti_hash'] ?? '').toString(),
-      isActive: (json['isActive'] as bool?) ?? (statusStr == 'active'),
+      refreshJtiHash: (json['refresh_jti_hash'] ?? '').toString(),
+      isActive: (json['is_active'] as bool?) ?? (statusStr == 'active'),
     );
   }
 

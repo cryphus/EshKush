@@ -22,7 +22,10 @@ class PointCategoryController {
 
   Future<Response> _getCategory(Request request, String id) async {
     try {
-      final categoryId = int.parse(id);
+      final categoryId = int.tryParse(id);
+      if (categoryId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final category = await _categoryService.getCategory(categoryId);
       
       if (category == null) {
@@ -74,7 +77,10 @@ class PointCategoryController {
 
   Future<Response> _updateCategory(Request request, String id) async {
     try {
-      final categoryId = int.parse(id);
+      final categoryId = int.tryParse(id);
+      if (categoryId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final data = jsonDecode(await request.readAsString());
       final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
       
@@ -90,10 +96,13 @@ class PointCategoryController {
 
   Future<Response> _deleteCategory(Request request, String id) async {
     try {
-      final categoryId = int.parse(id);
+      final categoryId = int.tryParse(id);
+      if (categoryId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       await _categoryService.deleteCategory(categoryId);
       return Response.ok(
-        jsonEncode({'message': 'РљР°С‚РµРіРѕСЂРёСЏ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅР°'}),
+        jsonEncode({'message': 'Категория успешно удалена'}),
         headers: _getCorsHeaders(),
       );
     } catch (e) {

@@ -118,17 +118,12 @@ class OrderService {
     }
     MapUtils.require<double>(data, 'total_price');
 
-    // Проверка существования пользователя
-    final user = await _userRepository.findById(userId);
-    if (user == null) {
-      throw Exception('Пользователь не найден');
-    }
-
-    // Проверка существования точки
-    final point = await _pointRepository.findById(pointId);
-    if (point == null) {
-      throw Exception('Точка не найдена');
-    }
+    final results = await Future.wait([
+      _userRepository.findById(userId),
+      _pointRepository.findById(pointId),
+    ]);
+    if (results[0] == null) throw Exception('Пользователь не найден');
+    if (results[1] == null) throw Exception('Точка не найдена');
 
     // Преобразуем список в List<int>
     final List<int> productsId = List<int>.from(data['products_id']);

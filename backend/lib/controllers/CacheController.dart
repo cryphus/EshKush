@@ -67,7 +67,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': true,
-          'message': 'РЈРґР°Р»РµРЅРѕ $count РєР»СЋС‡РµР№ РїРѕ РїР°С‚С‚РµСЂРЅСѓ $pattern',
+          'message': 'Удалено $count ключей по паттерну $pattern',
           'count': count,
         }),
         headers: {'Content-Type': 'application/json'},
@@ -228,7 +228,7 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': true,
-          'message': 'Р’СЃРµ С‚РѕРєРµРЅС‹ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёРЅРІР°Р»РёРґРёСЂРѕРІР°РЅС‹',
+          'message': 'Все токены пользователя инвалидированы',
         }),
         headers: {'Content-Type': 'application/json'},
       );

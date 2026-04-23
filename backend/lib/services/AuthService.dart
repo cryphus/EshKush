@@ -65,7 +65,6 @@ class AuthService {
           userAgent: userAgent,
           ipAddress: ipAddress,
           deviceId: deviceId,
-          token: bundle['access_token'] as String,
           refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
         ),
       );
@@ -119,7 +118,6 @@ class AuthService {
         userAgent: userAgent,
         ipAddress: ipAddress,
         deviceId: deviceId,
-        token: bundle['access_token'] as String,
         refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
       ),
     );

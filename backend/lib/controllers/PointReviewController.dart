@@ -112,7 +112,7 @@ class PointReviewController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕС‚Р·С‹РІРѕРІ С‚РѕС‡РєРё', e);
+      await LoggingUtils.logError('Ошибка получения отзывов точки', e);
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -128,7 +128,7 @@ class PointReviewController {
 
       final userId = int.tryParse(request.params['userId']!);
       if (userId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID пользователя', headers: _getCorsHeaders());
       }
 
       final reviews = await _service.getByUserId(userId);
@@ -147,7 +147,7 @@ class PointReviewController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕС‚Р·С‹РІРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e);
+      await LoggingUtils.logError('Ошибка получения отзывов пользователя', e);
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -173,7 +173,7 @@ class PointReviewController {
       try {
         final sanitizedData = ValidationUtils.validateAndSanitizeReviewData(data);
         final review = PointReview(
-          id: 0, // Р’СЂРµРјРµРЅРЅС‹Р№ ID, Р±СѓРґРµС‚ Р·Р°РјРµРЅРµРЅ РїСЂРё СЃРѕР·РґР°РЅРёРё РІ Р‘Р”
+          id: 0, // Временный ID, будет заменен при создании в БД
           pointId: sanitizedData['point_id'] as int,
           userId: sanitizedData['user_id'] as int,
           rating: sanitizedData['rating'] as double,
@@ -207,7 +207,7 @@ class PointReviewController {
         return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РѕС‚Р·С‹РІР°', e);
+      await LoggingUtils.logError('Ошибка создания отзыва', e);
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -277,7 +277,7 @@ class PointReviewController {
         return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РѕС‚Р·С‹РІР°', e);
+      await LoggingUtils.logError('Ошибка обновления отзыва', e);
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }
@@ -310,7 +310,7 @@ class PointReviewController {
       await _service.delete(id);
 
       await LoggingUtils.logInfo(
-        'РЈРґР°Р»РµРЅ РѕС‚Р·С‹РІ',
+        'Удален отзыв',
         context: {'reviewId': id},
       );
 
@@ -328,7 +328,7 @@ class PointReviewController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РѕС‚Р·С‹РІР°', e);
+      await LoggingUtils.logError('Ошибка удаления отзыва', e);
       return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
     }
   }

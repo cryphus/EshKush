@@ -53,6 +53,8 @@ class CreateUserDto {
     final password = json['password']?.toString() ?? '';
     if (password.isEmpty) {
       errors.add('Пароль обязателен');
+    } else if (password.length > 72) {
+      errors.add('Пароль не должен превышать 72 символа');
     } else if (!ValidationUtils.isValidPassword(password)) {
       errors.add(
         'Пароль: минимум 8 символов, заглавная и строчная буквы, цифра и спецсимвол (!@#\$%^&*(),.?":{}|<>).',
