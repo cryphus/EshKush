@@ -218,7 +218,7 @@ class PaymentGatewayService {
       await _orderService.updateOrderStatus(orderId, OrderStatus.cancelled);
     } catch (e) {
       // Не блокируем возврат, если не удалось обновить статус заказа.
-      await LoggingUtils.logError('Не удалось обновить статус заказа после возврата', e, context: {'orderId': orderId});
+      await LoggingUtils.logError('Не удалось обновить статус заказа после возврата (orderId: $orderId)', e);
     }
 
     return saved;
@@ -242,7 +242,7 @@ class PaymentGatewayService {
     try {
       await _orderService.updateOrderStatus(transaction.orderId, target);
     } catch (e) {
-      await LoggingUtils.logError('Не удалось синхронизировать статус заказа после webhook', e, context: {'orderId': transaction.orderId});
+      await LoggingUtils.logError('Не удалось синхронизировать статус заказа после webhook (orderId: ${transaction.orderId})', e);
     }
   }
 

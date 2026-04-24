@@ -1,3 +1,4 @@
+import 'package:bcrypt/bcrypt.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
@@ -32,8 +33,8 @@ void main() {
   });
 
   // ────────────────────────────────────────────────────────── fixtures ──────
-  User _user({int id = 1, String username = 'testuser'}) => User(
-    id: id, username: username, password: 'hash',
+  User _user({int id = 1, String username = 'testuser', String password = 'hash'}) => User(
+    id: id, username: username, password: password,
     number: '+79001234567', email: 'test@example.com',
     createdAt: DateTime(2024), role: UserRole.user,
   );
@@ -103,11 +104,13 @@ void main() {
     });
 
     test('бросает если пользователь не найден', () async {
+      when(userRepo.findByUsername(any)).thenAnswer((_) async => null);
       when(userRepo.update(any, any)).thenThrow(Exception('Пользователь не найден'));
       expect(() => sut.updateUser(1, {'username': 'newname'}), throwsA(isA<Exception>()));
     });
 
     test('успешно обновляет и инвалидирует кеш', () async {
+      when(userRepo.findByUsername(any)).thenAnswer((_) async => null);
       when(userRepo.update(any, any)).thenAnswer((_) async => _user(username: 'updated'));
       final result = await sut.updateUser(1, {'username': 'updated'});
       expect(result.username, 'updated');
@@ -115,8 +118,12 @@ void main() {
     });
 
     test('хеширует пароль при обновлении', () async {
+      final oldHash = BCrypt.hashpw('OldPass1!', BCrypt.gensalt(logRounds: 4));
+      final mockUser = _user(password: oldHash);
+      when(userRepo.findById(any)).thenAnswer((_) async => mockUser);
+      when(userRepo.findByUsername(any)).thenAnswer((_) async => null);
       when(userRepo.update(any, any)).thenAnswer((_) async => _user());
-      await sut.updateUser(1, {'password': 'NewPass1!'});
+      await sut.updateUser(1, {'password': 'NewPass1!', 'old_password': 'OldPass1!'});
       final captured = verify(userRepo.update(captureAny, captureAny)).captured;
       final updatedData = captured[1] as Map<String, dynamic>;
       expect(updatedData['password'], isNot('NewPass1!'));
