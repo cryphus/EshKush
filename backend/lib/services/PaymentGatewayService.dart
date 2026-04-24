@@ -116,8 +116,11 @@ class PaymentGatewayService {
     Map<String, dynamic> payload, {
     String? sharedSecret,
   }) async {
-    if (_config.yookassaWebhookSecret.isNotEmpty &&
-        sharedSecret != _config.yookassaWebhookSecret) {
+    if (_config.yookassaWebhookSecret.isEmpty) {
+      if (_config.isProduction) {
+        throw Exception('Webhook секрет не настроен — запрос отклонён');
+      }
+    } else if (sharedSecret != _config.yookassaWebhookSecret) {
       throw Exception('Неверный секрет webhook');
     }
 

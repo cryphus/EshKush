@@ -4,8 +4,8 @@ import 'package:shelf/shelf.dart';
 /// Uses [allowedOrigins] from config (e.g. prod, staging, dev). Does not send
 /// Access-Control-Allow-Origin for disallowed origins.
 class CorsMiddleware {
-  static const String _allowMethods = 'GET, POST, PUT, DELETE, OPTIONS';
-  static const String _allowHeaders = 'Origin, Content-Type, Accept, Authorization';
+  static const String _allowMethods = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
+  static const String _allowHeaders = 'Origin, Content-Type, Accept, Authorization, X-Webhook-Secret';
 
   final List<String> allowedOrigins;
   final bool devMode;
@@ -35,9 +35,11 @@ class CorsMiddleware {
             'Access-Control-Allow-Methods': _allowMethods,
             'Access-Control-Allow-Headers': _allowHeaders,
             'Access-Control-Max-Age': '86400',
+            'Vary': 'Origin',
           };
           if (allowed) {
             headers['Access-Control-Allow-Origin'] = origin!;
+            headers['Access-Control-Allow-Credentials'] = 'true';
           }
           return Response(204, headers: headers);
         }
@@ -51,6 +53,8 @@ class CorsMiddleware {
           'Access-Control-Allow-Origin': origin!,
           'Access-Control-Allow-Methods': _allowMethods,
           'Access-Control-Allow-Headers': _allowHeaders,
+          'Access-Control-Allow-Credentials': 'true',
+          'Vary': 'Origin',
         });
       };
     };

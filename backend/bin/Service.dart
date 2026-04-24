@@ -695,6 +695,7 @@ void main() async {
 
     final handler = const Pipeline()
         .addMiddleware(corsMiddleware)
+        .addMiddleware(SecurityMiddleware.requestSizeLimit())
         .addMiddleware(jsonContentType())
         .addMiddleware(SecurityMiddleware.checkJWT(
           userSessionRepository,

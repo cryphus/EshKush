@@ -68,9 +68,7 @@ class UserSessionRepository {
           'deviceInfo': session.userAgent.isNotEmpty ? session.userAgent : (session.deviceId ?? ''),
           'ipAddress': session.ipAddress,
           'status': session.status.toString().split('.').last,
-          'token': (session.token != null && session.token!.length > 255)
-              ? session.token!.substring(0, 255)
-              : session.token,
+          'token': session.token,
           'refreshJtiHash': session.refreshJtiHash,
         },
       );

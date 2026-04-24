@@ -33,19 +33,6 @@ class SecurityMiddleware {
     return headers;
   }
 
-  /// CORS middleware: отвечает на preflight и добавляет заголовки на ответы.
-  static Middleware corsMiddleware() {
-    return (Handler innerHandler) {
-      return (Request request) async {
-        if (request.method == 'OPTIONS') {
-          return Response.ok('', headers: corsHeadersFor(request));
-        }
-        final response = await innerHandler(request);
-        return response.change(headers: corsHeadersFor(request));
-      };
-    };
-  }
-
   static Middleware securityHeaders() {
     return (Handler innerHandler) {
       return (Request request) async {
@@ -134,10 +121,6 @@ class SecurityMiddleware {
   static Middleware checkJWT(UserSessionRepository sessionRepository, {List<String> openPaths = const []}) {
     return (Handler innerHandler) {
       return (Request request) async {
-        if (request.method == 'OPTIONS') {
-          return Response.ok('', headers: corsHeadersFor(request));
-        }
-
         final path = request.url.path;
         if (path.isEmpty || path == '/' || openPaths.any((p) => path.startsWith(p))) {
           return innerHandler(request);

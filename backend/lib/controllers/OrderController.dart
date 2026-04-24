@@ -10,7 +10,6 @@ import '../utils/RequestContextUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
 import '../utils/PaginationUtils.dart';
-import '../utils/AuthUtils.dart';
 import '../model/dto/responses/OrderResponseDto.dart';
 import '../model/dto/requests/CreateOrderDto.dart';
 import 'dart:convert';
@@ -47,14 +46,9 @@ class OrderController {
             headers: _getCorsHeaders());
       }
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return Response.unauthorized(
-            jsonEncode({'error': 'Требуется авторизация'}),
-            headers: _getCorsHeaders());
-      }
-      final payload = AuthUtils.verifyToken(token);
-      final userId = payload['id'] as int;
+      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final userId = RequestContextUtils.getUser(request)!['id'] as int;
 
       final orderId = int.tryParse(request.params['id'] ?? '');
       if (orderId == null) {
@@ -224,7 +218,7 @@ class OrderController {
       await LoggingUtils.logResponse(resp.statusCode, resp.headers, body, requestId: RequestContextUtils.getRequestId(request));
       return resp;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения списка сессий', e, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logError('Ошибка обновления статуса заказа', e, requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
