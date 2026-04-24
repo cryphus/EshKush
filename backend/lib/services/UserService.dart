@@ -116,10 +116,6 @@ class UserService {
 
       final result = await _userRepository.update(id, data);
 
-      if (result == null) {
-        throw Exception('Пользователь не найден');
-      }
-      
       // Инвалидируем кеш
       await _invalidateUserCache(id);
       

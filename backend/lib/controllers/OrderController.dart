@@ -206,10 +206,18 @@ class OrderController {
       final data = await request.readAsString();
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, data, requestId: RequestContextUtils.getRequestId(request));
       final jsonData = jsonDecode(data) as Map<String, dynamic>;
-      final status = OrderStatus.values.firstWhere(
-        (e) => e.name.toLowerCase() == jsonData['status'].toString().toLowerCase(),
-        orElse: () => OrderStatus.pending,
+      final rawStatus = jsonData['status']?.toString().toLowerCase() ?? '';
+      final statusMatch = OrderStatus.values.where(
+        (e) => e.name.toLowerCase() == rawStatus,
       );
+      if (statusMatch.isEmpty) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+          'Неверный статус заказа: "$rawStatus". Допустимые значения: ${OrderStatus.values.map((e) => e.name).join(', ')}',
+          code: ErrorCode.badRequest,
+          headers: _getCorsHeaders(),
+        );
+      }
+      final status = statusMatch.first;
       
       final order = await _orderService.updateOrderStatus(id, status);
       final orderDto = OrderResponseDto.fromEntity(order);

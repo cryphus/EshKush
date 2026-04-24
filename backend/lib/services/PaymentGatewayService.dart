@@ -5,6 +5,7 @@ import '../model/enums/PaymentMethod.dart';
 import '../model/enums/PaymentTransactionStatus.dart';
 import '../repositories/OrderRepository.dart';
 import '../repositories/PaymentTransactionsRepository.dart';
+import '../utils/LoggingUtils.dart';
 import 'OrderService.dart';
 import 'YooKassaService.dart';
 
@@ -217,7 +218,7 @@ class PaymentGatewayService {
       await _orderService.updateOrderStatus(orderId, OrderStatus.cancelled);
     } catch (e) {
       // Не блокируем возврат, если не удалось обновить статус заказа.
-      print('PaymentGatewayService: не удалось обновить статус заказа $orderId: $e');
+      await LoggingUtils.logError('Не удалось обновить статус заказа после возврата', e, context: {'orderId': orderId});
     }
 
     return saved;
@@ -241,8 +242,7 @@ class PaymentGatewayService {
     try {
       await _orderService.updateOrderStatus(transaction.orderId, target);
     } catch (e) {
-      print(
-          'PaymentGatewayService: не удалось синхронизировать статус заказа ${transaction.orderId}: $e');
+      await LoggingUtils.logError('Не удалось синхронизировать статус заказа после webhook', e, context: {'orderId': transaction.orderId});
     }
   }
 

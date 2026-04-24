@@ -712,7 +712,7 @@ void main() async {
       _runApiTests();
     }
 
-    Timer.periodic(const Duration(minutes: 15), (_) async {
+    Timer.periodic(config.sessionCleanupInterval, (_) async {
       try {
         final n = await userSessionRepository.cleanupExpiredSessions();
         await userSessionRepository.cleanupExpiredBlacklist();

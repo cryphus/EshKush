@@ -57,6 +57,9 @@ class AppConfig {
   /// Сколько часов после создания заказа можно вернуть деньги.
   late final Duration refundWindow;
 
+  /// Интервал периодической очистки истёкших сессий.
+  late final Duration sessionCleanupInterval;
+
   Future<void> initialize() async {
     if (_initialized) return;
     final env = DotEnv(includePlatformEnvironment: true)..load();
@@ -117,6 +120,10 @@ class AppConfig {
       hours: int.tryParse(env['REFUND_WINDOW_HOURS'] ?? '24') ?? 24,
     );
 
+    sessionCleanupInterval = Duration(
+      minutes: int.tryParse(env['SESSION_CLEANUP_INTERVAL_MINUTES'] ?? '15') ?? 15,
+    );
+
     _validateConfig();
     _initialized = true;
   }
@@ -153,6 +160,7 @@ class AppConfig {
     _instance.yookassaReturnUrl = 'https://eshkush.app/payments/return';
     _instance.yookassaWebhookSecret = '';
     _instance.refundWindow = const Duration(hours: 24);
+    _instance.sessionCleanupInterval = const Duration(minutes: 15);
     _initialized = true;
   }
 

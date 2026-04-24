@@ -6,20 +6,19 @@ import 'package:bcrypt/bcrypt.dart';
 import 'package:uuid/uuid.dart';
 
 class AuthUtils {
-  static String get _jwtSecret {
-    final secret = Platform.environment['JWT_SECRET'];
-    if (secret == null || secret.isEmpty) {
-      throw Exception('JWT_SECRET не установлен в переменных окружения');
-    }
-    return secret;
-  }
+  static String? _jwtSecretCached;
+  static String? _refreshSecretCached;
 
-  static String get _refreshSecret {
-    final secret = Platform.environment['JWT_REFRESH_SECRET'];
-    if (secret == null || secret.isEmpty) {
-      throw Exception('JWT_REFRESH_SECRET не установлен в переменных окружения');
-    }
-    return secret;
+  static String get _jwtSecret =>
+      _jwtSecretCached ??= _readRequired('JWT_SECRET');
+
+  static String get _refreshSecret =>
+      _refreshSecretCached ??= _readRequired('JWT_REFRESH_SECRET');
+
+  static String _readRequired(String key) {
+    final v = Platform.environment[key];
+    if (v == null || v.isEmpty) throw Exception('$key не установлен в переменных окружения');
+    return v;
   }
 
   static const int _tokenExpirationInMinutes = 15;

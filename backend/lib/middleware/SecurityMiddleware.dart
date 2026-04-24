@@ -8,6 +8,10 @@ import '../repositories/UserSessionRepository.dart';
 class SecurityMiddleware {
   static final Map<String, List<DateTime>> _requests = {};
 
+  // Throttle last_active DB writes: at most once per 5 minutes per session.
+  static final Map<int, DateTime> _lastActiveUpdates = {};
+  static const Duration _lastActiveThrottle = Duration(minutes: 5);
+
   /// Подбирает CORS-заголовки для запроса на основе whitelist из AppConfig.
   /// Если origin запроса отсутствует в allowedOrigins — заголовок
   /// Access-Control-Allow-Origin не выставляется (браузер отклонит запрос).
@@ -157,7 +161,11 @@ class SecurityMiddleware {
             );
           }
 
-          await sessionRepository.updateLastActive(session.id);
+          final lastUpdate = _lastActiveUpdates[session.id];
+          if (lastUpdate == null || DateTime.now().difference(lastUpdate) >= _lastActiveThrottle) {
+            await sessionRepository.updateLastActive(session.id);
+            _lastActiveUpdates[session.id] = DateTime.now();
+          }
 
           final modifiedRequest = request.change(context: {
             'user': payload,
