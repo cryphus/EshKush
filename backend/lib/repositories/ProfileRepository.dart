@@ -1,5 +1,4 @@
 import '../model/entities/Profile.dart';
-import '../utils/SafeLoggingUtils.dart';
 import 'BaseRepository.dart';
 
 class ProfileRepository extends BaseRepository {
@@ -59,7 +58,6 @@ class ProfileRepository extends BaseRepository {
         return null;
       }
       
-      final safeResult = SafeLoggingUtils.sanitizeData(result);
       return Profile.fromJson(result);
     } catch (e) {
       rethrow;

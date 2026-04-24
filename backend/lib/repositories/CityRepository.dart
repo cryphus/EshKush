@@ -1,6 +1,5 @@
 import 'package:postgres/postgres.dart';
 import '../model/entities/City.dart';
-import '../utils/SafeLoggingUtils.dart';
 
 class CityRepository {
   final PostgreSQLConnection _connection;
@@ -93,9 +92,8 @@ class CityRepository {
         throw Exception('Ошибка создания города: результат запроса пустой');
       }
       
-      final safeResult = SafeLoggingUtils.sanitizeData(result);
       return City.fromJson(result);
-    } catch (e, stackTrace) {
+    } catch (e) {
       rethrow;
     }
   }

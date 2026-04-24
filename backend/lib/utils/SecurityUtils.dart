@@ -1,10 +1,7 @@
 import 'dart:convert';
-import 'package:html_unescape/html_unescape.dart';
 import 'package:crypto/crypto.dart';
 
 class SecurityUtils {
-  static final _htmlUnescape = HtmlUnescape();
-
   static String sanitizeInput(String input) {
     if (input.isEmpty) return input;
 

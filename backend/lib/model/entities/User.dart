@@ -1,10 +1,6 @@
-import 'package:postgres/postgres.dart';
 import '../../utils/AuthUtils.dart';
-import '../../utils/SafeLoggingUtils.dart';
-import '../../utils/PasswordFilter.dart';
 import '../../utils/ValidationUtils.dart';
 import '../enums/UserRole.dart';
-import 'package:email_validator/email_validator.dart';
 
 class User {
   final int id;
@@ -97,7 +93,7 @@ class User {
         ),
       );
       return user;
-    } catch (e, stackTrace) {
+    } catch (e) {
       rethrow;
     }
   }

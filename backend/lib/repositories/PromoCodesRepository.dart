@@ -1,6 +1,5 @@
 import 'package:postgres/postgres.dart';
 import '../model/entities/PromoCodes.dart';
-import '../model/enums/DiscountType.dart';
 
 class PromoCodesRepository {
   final PostgreSQLConnection _connection;

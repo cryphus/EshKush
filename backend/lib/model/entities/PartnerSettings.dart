@@ -1,4 +1,3 @@
-import '../../utils/SafeLoggingUtils.dart';
 
 class PartnerSettings {
   final int id;
@@ -16,8 +15,6 @@ class PartnerSettings {
   });
 
   factory PartnerSettings.fromJson(Map<String, dynamic> json) {
-    final safeJson = SafeLoggingUtils.sanitizeData(json);
-    
     try {
     return PartnerSettings(
       id: json['id'] as int,
@@ -30,7 +27,7 @@ class PartnerSettings {
             ? DateTime.parse(json['updated_at'] as String)
             : DateTime.now(),
     );
-    } catch (e, stackTrace) {
+    } catch (e) {
       rethrow;
     }
   }

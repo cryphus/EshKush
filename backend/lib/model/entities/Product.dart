@@ -1,4 +1,3 @@
-import '../../utils/SafeLoggingUtils.dart';
 
 class Product {
   final int id;
@@ -32,8 +31,6 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    final safeJson = SafeLoggingUtils.sanitizeData(json);
-    
     try {
       // Преобразуем числовые поля
       if (json['id'] == null) throw ArgumentError('Product.fromJson: поле id обязательно');

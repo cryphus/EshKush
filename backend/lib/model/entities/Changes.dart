@@ -1,6 +1,3 @@
-import 'package:backend/model/enums/EntityType.dart';
-import 'package:backend/model/enums/ChangeType.dart';
-
 class Changes {
   final int id;
   final String entityType;

@@ -8,7 +8,6 @@ import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../model/dto/responses/PartnerResponseDto.dart';
-import '../utils/AuthUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
 
 class PartnerController {

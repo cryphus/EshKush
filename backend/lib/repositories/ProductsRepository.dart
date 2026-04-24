@@ -3,7 +3,6 @@ import '../model/entities/Product.dart';
 import '../model/entities/ProductCategory.dart';
 import '../utils/SafeLoggingUtils.dart';
 import 'BaseRepository.dart';
-import 'dart:convert';
 
 class ProductsRepository extends BaseRepository {
   final PostgreSQLConnection _connection;

@@ -1,6 +1,7 @@
 import '../repositories/UserRepository.dart';
 import '../model/entities/User.dart';
 import '../model/enums/UserRole.dart';
+import '../utils/AppException.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/ValidationUtils.dart';
@@ -27,9 +28,9 @@ class UserService {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Пользователь не найден');
+        throw NotFoundException('Пользователь не найден');
       }
-      
+
       final user = User.fromJson(result);
       
       // Сохраняем в кеш
@@ -206,27 +207,6 @@ class UserService {
       );
     } catch (e) {
       rethrow;
-    }
-  }
-
-  void _validateUserData(Map<String, dynamic> data) {
-    if (data['username'] != null && (data['username'] as String).isEmpty) {
-      throw Exception('Имя пользователя не может быть пустым');
-    }
-    if (data['email'] != null && (data['email'] as String).isEmpty) {
-      throw Exception('Email не может быть пустым');
-    }
-    if (data['number'] != null && (data['number'] as String).isEmpty) {
-      throw Exception('Номер телефона не может быть пустым');
-    }
-    if (data['role'] != null) {
-      try {
-        UserRole.values.firstWhere(
-          (role) => role.name.toLowerCase() == (data['role'] as String).toLowerCase(),
-        );
-      } catch (e) {
-        throw Exception('Некорректная роль пользователя');
-      }
     }
   }
 

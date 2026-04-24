@@ -1,6 +1,5 @@
 import 'package:postgres/postgres.dart';
 import '../model/entities/Partner.dart';
-import '../utils/SafeLoggingUtils.dart';
 
 class PartnerRepository {
   final PostgreSQLConnection _connection;
@@ -95,8 +94,6 @@ class PartnerRepository {
         throw Exception('Ошибка создания партнера');
       }
       
-      final safeResult = SafeLoggingUtils.sanitizeData(result);
-
       // Добавляем created_at, если его нет в результате
       if (!result.containsKey('created_at')) {
         result['created_at'] = partner.createdAt.toIso8601String();

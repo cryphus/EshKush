@@ -2,7 +2,6 @@ import 'package:postgres/postgres.dart';
 import '../model/entities/User.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
-import '../utils/PasswordFilter.dart';
 import '../utils/ValidationUtils.dart';
 
 class UserRepository {

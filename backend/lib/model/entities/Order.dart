@@ -1,5 +1,4 @@
 import 'package:backend/model/enums/OrderStatus.dart';
-import '../../utils/SafeLoggingUtils.dart';
 
 class Order {
   final int id;
@@ -25,8 +24,6 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
-    final safeJson = SafeLoggingUtils.sanitizeData(json);
-    
     try {
       // Преобразуем products_id в List<int>
       final productsId = (json['products_id'] as List?)?.map((e) {

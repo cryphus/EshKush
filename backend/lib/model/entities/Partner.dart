@@ -1,4 +1,3 @@
-import '../../utils/SafeLoggingUtils.dart';
 
 class Partner {
   final int id;
@@ -35,8 +34,6 @@ class Partner {
   }
 
   factory Partner.fromJson(Map<String, dynamic> json) {
-    final safeJson = SafeLoggingUtils.sanitizeData(json);
-    
     try {
       final partner = Partner(
         id: json['id'] as int,
@@ -56,7 +53,7 @@ class Partner {
             : DateTime.now(),
       );
       return partner;
-    } catch (e, stackTrace) {
+    } catch (e) {
       rethrow;
     }
   }

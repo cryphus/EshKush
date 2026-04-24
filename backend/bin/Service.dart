@@ -85,7 +85,6 @@ import 'package:backend/services/YooKassaService.dart';
 import 'package:backend/services/OAuthService.dart';
 import 'package:backend/middleware/LoggingMiddleware.dart';
 import 'package:backend/middleware/RbacMiddleware.dart';
-import 'package:backend/utils/RateLimiterStore.dart';
 import 'package:backend/utils/LoggingUtils.dart';
 import 'package:backend/utils/AuthUtils.dart';
 import 'package:backend/repositories/UserRepository.dart';
@@ -694,6 +693,7 @@ void main() async {
     }
 
     final handler = const Pipeline()
+        .addMiddleware(SecurityMiddleware.securityHeaders())
         .addMiddleware(corsMiddleware)
         .addMiddleware(SecurityMiddleware.requestSizeLimit())
         .addMiddleware(jsonContentType())

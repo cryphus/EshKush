@@ -1,7 +1,6 @@
 import 'package:postgres/postgres.dart';
 import '../model/entities/Point.dart';
 import '../model/entities/PointCategory.dart';
-import '../model/entities/PointCategoryMap.dart';
 import '../model/entities/PointReview.dart';
 import '../model/entities/NearbyPoint.dart';
 
@@ -323,7 +322,7 @@ class PointRepository {
 
   Future<void> _updatePointRating(int pointId) async {
     try {
-      final result = await _connection.mappedResultsQuery('''
+      await _connection.mappedResultsQuery('''
         WITH avg_rating AS (
           SELECT AVG(rating) as new_rating
           FROM point_reviews

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shelf/shelf.dart';
+import 'AppException.dart';
 import 'ValidationUtils.dart';
 
 /// Стабильные коды ошибок для клиента (без утечки деталей).
@@ -24,13 +25,20 @@ class ErrorResponseUtils {
   static String clientSafeErrorMessage(dynamic e, {String? fallback}) {
     if (e == null) return fallback ?? defaultClientMessage;
     if (e is ValidationException) return e.message;
+    if (e is AppException) return e.message;
     return fallback ?? defaultClientMessage;
   }
 
-  /// Определяет код ошибки и HTTP-статус по исключению.
+  /// Определяет код ошибки по типу исключения, с fallback на строковый поиск
+  /// для обратной совместимости с generic Exception().
   static ErrorCode errorCodeFromException(dynamic e) {
     if (e == null) return ErrorCode.internalError;
     if (e is ValidationException) return ErrorCode.validationError;
+    if (e is NotFoundException) return ErrorCode.notFound;
+    if (e is ForbiddenException) return ErrorCode.forbidden;
+    if (e is UnauthorizedException) return ErrorCode.unauthorized;
+    if (e is ConflictException) return ErrorCode.conflict;
+    // Fallback: string matching for legacy generic exceptions.
     final msg = e.toString().toLowerCase();
     if (msg.contains('unauthorized') || msg.contains('токен') || msg.contains('авториз') ||
         msg.contains('неверный') || msg.contains('недействительный') || msg.contains('token') ||
