@@ -68,7 +68,8 @@ void main() {
 
       final result = await sut.register({
         'username': 'newuser', 'email': 'new@example.com',
-        'number': '+79001234567', 'password': 'Pass1!xx', 'role': 'user',
+        'number': '+79001234567', 'password': 'Pass1!xx',
+        'password_confirm': 'Pass1!xx', 'role': 'user',
       });
 
       expect(result['access_token'], isNotNull);

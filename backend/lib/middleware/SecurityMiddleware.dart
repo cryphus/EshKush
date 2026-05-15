@@ -171,6 +171,10 @@ class SecurityMiddleware {
       {List<String> openPaths = const []}) {
     return (Handler innerHandler) {
       return (Request request) async {
+        if (request.method.toUpperCase() == 'OPTIONS') {
+          return innerHandler(request);
+        }
+
         final path = request.url.path;
         if (path.isEmpty ||
             path == '/' ||

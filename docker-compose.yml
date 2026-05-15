@@ -72,6 +72,8 @@ services:
     environment:
       # cost=4 — минимум для тестов, в 256 раз быстрее дефолтного 12
       - BCRYPT_LOG_ROUNDS=4
+      - JWT_SECRET=${JWT_SECRET:-testsecretforjwttestingatleast32chars}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-testrefreshsecretforjwttests32chars__}
     networks:
       - app-network
 
