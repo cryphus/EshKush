@@ -3,18 +3,17 @@ import '../model/entities/Product.dart';
 import '../model/entities/ProductCategory.dart';
 import '../utils/SafeLoggingUtils.dart';
 import 'BaseRepository.dart';
+import '../utils/AppException.dart';
 
 class ProductsRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  ProductsRepository(this._connection) : super(_connection) {
-    _connection.execute('SET client_encoding TO \'UTF8\'');
-    _connection.execute('SET standard_conforming_strings TO on');
+  ProductsRepository(PostgreSQLConnection connection) : super(connection) {
+    connection.execute('SET client_encoding TO \'UTF8\'');
+    connection.execute('SET standard_conforming_strings TO on');
   }
 
   Future<Product?> findById(int id) async {
     try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
+      await connection.execute('SET client_encoding TO \'UTF8\'');
       final result = await queryOne(
         '''
         SELECT 
@@ -46,7 +45,7 @@ class ProductsRepository extends BaseRepository {
 
   Future<List<Product>> findAll({int limit = 20, int offset = 0}) async {
     try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
+      await connection.execute('SET client_encoding TO \'UTF8\'');
       final results = await query('''
         SELECT
           id,
@@ -74,10 +73,11 @@ class ProductsRepository extends BaseRepository {
     }
   }
 
-  Future<List<Product>> findByCategory(int categoryId, {int limit = 20, int offset = 0}) async {
+  Future<List<Product>> findByCategory(int categoryId,
+      {int limit = 20, int offset = 0}) async {
     try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
-      final results = await _connection.mappedResultsQuery('''
+      await connection.execute('SET client_encoding TO \'UTF8\'');
+      final results = await connection.mappedResultsQuery('''
         SELECT
           p.id,
           COALESCE(p.name, '') as name,
@@ -99,7 +99,11 @@ class ProductsRepository extends BaseRepository {
         WHERE pcm.category_id = @categoryId
         ORDER BY p.id
         LIMIT @limit OFFSET @offset
-      ''', substitutionValues: {'categoryId': categoryId, 'limit': limit, 'offset': offset});
+      ''', substitutionValues: {
+        'categoryId': categoryId,
+        'limit': limit,
+        'offset': offset
+      });
 
       return results.map((row) => Product.fromJson(row['products']!)).toList();
     } catch (e) {
@@ -130,22 +134,31 @@ class ProductsRepository extends BaseRepository {
 
   Future<Product> create(Map<String, dynamic> data) async {
     try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
-      await _connection.execute('SET standard_conforming_strings TO on');
-      
-      SafeLoggingUtils.logData('Входные данные в create', data);
-      
-      // Преобразуем строки в UTF-8
+      await connection.execute('SET client_encoding TO \'UTF8\'');
+      await connection.execute('SET standard_conforming_strings TO on');
+
+      SafeLoggingUtils.logData(
+          'Р вЂ™РЎвЂ¦Р С•Р Т‘Р Р…РЎвЂ№Р Вµ Р Т‘Р В°Р Р…Р Р…РЎвЂ№Р Вµ Р Р† create',
+          data);
+
+      // Р СџРЎР‚Р ВµР С•Р В±РЎР‚Р В°Р В·РЎС“Р ВµР С РЎРѓРЎвЂљРЎР‚Р С•Р С”Р С‘ Р Р† UTF-8
       final name = data['name'] as String;
       final description = data['description'] as String;
-      
-      // Преобразуем числовые значения
-      final price = data['price'] is String ? double.parse(data['price']) : (data['price'] as num).toDouble();
-      final pointId = data['point_id'] is String ? int.parse(data['point_id']) : (data['point_id'] as num).toInt();
-      final partnerId = data['partner_id'] is String ? int.parse(data['partner_id']) : (data['partner_id'] as num).toInt();
-      final weight = data['weight'] is String ? double.parse(data['weight']) : (data['weight'] as num).toDouble();
-      
-      
+
+      // Р СџРЎР‚Р ВµР С•Р В±РЎР‚Р В°Р В·РЎС“Р ВµР С РЎвЂЎР С‘РЎРѓР В»Р С•Р Р†РЎвЂ№Р Вµ Р В·Р Р…Р В°РЎвЂЎР ВµР Р…Р С‘РЎРЏ
+      final price = data['price'] is String
+          ? double.parse(data['price'])
+          : (data['price'] as num).toDouble();
+      final pointId = data['point_id'] is String
+          ? int.parse(data['point_id'])
+          : (data['point_id'] as num).toInt();
+      final partnerId = data['partner_id'] is String
+          ? int.parse(data['partner_id'])
+          : (data['partner_id'] as num).toInt();
+      final weight = data['weight'] is String
+          ? double.parse(data['weight'])
+          : (data['weight'] as num).toDouble();
+
       final result = await queryOne(
         '''
         WITH inserted_product AS (
@@ -195,11 +208,11 @@ class ProductsRepository extends BaseRepository {
           'is_active': data['is_active'] ?? true,
         },
       );
-      
+
       if (result == null) {
-        throw Exception('Ошибка создания продукта');
+        throw const InternalServerException();
       }
-      
+
       return Product.fromJson(result);
     } catch (e) {
       rethrow;
@@ -208,7 +221,6 @@ class ProductsRepository extends BaseRepository {
 
   Future<Product> update(Product product) async {
     try {
-      
       final result = await queryOne(
         '''
         WITH updated_product AS (
@@ -253,7 +265,7 @@ class ProductsRepository extends BaseRepository {
           'is_active': product.isActive,
         },
       );
-      
+
       return Product.fromJson(result!);
     } catch (e) {
       rethrow;
@@ -271,7 +283,8 @@ class ProductsRepository extends BaseRepository {
     }
   }
 
-  Future<void> updateProductCategories(int productId, List<int> categoryIds) async {
+  Future<void> updateProductCategories(
+      int productId, List<int> categoryIds) async {
     try {
       await transaction((txn) async {
         await txn.query(
@@ -297,7 +310,8 @@ class ProductsRepository extends BaseRepository {
     }
   }
 
-  Future<List<Product>> findByPointId(int pointId, {int limit = 20, int offset = 0}) async {
+  Future<List<Product>> findByPointId(int pointId,
+      {int limit = 20, int offset = 0}) async {
     try {
       final results = await query(
         '''
@@ -369,7 +383,7 @@ class ProductsRepository extends BaseRepository {
         FROM products 
         WHERE id = ANY(@ids)
       ''', params: {'ids': ids});
-      
+
       return results;
     } catch (e) {
       rethrow;

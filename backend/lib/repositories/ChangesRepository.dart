@@ -3,11 +3,10 @@ import 'BaseRepository.dart';
 import '../model/entities/Changes.dart';
 import '../model/enums/EntityType.dart';
 import '../model/enums/ChangeType.dart';
+import '../utils/AppException.dart';
 
 class ChangesRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  ChangesRepository(this._connection) : super(_connection);
+  ChangesRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<Changes> create(Changes change) async {
     try {
@@ -42,7 +41,7 @@ class ChangesRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания записи об изменении');
+        throw const InternalServerException();
       }
 
       return Changes.fromJson(result);

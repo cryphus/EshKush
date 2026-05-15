@@ -1,6 +1,7 @@
 import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/City.dart';
+import '../utils/AppException.dart';
 
 class CityRepository extends BaseRepository {
   CityRepository(PostgreSQLConnection connection) : super(connection);
@@ -57,7 +58,7 @@ class CityRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания города: результат запроса пустой');
+        throw const InternalServerException();
       }
 
       return City.fromJson(result);
@@ -84,7 +85,7 @@ class CityRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Город не найден');
+        throw const NotFoundException();
       }
       return City.fromJson(result);
     } catch (e) {
@@ -99,7 +100,7 @@ class CityRepository extends BaseRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Город не найден');
+        throw const NotFoundException();
       }
     } catch (e) {
       rethrow;

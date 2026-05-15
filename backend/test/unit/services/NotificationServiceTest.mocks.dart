@@ -75,6 +75,16 @@ class MockNotificationRepository extends _i1.Mock
       ) as _i2.PostgreSQLConnection);
 
   @override
+  _i4.Future<_i3.Notification?> findById(int? notificationId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #findById,
+          [notificationId],
+        ),
+        returnValue: _i4.Future<_i3.Notification?>.value(),
+      ) as _i4.Future<_i3.Notification?>);
+
+  @override
   _i4.Future<_i3.Notification> create(_i3.Notification? notification) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -113,6 +123,23 @@ class MockNotificationRepository extends _i1.Mock
       ) as _i4.Future<List<_i3.Notification>>);
 
   @override
+  _i4.Future<List<_i3.Notification>> findByUserIdAndType(
+    int? userId,
+    _i6.NotificationType? type,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #findByUserIdAndType,
+          [
+            userId,
+            type,
+          ],
+        ),
+        returnValue:
+            _i4.Future<List<_i3.Notification>>.value(<_i3.Notification>[]),
+      ) as _i4.Future<List<_i3.Notification>>);
+
+  @override
   _i4.Future<List<_i3.Notification>> findUnread(int? userId) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -122,6 +149,23 @@ class MockNotificationRepository extends _i1.Mock
         returnValue:
             _i4.Future<List<_i3.Notification>>.value(<_i3.Notification>[]),
       ) as _i4.Future<List<_i3.Notification>>);
+
+  @override
+  _i4.Future<bool> existsByIdAndUserId({
+    required int? notificationId,
+    required int? userId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #existsByIdAndUserId,
+          [],
+          {
+            #notificationId: notificationId,
+            #userId: userId,
+          },
+        ),
+        returnValue: _i4.Future<bool>.value(false),
+      ) as _i4.Future<bool>);
 
   @override
   _i4.Future<List<_i3.Notification>> findRecent({int? limit = 100}) =>

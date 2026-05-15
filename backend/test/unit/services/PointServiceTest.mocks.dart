@@ -5,13 +5,15 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
-import 'package:backend/model/entities/NearbyPoint.dart' as _i6;
-import 'package:backend/model/entities/Point.dart' as _i2;
-import 'package:backend/model/entities/PointCategory.dart' as _i7;
-import 'package:backend/model/entities/PointReview.dart' as _i3;
-import 'package:backend/repositories/PointRepository.dart' as _i4;
-import 'package:backend/services/CacheService.dart' as _i8;
+import 'package:backend/model/entities/NearbyPoint.dart' as _i7;
+import 'package:backend/model/entities/Point.dart' as _i3;
+import 'package:backend/model/entities/PointCategory.dart' as _i8;
+import 'package:backend/model/entities/PointReview.dart' as _i4;
+import 'package:backend/repositories/PointRepository.dart' as _i6;
+import 'package:backend/services/CacheService.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:postgres/postgres.dart' as _i2;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -26,8 +28,9 @@ import 'package:mockito/mockito.dart' as _i1;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakePoint_0 extends _i1.SmartFake implements _i2.Point {
-  _FakePoint_0(
+class _FakePostgreSQLConnection_0 extends _i1.SmartFake
+    implements _i2.PostgreSQLConnection {
+  _FakePostgreSQLConnection_0(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -36,8 +39,28 @@ class _FakePoint_0 extends _i1.SmartFake implements _i2.Point {
         );
 }
 
-class _FakePointReview_1 extends _i1.SmartFake implements _i3.PointReview {
-  _FakePointReview_1(
+class _FakePoint_1 extends _i1.SmartFake implements _i3.Point {
+  _FakePoint_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakePointReview_2 extends _i1.SmartFake implements _i4.PointReview {
+  _FakePointReview_2(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeFuture_3<T1> extends _i1.SmartFake implements _i5.Future<T1> {
+  _FakeFuture_3(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -49,13 +72,22 @@ class _FakePointReview_1 extends _i1.SmartFake implements _i3.PointReview {
 /// A class which mocks [PointRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
+class MockPointRepository extends _i1.Mock implements _i6.PointRepository {
   MockPointRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i5.Future<List<_i2.Point>> findAll({
+  _i2.PostgreSQLConnection get connection => (super.noSuchMethod(
+        Invocation.getter(#connection),
+        returnValue: _FakePostgreSQLConnection_0(
+          this,
+          Invocation.getter(#connection),
+        ),
+      ) as _i2.PostgreSQLConnection);
+
+  @override
+  _i5.Future<List<_i3.Point>> findAll({
     int? limit = 20,
     int? offset = 0,
   }) =>
@@ -68,20 +100,20 @@ class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
             #offset: offset,
           },
         ),
-        returnValue: _i5.Future<List<_i2.Point>>.value(<_i2.Point>[]),
-      ) as _i5.Future<List<_i2.Point>>);
+        returnValue: _i5.Future<List<_i3.Point>>.value(<_i3.Point>[]),
+      ) as _i5.Future<List<_i3.Point>>);
 
   @override
-  _i5.Future<_i2.Point?> findById(int? id) => (super.noSuchMethod(
+  _i5.Future<_i3.Point?> findById(int? id) => (super.noSuchMethod(
         Invocation.method(
           #findById,
           [id],
         ),
-        returnValue: _i5.Future<_i2.Point?>.value(),
-      ) as _i5.Future<_i2.Point?>);
+        returnValue: _i5.Future<_i3.Point?>.value(),
+      ) as _i5.Future<_i3.Point?>);
 
   @override
-  _i5.Future<List<_i6.NearbyPoint>> findNearby({
+  _i5.Future<List<_i7.NearbyPoint>> findNearby({
     required double? lat,
     required double? lon,
     required double? radiusM,
@@ -99,11 +131,11 @@ class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
           },
         ),
         returnValue:
-            _i5.Future<List<_i6.NearbyPoint>>.value(<_i6.NearbyPoint>[]),
-      ) as _i5.Future<List<_i6.NearbyPoint>>);
+            _i5.Future<List<_i7.NearbyPoint>>.value(<_i7.NearbyPoint>[]),
+      ) as _i5.Future<List<_i7.NearbyPoint>>);
 
   @override
-  _i5.Future<List<_i2.Point>> findByCategory(
+  _i5.Future<List<_i3.Point>> findByCategory(
     int? categoryId, {
     int? limit = 20,
     int? offset = 0,
@@ -117,38 +149,38 @@ class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
             #offset: offset,
           },
         ),
-        returnValue: _i5.Future<List<_i2.Point>>.value(<_i2.Point>[]),
-      ) as _i5.Future<List<_i2.Point>>);
+        returnValue: _i5.Future<List<_i3.Point>>.value(<_i3.Point>[]),
+      ) as _i5.Future<List<_i3.Point>>);
 
   @override
-  _i5.Future<List<_i7.PointCategory>> getCategoriesForPoint(int? pointId) =>
+  _i5.Future<List<_i8.PointCategory>> getCategoriesForPoint(int? pointId) =>
       (super.noSuchMethod(
         Invocation.method(
           #getCategoriesForPoint,
           [pointId],
         ),
         returnValue:
-            _i5.Future<List<_i7.PointCategory>>.value(<_i7.PointCategory>[]),
-      ) as _i5.Future<List<_i7.PointCategory>>);
+            _i5.Future<List<_i8.PointCategory>>.value(<_i8.PointCategory>[]),
+      ) as _i5.Future<List<_i8.PointCategory>>);
 
   @override
-  _i5.Future<_i2.Point> createPoint(Map<String, dynamic>? data) =>
+  _i5.Future<_i3.Point> createPoint(Map<String, dynamic>? data) =>
       (super.noSuchMethod(
         Invocation.method(
           #createPoint,
           [data],
         ),
-        returnValue: _i5.Future<_i2.Point>.value(_FakePoint_0(
+        returnValue: _i5.Future<_i3.Point>.value(_FakePoint_1(
           this,
           Invocation.method(
             #createPoint,
             [data],
           ),
         )),
-      ) as _i5.Future<_i2.Point>);
+      ) as _i5.Future<_i3.Point>);
 
   @override
-  _i5.Future<_i2.Point?> updatePoint(
+  _i5.Future<_i3.Point?> updatePoint(
     int? id,
     Map<String, dynamic>? data,
   ) =>
@@ -160,20 +192,20 @@ class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
             data,
           ],
         ),
-        returnValue: _i5.Future<_i2.Point?>.value(),
-      ) as _i5.Future<_i2.Point?>);
+        returnValue: _i5.Future<_i3.Point?>.value(),
+      ) as _i5.Future<_i3.Point?>);
 
   @override
-  _i5.Future<_i2.Point?> deletePoint(int? id) => (super.noSuchMethod(
+  _i5.Future<_i3.Point?> deletePoint(int? id) => (super.noSuchMethod(
         Invocation.method(
           #deletePoint,
           [id],
         ),
-        returnValue: _i5.Future<_i2.Point?>.value(),
-      ) as _i5.Future<_i2.Point?>);
+        returnValue: _i5.Future<_i3.Point?>.value(),
+      ) as _i5.Future<_i3.Point?>);
 
   @override
-  _i5.Future<_i2.Point?> updateRating(
+  _i5.Future<_i3.Point?> updateRating(
     int? pointId,
     double? rating,
   ) =>
@@ -185,8 +217,8 @@ class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
             rating,
           ],
         ),
-        returnValue: _i5.Future<_i2.Point?>.value(),
-      ) as _i5.Future<_i2.Point?>);
+        returnValue: _i5.Future<_i3.Point?>.value(),
+      ) as _i5.Future<_i3.Point?>);
 
   @override
   _i5.Future<void> updatePointCategories(
@@ -206,37 +238,93 @@ class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<List<_i3.PointReview>> getPointReviews(int? pointId) =>
+  _i5.Future<List<_i4.PointReview>> getPointReviews(int? pointId) =>
       (super.noSuchMethod(
         Invocation.method(
           #getPointReviews,
           [pointId],
         ),
         returnValue:
-            _i5.Future<List<_i3.PointReview>>.value(<_i3.PointReview>[]),
-      ) as _i5.Future<List<_i3.PointReview>>);
+            _i5.Future<List<_i4.PointReview>>.value(<_i4.PointReview>[]),
+      ) as _i5.Future<List<_i4.PointReview>>);
 
   @override
-  _i5.Future<_i3.PointReview> createPointReview(Map<String, dynamic>? data) =>
+  _i5.Future<_i4.PointReview> createPointReview(Map<String, dynamic>? data) =>
       (super.noSuchMethod(
         Invocation.method(
           #createPointReview,
           [data],
         ),
-        returnValue: _i5.Future<_i3.PointReview>.value(_FakePointReview_1(
+        returnValue: _i5.Future<_i4.PointReview>.value(_FakePointReview_2(
           this,
           Invocation.method(
             #createPointReview,
             [data],
           ),
         )),
-      ) as _i5.Future<_i3.PointReview>);
+      ) as _i5.Future<_i4.PointReview>);
+
+  @override
+  _i5.Future<List<Map<String, dynamic>>> query(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #query,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i5.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i5.Future<List<Map<String, dynamic>>>);
+
+  @override
+  _i5.Future<Map<String, dynamic>?> queryOne(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #queryOne,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i5.Future<Map<String, dynamic>?>.value(),
+      ) as _i5.Future<Map<String, dynamic>?>);
+
+  @override
+  _i5.Future<T> transaction<T>(
+          _i5.Future<T> Function(_i2.PostgreSQLExecutionContext)? callback) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #transaction,
+          [callback],
+        ),
+        returnValue: _i9.ifNotNull(
+              _i9.dummyValueOrNull<T>(
+                this,
+                Invocation.method(
+                  #transaction,
+                  [callback],
+                ),
+              ),
+              (T v) => _i5.Future<T>.value(v),
+            ) ??
+            _FakeFuture_3<T>(
+              this,
+              Invocation.method(
+                #transaction,
+                [callback],
+              ),
+            ),
+      ) as _i5.Future<T>);
 }
 
 /// A class which mocks [CacheService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockCacheService extends _i1.Mock implements _i8.CacheService {
+class MockCacheService extends _i1.Mock implements _i10.CacheService {
   MockCacheService() {
     _i1.throwOnMissingStub(this);
   }

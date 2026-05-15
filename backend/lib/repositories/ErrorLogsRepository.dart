@@ -2,11 +2,10 @@ import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/ErrorLogs.dart';
 import '../model/enums/ErrorSeverity.dart';
+import '../utils/AppException.dart';
 
 class ErrorLogsRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  ErrorLogsRepository(this._connection) : super(_connection);
+  ErrorLogsRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<ErrorLogs> create(ErrorLogs error) async {
     try {
@@ -40,7 +39,7 @@ class ErrorLogsRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания лога ошибки');
+        throw const InternalServerException();
       }
 
       return ErrorLogs.fromJson(result);

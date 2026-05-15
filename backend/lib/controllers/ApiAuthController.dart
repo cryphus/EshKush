@@ -4,6 +4,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../middleware/SecurityMiddleware.dart';
+import '../model/dto/requests/LoginDto.dart';
 import '../repositories/UserRepository.dart';
 import '../repositories/UserSessionRepository.dart';
 import '../services/AuthService.dart';
@@ -90,9 +91,10 @@ class ApiAuthController {
   Future<Response> _login(Request request) async {
     try {
       final data = await RequestBodyUtils.readJsonObject(request);
+      final loginDto = LoginDto.fromJson(data);
       final result = await _authService.login(
-        data['username'],
-        data['password'],
+        loginDto.username,
+        loginDto.password,
         userAgent: request.headers['user-agent'] ?? 'unknown',
         ipAddress: SecurityMiddleware.extractClientIp(request),
       );

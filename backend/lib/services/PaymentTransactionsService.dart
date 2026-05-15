@@ -21,6 +21,16 @@ class PaymentTransactionsService {
     return _repository.findByUserId(userId);
   }
 
+  Future<bool> isTransactionOwnedByUser({
+    required int transactionId,
+    required int userId,
+  }) async {
+    return _repository.isOwnedByUser(
+      transactionId: transactionId,
+      userId: userId,
+    );
+  }
+
   Future<List<PaymentTransactions>> getTransactionsByOrderId(
       int orderId) async {
     return _repository.findByOrderId(orderId);

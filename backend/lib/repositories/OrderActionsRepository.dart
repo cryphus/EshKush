@@ -2,11 +2,10 @@ import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/OrderActions.dart';
 import '../model/enums/ActionType.dart';
+import '../utils/AppException.dart';
 
 class OrderActionsRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  OrderActionsRepository(this._connection) : super(_connection);
+  OrderActionsRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<OrderActions?> findById(int id) async {
     try {
@@ -69,7 +68,7 @@ class OrderActionsRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания действия');
+        throw const InternalServerException();
       }
       return OrderActions.fromJson(result);
     } catch (e) {
@@ -95,7 +94,8 @@ class OrderActionsRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Действие не найдено');
+        throw const NotFoundException(
+            'Р вЂќР ВµР в„–РЎРѓРЎвЂљР Р†Р С‘Р Вµ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р С•');
       }
       return OrderActions.fromJson(result);
     } catch (e) {

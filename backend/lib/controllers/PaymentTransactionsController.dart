@@ -78,9 +78,10 @@ class PaymentTransactionsController {
       if (!_isElevated(request)) {
         final requestUserId = RequestContextUtils.getUserId(request);
         if (requestUserId == null) return _forbidden();
-        final ownTransactions =
-            await _transactionsService.getTransactionsByUserId(requestUserId);
-        final accessible = ownTransactions.any((t) => t.id == transaction.id);
+        final accessible = await _transactionsService.isTransactionOwnedByUser(
+          transactionId: transaction.id,
+          userId: requestUserId,
+        );
         if (!accessible) return _forbidden();
       }
 

@@ -42,6 +42,7 @@ class ErrorResponseUtils {
     if (e is UnauthorizedException) return ErrorCode.unauthorized;
     if (e is ConflictException) return ErrorCode.conflict;
     if (e is TooManyRequestsException) return ErrorCode.tooManyRequests;
+    if (e is InternalServerException) return ErrorCode.internalError;
     if (e is BadRequestException ||
         e is FormatException ||
         e is ArgumentError) {

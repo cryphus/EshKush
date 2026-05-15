@@ -1,36 +1,10 @@
 import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/PointCategory.dart';
+import '../utils/AppException.dart';
 
 class PointCategoryRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  PointCategoryRepository(this._connection) : super(_connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query,
-      {Map<String, dynamic>? params}) async {
-    try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
-      final results = await _connection.mappedResultsQuery(query,
-          substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query,
-      {Map<String, dynamic>? params}) async {
-    try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
-      final results = await _connection.mappedResultsQuery(query,
-          substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  PointCategoryRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<PointCategory?> findById(int id) async {
     try {
@@ -104,7 +78,7 @@ class PointCategoryRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания категории');
+        throw const InternalServerException();
       }
 
       return PointCategory.fromJson({
@@ -133,7 +107,7 @@ class PointCategoryRepository extends BaseRepository {
       }
 
       if (updateFields.isEmpty) {
-        throw Exception('Нет полей для обновления');
+        throw const BadRequestException();
       }
 
       final result = await queryOne(
@@ -151,7 +125,7 @@ class PointCategoryRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Категория не найдена');
+        throw const NotFoundException();
       }
 
       return PointCategory.fromJson({
@@ -172,7 +146,7 @@ class PointCategoryRepository extends BaseRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Категория не найдена');
+        throw const NotFoundException();
       }
     } catch (e) {
       rethrow;

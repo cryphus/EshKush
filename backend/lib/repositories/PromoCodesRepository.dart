@@ -1,11 +1,10 @@
 import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/PromoCodes.dart';
+import '../utils/AppException.dart';
 
 class PromoCodesRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  PromoCodesRepository(this._connection) : super(_connection);
+  PromoCodesRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<PromoCodes?> findById(int id) async {
     try {
@@ -100,7 +99,7 @@ class PromoCodesRepository extends BaseRepository {
 
   Future<PromoCodes> create(PromoCodes promoCode) async {
     try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
+      await connection.execute('SET client_encoding TO \'UTF8\'');
       final result = await queryOne(
         '''
         INSERT INTO promo_codes (
@@ -147,7 +146,7 @@ class PromoCodesRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания промокода');
+        throw const InternalServerException();
       }
       return PromoCodes.fromJson(result);
     } catch (e) {
@@ -203,7 +202,8 @@ class PromoCodesRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Промокод не найден');
+        throw const NotFoundException(
+            'Р СџРЎР‚Р С•Р СР С•Р С”Р С•Р Т‘ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…');
       }
       return PromoCodes.fromJson(result);
     } catch (e) {
@@ -218,7 +218,8 @@ class PromoCodesRepository extends BaseRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Промокод не найден');
+        throw const NotFoundException(
+            'Р СџРЎР‚Р С•Р СР С•Р С”Р С•Р Т‘ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…');
       }
     } catch (e) {
       rethrow;

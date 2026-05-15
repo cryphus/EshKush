@@ -1,11 +1,10 @@
 import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/UserSessions.dart';
+import '../utils/AppException.dart';
 
 class UserSessionRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  UserSessionRepository(this._connection) : super(_connection);
+  UserSessionRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<UserSessions?> findById(int id) async {
     try {
@@ -57,7 +56,7 @@ class UserSessionRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания сессии');
+        throw const InternalServerException();
       }
       return UserSessions.fromJson(result);
     } catch (e) {
@@ -89,7 +88,8 @@ class UserSessionRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Сессия не найдена');
+        throw const NotFoundException(
+            'Р РЋР ВµРЎРѓРЎРѓР С‘РЎРЏ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
       return UserSessions.fromJson(result);
     } catch (e) {
@@ -104,14 +104,15 @@ class UserSessionRepository extends BaseRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Сессия не найдена');
+        throw const NotFoundException(
+            'Р РЋР ВµРЎРѓРЎРѓР С‘РЎРЏ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
     } catch (e) {
       rethrow;
     }
   }
 
-  /// Проверка, что jti в blacklist (отозван при logout/terminate).
+  /// Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚Р С”Р В°, РЎвЂЎРЎвЂљР С• jti Р Р† blacklist (Р С•РЎвЂљР С•Р В·Р Р†Р В°Р Р… Р С—РЎР‚Р С‘ logout/terminate).
   Future<bool> isBlacklisted(String jtiHash) async {
     try {
       final result = await queryOne(
@@ -139,7 +140,9 @@ class UserSessionRepository extends BaseRepository {
         ''',
         params: {'jtiHash': jtiHash, 'expiresAt': expiresAt},
       );
-    } catch (e) {}
+    } catch (_) {
+      // Best-effort blacklist update: auth flow should not fail on cache/DB hiccups.
+    }
   }
 
   Future<void> addManyToBlacklist(
@@ -154,7 +157,9 @@ class UserSessionRepository extends BaseRepository {
         ''',
         params: {'hashes': jtiHashes, 'expiresAt': expiresAt},
       );
-    } catch (e) {}
+    } catch (_) {
+      // Best-effort blacklist bulk update.
+    }
   }
 
   Future<UserSessions?> findActiveByRefreshJtiHash(
@@ -249,13 +254,15 @@ class UserSessionRepository extends BaseRepository {
         ''',
         params: {'id': sessionId},
       );
-    } catch (e) {}
+    } catch (_) {
+      // Non-critical heartbeat update.
+    }
   }
 
-  /// Удаление истёкших сессий (TTL/auto-expire cleanup).
+  /// Р Р€Р Т‘Р В°Р В»Р ВµР Р…Р С‘Р Вµ Р С‘РЎРѓРЎвЂљРЎвЂР С”РЎв‚¬Р С‘РЎвЂ¦ РЎРѓР ВµРЎРѓРЎРѓР С‘Р в„– (TTL/auto-expire cleanup).
   Future<int> cleanupExpiredSessions() async {
     try {
-      return await _connection.execute(
+      return await connection.execute(
         'DELETE FROM user_sessions WHERE expires_at < NOW()',
       );
     } catch (e) {
@@ -263,12 +270,14 @@ class UserSessionRepository extends BaseRepository {
     }
   }
 
-  /// Удаление записей из blacklist с истёкшим expires_at.
+  /// Р Р€Р Т‘Р В°Р В»Р ВµР Р…Р С‘Р Вµ Р В·Р В°Р С—Р С‘РЎРѓР ВµР в„– Р С‘Р В· blacklist РЎРѓ Р С‘РЎРѓРЎвЂљРЎвЂР С”РЎв‚¬Р С‘Р С expires_at.
   Future<void> cleanupExpiredBlacklist() async {
     try {
-      await _connection.execute(
+      await connection.execute(
         'DELETE FROM token_blacklist WHERE expires_at < NOW()',
       );
-    } catch (e) {}
+    } catch (_) {
+      // Cleanup is best-effort.
+    }
   }
 }

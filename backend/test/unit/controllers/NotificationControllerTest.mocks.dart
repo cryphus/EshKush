@@ -87,12 +87,39 @@ class MockNotificationService extends _i1.Mock
       ) as _i4.Future<List<_i2.Notification>>);
 
   @override
+  _i4.Future<_i2.Notification?> getNotificationById(int? notificationId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getNotificationById,
+          [notificationId],
+        ),
+        returnValue: _i4.Future<_i2.Notification?>.value(),
+      ) as _i4.Future<_i2.Notification?>);
+
+  @override
   _i4.Future<List<_i2.Notification>> getNotificationsByType(
           _i5.NotificationType? type) =>
       (super.noSuchMethod(
         Invocation.method(
           #getNotificationsByType,
           [type],
+        ),
+        returnValue:
+            _i4.Future<List<_i2.Notification>>.value(<_i2.Notification>[]),
+      ) as _i4.Future<List<_i2.Notification>>);
+
+  @override
+  _i4.Future<List<_i2.Notification>> getUserNotificationsByType(
+    int? userId,
+    _i5.NotificationType? type,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUserNotificationsByType,
+          [
+            userId,
+            type,
+          ],
         ),
         returnValue:
             _i4.Future<List<_i2.Notification>>.value(<_i2.Notification>[]),
@@ -108,6 +135,23 @@ class MockNotificationService extends _i1.Mock
         returnValue:
             _i4.Future<List<_i2.Notification>>.value(<_i2.Notification>[]),
       ) as _i4.Future<List<_i2.Notification>>);
+
+  @override
+  _i4.Future<bool> isNotificationOwnedByUser({
+    required int? notificationId,
+    required int? userId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #isNotificationOwnedByUser,
+          [],
+          {
+            #notificationId: notificationId,
+            #userId: userId,
+          },
+        ),
+        returnValue: _i4.Future<bool>.value(false),
+      ) as _i4.Future<bool>);
 
   @override
   _i4.Future<List<_i2.Notification>> getRecentNotifications(

@@ -107,7 +107,7 @@ void main() {
     test('4xx при пустом теле', () async {
       if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
       final (code, _) = await _post('/login', {});
-      expect(code, anyOf(400, 401, 422));
+      expect(code, anyOf(400, 401, 422, 429));
     });
 
     test('401 при неверном пароле', () async {

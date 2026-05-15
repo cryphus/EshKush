@@ -4,12 +4,13 @@ import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/ValidationUtils.dart';
 import 'BaseRepository.dart';
+import '../utils/AppException.dart';
 
 class UserRepository extends BaseRepository {
   UserRepository(PostgreSQLConnection connection) : super(connection);
 
-  /// Единый список колонок users, который должен возвращаться во всех SELECT.
-  /// Дублируется в `fromJson`, поэтому синхронизируется при расширении схемы.
+  /// Р В РІР‚СћР В РўвЂР В РЎвЂР В Р вЂ¦Р РЋРІР‚в„–Р В РІвЂћвЂ“ Р РЋР С“Р В РЎвЂ”Р В РЎвЂР РЋР С“Р В РЎвЂўР В РЎвЂќ Р В РЎвЂќР В РЎвЂўР В Р’В»Р В РЎвЂўР В Р вЂ¦Р В РЎвЂўР В РЎвЂќ users, Р В РЎвЂќР В РЎвЂўР РЋРІР‚С™Р В РЎвЂўР РЋР вЂљР РЋРІР‚в„–Р В РІвЂћвЂ“ Р В РўвЂР В РЎвЂўР В Р’В»Р В Р’В¶Р В Р’ВµР В Р вЂ¦ Р В Р вЂ Р В РЎвЂўР В Р’В·Р В Р вЂ Р РЋР вЂљР В Р’В°Р РЋРІР‚В°Р В Р’В°Р РЋРІР‚С™Р РЋР Р‰Р РЋР С“Р РЋР РЏ Р В Р вЂ Р В РЎвЂў Р В Р вЂ Р РЋР С“Р В Р’ВµР РЋРІР‚В¦ SELECT.
+  /// Р В РІР‚СњР РЋРЎвЂњР В Р’В±Р В Р’В»Р В РЎвЂР РЋР вЂљР РЋРЎвЂњР В Р’ВµР РЋРІР‚С™Р РЋР С“Р РЋР РЏ Р В Р вЂ  `fromJson`, Р В РЎвЂ”Р В РЎвЂўР РЋР РЉР РЋРІР‚С™Р В РЎвЂўР В РЎВР РЋРЎвЂњ Р РЋР С“Р В РЎвЂР В Р вЂ¦Р РЋРІР‚В¦Р РЋР вЂљР В РЎвЂўР В Р вЂ¦Р В РЎвЂР В Р’В·Р В РЎвЂР РЋР вЂљР РЋРЎвЂњР В Р’ВµР РЋРІР‚С™Р РЋР С“Р РЋР РЏ Р В РЎвЂ”Р РЋР вЂљР В РЎвЂ Р РЋР вЂљР В Р’В°Р РЋР С“Р РЋРІвЂљВ¬Р В РЎвЂР РЋР вЂљР В Р’ВµР В Р вЂ¦Р В РЎвЂР В РЎвЂ Р РЋР С“Р РЋРІР‚В¦Р В Р’ВµР В РЎВР РЋРІР‚в„–.
   static const String _userColumns = '''
     id,
     username,
@@ -71,7 +72,7 @@ class UserRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания пользователя');
+        throw const InternalServerException();
       }
       return User.fromJson(result);
     } catch (e) {
@@ -80,7 +81,7 @@ class UserRepository extends BaseRepository {
   }
 
   Future<User?> authenticate(String identifier, String password) async {
-    // Ищем по username, если не найдено — по номеру телефона
+    // Р В Р’ВР РЋРІР‚В°Р В Р’ВµР В РЎВ Р В РЎвЂ”Р В РЎвЂў username, Р В Р’ВµР РЋР С“Р В Р’В»Р В РЎвЂ Р В Р вЂ¦Р В Р’Вµ Р В Р вЂ¦Р В Р’В°Р В РІвЂћвЂ“Р В РўвЂР В Р’ВµР В Р вЂ¦Р В РЎвЂў Р Р†Р вЂљРІР‚Сњ Р В РЎвЂ”Р В РЎвЂў Р В Р вЂ¦Р В РЎвЂўР В РЎВР В Р’ВµР РЋР вЂљР РЋРЎвЂњ Р РЋРІР‚С™Р В Р’ВµР В Р’В»Р В Р’ВµР РЋРІР‚С›Р В РЎвЂўР В Р вЂ¦Р В Р’В°
     var result = await queryOne(
       'SELECT $_userColumns FROM users WHERE username = @id',
       params: {'id': identifier},
@@ -117,8 +118,8 @@ class UserRepository extends BaseRepository {
     return result == null ? null : User.fromJson(result);
   }
 
-  /// Создаёт пользователя на основе данных OAuth провайдера.
-  /// Username генерируется из данных провайдера, при конфликте добавляется суффикс.
+  /// Р В Р Р‹Р В РЎвЂўР В Р’В·Р В РўвЂР В Р’В°Р РЋРІР‚ВР РЋРІР‚С™ Р В РЎвЂ”Р В РЎвЂўР В Р’В»Р РЋР Р‰Р В Р’В·Р В РЎвЂўР В Р вЂ Р В Р’В°Р РЋРІР‚С™Р В Р’ВµР В Р’В»Р РЋР РЏ Р В Р вЂ¦Р В Р’В° Р В РЎвЂўР РЋР С“Р В Р вЂ¦Р В РЎвЂўР В Р вЂ Р В Р’Вµ Р В РўвЂР В Р’В°Р В Р вЂ¦Р В Р вЂ¦Р РЋРІР‚в„–Р РЋРІР‚В¦ OAuth Р В РЎвЂ”Р РЋР вЂљР В РЎвЂўР В Р вЂ Р В Р’В°Р В РІвЂћвЂ“Р В РўвЂР В Р’ВµР РЋР вЂљР В Р’В°.
+  /// Username Р В РЎвЂ“Р В Р’ВµР В Р вЂ¦Р В Р’ВµР РЋР вЂљР В РЎвЂР РЋР вЂљР РЋРЎвЂњР В Р’ВµР РЋРІР‚С™Р РЋР С“Р РЋР РЏ Р В РЎвЂР В Р’В· Р В РўвЂР В Р’В°Р В Р вЂ¦Р В Р вЂ¦Р РЋРІР‚в„–Р РЋРІР‚В¦ Р В РЎвЂ”Р РЋР вЂљР В РЎвЂўР В Р вЂ Р В Р’В°Р В РІвЂћвЂ“Р В РўвЂР В Р’ВµР РЋР вЂљР В Р’В°, Р В РЎвЂ”Р РЋР вЂљР В РЎвЂ Р В РЎвЂќР В РЎвЂўР В Р вЂ¦Р РЋРІР‚С›Р В Р’В»Р В РЎвЂР В РЎвЂќР РЋРІР‚С™Р В Р’Вµ Р В РўвЂР В РЎвЂўР В Р’В±Р В Р’В°Р В Р вЂ Р В Р’В»Р РЋР РЏР В Р’ВµР РЋРІР‚С™Р РЋР С“Р РЋР РЏ Р РЋР С“Р РЋРЎвЂњР РЋРІР‚С›Р РЋРІР‚С›Р В РЎвЂР В РЎвЂќР РЋР С“.
   Future<User> createOAuthUser({
     required String baseUsername,
     String? email,
@@ -154,13 +155,15 @@ class UserRepository extends BaseRepository {
       },
     );
 
-    if (result == null) throw Exception('Ошибка создания OAuth пользователя');
+    if (result == null) throw const InternalServerException();
     return User.fromJson(result);
   }
 
   Future<User> createUser(Map<String, dynamic> data) async {
     try {
-      SafeLoggingUtils.logData('Создание пользователя с данными', data);
+      SafeLoggingUtils.logData(
+          'Р В Р Р‹Р В РЎвЂўР В Р’В·Р В РўвЂР В Р’В°Р В Р вЂ¦Р В РЎвЂР В Р’Вµ Р В РЎвЂ”Р В РЎвЂўР В Р’В»Р РЋР Р‰Р В Р’В·Р В РЎвЂўР В Р вЂ Р В Р’В°Р РЋРІР‚С™Р В Р’ВµР В Р’В»Р РЋР РЏ Р РЋР С“ Р В РўвЂР В Р’В°Р В Р вЂ¦Р В Р вЂ¦Р РЋРІР‚в„–Р В РЎВР В РЎвЂ',
+          data);
       _validateUserData(data);
 
       final result = await queryOne(
@@ -179,7 +182,7 @@ class UserRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания пользователя');
+        throw const InternalServerException();
       }
 
       return User.fromJson(result);
@@ -188,9 +191,9 @@ class UserRepository extends BaseRepository {
     }
   }
 
-  /// Создаёт пользователя на основе данных из Телеграма.
-  /// Пароль/email не задаются — их пользователь выставит позже.
-  /// Username генерируется из telegram_id, чтобы удовлетворить NOT NULL + UNIQUE.
+  /// Р В Р Р‹Р В РЎвЂўР В Р’В·Р В РўвЂР В Р’В°Р РЋРІР‚ВР РЋРІР‚С™ Р В РЎвЂ”Р В РЎвЂўР В Р’В»Р РЋР Р‰Р В Р’В·Р В РЎвЂўР В Р вЂ Р В Р’В°Р РЋРІР‚С™Р В Р’ВµР В Р’В»Р РЋР РЏ Р В Р вЂ¦Р В Р’В° Р В РЎвЂўР РЋР С“Р В Р вЂ¦Р В РЎвЂўР В Р вЂ Р В Р’Вµ Р В РўвЂР В Р’В°Р В Р вЂ¦Р В Р вЂ¦Р РЋРІР‚в„–Р РЋРІР‚В¦ Р В РЎвЂР В Р’В· Р В РЎС›Р В Р’ВµР В Р’В»Р В Р’ВµР В РЎвЂ“Р РЋР вЂљР В Р’В°Р В РЎВР В Р’В°.
+  /// Р В РЎСџР В Р’В°Р РЋР вЂљР В РЎвЂўР В Р’В»Р РЋР Р‰/email Р В Р вЂ¦Р В Р’Вµ Р В Р’В·Р В Р’В°Р В РўвЂР В Р’В°Р РЋР вЂ№Р РЋРІР‚С™Р РЋР С“Р РЋР РЏ Р Р†Р вЂљРІР‚Сњ Р В РЎвЂР РЋРІР‚В¦ Р В РЎвЂ”Р В РЎвЂўР В Р’В»Р РЋР Р‰Р В Р’В·Р В РЎвЂўР В Р вЂ Р В Р’В°Р РЋРІР‚С™Р В Р’ВµР В Р’В»Р РЋР Р‰ Р В Р вЂ Р РЋРІР‚в„–Р РЋР С“Р РЋРІР‚С™Р В Р’В°Р В Р вЂ Р В РЎвЂР РЋРІР‚С™ Р В РЎвЂ”Р В РЎвЂўР В Р’В·Р В Р’В¶Р В Р’Вµ.
+  /// Username Р В РЎвЂ“Р В Р’ВµР В Р вЂ¦Р В Р’ВµР РЋР вЂљР В РЎвЂР РЋР вЂљР РЋРЎвЂњР В Р’ВµР РЋРІР‚С™Р РЋР С“Р РЋР РЏ Р В РЎвЂР В Р’В· telegram_id, Р РЋРІР‚РЋР РЋРІР‚С™Р В РЎвЂўР В Р’В±Р РЋРІР‚в„– Р РЋРЎвЂњР В РўвЂР В РЎвЂўР В Р вЂ Р В Р’В»Р В Р’ВµР РЋРІР‚С™Р В Р вЂ Р В РЎвЂўР РЋР вЂљР В РЎвЂР РЋРІР‚С™Р РЋР Р‰ NOT NULL + UNIQUE.
   Future<User> createTelegramUser({
     required int telegramId,
     String? telegramUsername,
@@ -220,13 +223,13 @@ class UserRepository extends BaseRepository {
     );
 
     if (result == null) {
-      throw Exception('Ошибка создания Telegram-пользователя');
+      throw const InternalServerException();
     }
     return User.fromJson(result);
   }
 
-  /// Обновляет номер телефона существующего пользователя.
-  /// Используется ботом после получения контакта через request_contact.
+  /// Р В РЎвЂєР В Р’В±Р В Р вЂ¦Р В РЎвЂўР В Р вЂ Р В Р’В»Р РЋР РЏР В Р’ВµР РЋРІР‚С™ Р В Р вЂ¦Р В РЎвЂўР В РЎВР В Р’ВµР РЋР вЂљ Р РЋРІР‚С™Р В Р’ВµР В Р’В»Р В Р’ВµР РЋРІР‚С›Р В РЎвЂўР В Р вЂ¦Р В Р’В° Р РЋР С“Р РЋРЎвЂњР РЋРІР‚В°Р В Р’ВµР РЋР С“Р РЋРІР‚С™Р В Р вЂ Р РЋРЎвЂњР РЋР вЂ№Р РЋРІР‚В°Р В Р’ВµР В РЎвЂ“Р В РЎвЂў Р В РЎвЂ”Р В РЎвЂўР В Р’В»Р РЋР Р‰Р В Р’В·Р В РЎвЂўР В Р вЂ Р В Р’В°Р РЋРІР‚С™Р В Р’ВµР В Р’В»Р РЋР РЏ.
+  /// Р В Р’ВР РЋР С“Р В РЎвЂ”Р В РЎвЂўР В Р’В»Р РЋР Р‰Р В Р’В·Р РЋРЎвЂњР В Р’ВµР РЋРІР‚С™Р РЋР С“Р РЋР РЏ Р В Р’В±Р В РЎвЂўР РЋРІР‚С™Р В РЎвЂўР В РЎВ Р В РЎвЂ”Р В РЎвЂўР РЋР С“Р В Р’В»Р В Р’Вµ Р В РЎвЂ”Р В РЎвЂўР В Р’В»Р РЋРЎвЂњР РЋРІР‚РЋР В Р’ВµР В Р вЂ¦Р В РЎвЂР РЋР РЏ Р В РЎвЂќР В РЎвЂўР В Р вЂ¦Р РЋРІР‚С™Р В Р’В°Р В РЎвЂќР РЋРІР‚С™Р В Р’В° Р РЋРІР‚РЋР В Р’ВµР РЋР вЂљР В Р’ВµР В Р’В· request_contact.
   Future<User> updatePhone(int userId, String phone) async {
     final result = await queryOne(
       '''
@@ -238,13 +241,13 @@ class UserRepository extends BaseRepository {
       params: {'id': userId, 'phone': phone},
     );
     if (result == null) {
-      throw Exception('Пользователь не найден');
+      throw const NotFoundException();
     }
     return User.fromJson(result);
   }
 
-  /// Устанавливает пароль пользователя (для Telegram-юзеров, которые
-  /// хотят дополнительно входить через логин/пароль).
+  /// Р В Р в‚¬Р РЋР С“Р РЋРІР‚С™Р В Р’В°Р В Р вЂ¦Р В Р’В°Р В Р вЂ Р В Р’В»Р В РЎвЂР В Р вЂ Р В Р’В°Р В Р’ВµР РЋРІР‚С™ Р В РЎвЂ”Р В Р’В°Р РЋР вЂљР В РЎвЂўР В Р’В»Р РЋР Р‰ Р В РЎвЂ”Р В РЎвЂўР В Р’В»Р РЋР Р‰Р В Р’В·Р В РЎвЂўР В Р вЂ Р В Р’В°Р РЋРІР‚С™Р В Р’ВµР В Р’В»Р РЋР РЏ (Р В РўвЂР В Р’В»Р РЋР РЏ Telegram-Р РЋР вЂ№Р В Р’В·Р В Р’ВµР РЋР вЂљР В РЎвЂўР В Р вЂ , Р В РЎвЂќР В РЎвЂўР РЋРІР‚С™Р В РЎвЂўР РЋР вЂљР РЋРІР‚в„–Р В Р’Вµ
+  /// Р РЋРІР‚В¦Р В РЎвЂўР РЋРІР‚С™Р РЋР РЏР РЋРІР‚С™ Р В РўвЂР В РЎвЂўР В РЎвЂ”Р В РЎвЂўР В Р’В»Р В Р вЂ¦Р В РЎвЂР РЋРІР‚С™Р В Р’ВµР В Р’В»Р РЋР Р‰Р В Р вЂ¦Р В РЎвЂў Р В Р вЂ Р РЋРІР‚В¦Р В РЎвЂўР В РўвЂР В РЎвЂР РЋРІР‚С™Р РЋР Р‰ Р РЋРІР‚РЋР В Р’ВµР РЋР вЂљР В Р’ВµР В Р’В· Р В Р’В»Р В РЎвЂўР В РЎвЂ“Р В РЎвЂР В Р вЂ¦/Р В РЎвЂ”Р В Р’В°Р РЋР вЂљР В РЎвЂўР В Р’В»Р РЋР Р‰).
   Future<void> setPassword(int userId, String password) async {
     await queryOne(
       '''
@@ -276,7 +279,7 @@ class UserRepository extends BaseRepository {
 
   Future<User?> findByEmail(String email) async {
     if (!UserValidationUtils.isValidEmail(email)) {
-      throw Exception('Некорректный email');
+      throw const BadRequestException();
     }
     final result = await queryOne(
       'SELECT $_userColumns FROM users WHERE email = @email',
@@ -287,7 +290,7 @@ class UserRepository extends BaseRepository {
 
   Future<User?> findByNumber(String number) async {
     if (!UserValidationUtils.isValidPhoneNumber(number)) {
-      throw Exception('Некорректный номер телефона');
+      throw const BadRequestException();
     }
     final result = await queryOne(
       'SELECT $_userColumns FROM users WHERE number = @number',
@@ -304,7 +307,7 @@ class UserRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Пользователь не найден');
+        throw const NotFoundException();
       }
 
       final List<dynamic> favoriteIds = result['favorite_ids'] ?? [];
@@ -317,7 +320,7 @@ class UserRepository extends BaseRepository {
   Future<void> addFavoritePoint(int userId, int pointId) async {
     try {
       if (pointId <= 0) {
-        throw Exception('Некорректный идентификатор точки');
+        throw const BadRequestException();
       }
 
       await queryOne(
@@ -339,7 +342,7 @@ class UserRepository extends BaseRepository {
   Future<void> removeFavoritePoint(int userId, int pointId) async {
     try {
       if (pointId <= 0) {
-        throw Exception('Некорректный идентификатор точки');
+        throw const BadRequestException();
       }
 
       await queryOne(
@@ -363,7 +366,7 @@ class UserRepository extends BaseRepository {
         UserValidationUtils.validateUserRegistrationData(data);
     if (validationErrors.isNotEmpty) {
       final errorMessages = validationErrors.values.join(', ');
-      throw Exception('Ошибки валидации: $errorMessages');
+      throw BadRequestException(errorMessages);
     }
   }
 
@@ -394,7 +397,7 @@ class UserRepository extends BaseRepository {
       }
 
       if (updateFields.isEmpty) {
-        throw Exception('Нет полей для обновления');
+        throw const BadRequestException();
       }
 
       final updateQuery = '''
@@ -407,7 +410,7 @@ class UserRepository extends BaseRepository {
       final result = await queryOne(updateQuery, params: params);
 
       if (result == null) {
-        throw Exception('Пользователь не найден');
+        throw const NotFoundException();
       }
 
       return User.fromJson(result);

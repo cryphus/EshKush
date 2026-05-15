@@ -5,7 +5,6 @@
 /// семантику репозиториев без запущенной БД.
 import 'package:test/test.dart';
 import 'package:backend/model/entities/Order.dart';
-import 'package:backend/model/entities/User.dart';
 import 'package:backend/model/enums/OrderStatus.dart';
 import 'package:backend/model/enums/UserRole.dart';
 

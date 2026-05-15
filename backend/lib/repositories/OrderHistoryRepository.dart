@@ -2,11 +2,10 @@ import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/OrderHistory.dart';
 import '../model/enums/HistoryStatus.dart';
+import '../utils/AppException.dart';
 
 class OrderHistoryRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  OrderHistoryRepository(this._connection) : super(_connection);
+  OrderHistoryRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<OrderHistory?> findById(int id) async {
     try {
@@ -78,7 +77,7 @@ class OrderHistoryRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания истории заказа');
+        throw const InternalServerException();
       }
       return OrderHistory.fromJson(result);
     } catch (e) {
@@ -118,7 +117,8 @@ class OrderHistoryRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('История заказа не найдена');
+        throw const NotFoundException(
+            'Р ВРЎРѓРЎвЂљР С•РЎР‚Р С‘РЎРЏ Р В·Р В°Р С”Р В°Р В·Р В° Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
       return OrderHistory.fromJson(result);
     } catch (e) {

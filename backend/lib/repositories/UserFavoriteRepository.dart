@@ -1,11 +1,10 @@
 import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/UserFavorite.dart';
+import '../utils/AppException.dart';
 
 class UserFavoriteRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  UserFavoriteRepository(this._connection) : super(_connection);
+  UserFavoriteRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<List<UserFavorite>> findByUserId(int userId) async {
     try {
@@ -46,7 +45,7 @@ class UserFavoriteRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка добавления места в избранное');
+        throw const InternalServerException();
       }
       return UserFavorite.fromJson(result);
     } catch (e) {
@@ -68,7 +67,8 @@ class UserFavoriteRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Место не найдено в избранном');
+        throw const NotFoundException(
+            'Р СљР ВµРЎРѓРЎвЂљР С• Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р С• Р Р† Р С‘Р В·Р В±РЎР‚Р В°Р Р…Р Р…Р С•Р С');
       }
     } catch (e) {
       rethrow;

@@ -10,25 +10,36 @@ abstract class AppException implements Exception {
 }
 
 class NotFoundException extends AppException {
-  const NotFoundException([String message = 'Ресурс не найден']) : super(message);
+  const NotFoundException([String message = 'Ресурс не найден'])
+      : super(message);
 }
 
 class ForbiddenException extends AppException {
-  const ForbiddenException([String message = 'Доступ запрещён']) : super(message);
+  const ForbiddenException([String message = 'Доступ запрещён'])
+      : super(message);
 }
 
 class UnauthorizedException extends AppException {
-  const UnauthorizedException([String message = 'Требуется авторизация']) : super(message);
+  const UnauthorizedException([String message = 'Требуется авторизация'])
+      : super(message);
 }
 
 class ConflictException extends AppException {
-  const ConflictException([String message = 'Конфликт данных']) : super(message);
+  const ConflictException([String message = 'Конфликт данных'])
+      : super(message);
 }
 
 class BadRequestException extends AppException {
-  const BadRequestException([String message = 'Некорректный запрос']) : super(message);
+  const BadRequestException([String message = 'Некорректный запрос'])
+      : super(message);
 }
 
 class TooManyRequestsException extends AppException {
-  const TooManyRequestsException([String message = 'Слишком много запросов']) : super(message);
+  const TooManyRequestsException([String message = 'Слишком много запросов'])
+      : super(message);
+}
+
+class InternalServerException extends AppException {
+  const InternalServerException([String message = 'Внутренняя ошибка сервера'])
+      : super(message);
 }

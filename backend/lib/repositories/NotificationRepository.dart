@@ -1,12 +1,19 @@
-import 'package:postgres/postgres.dart' as pg;
+import 'package:postgres/postgres.dart' hide Notification;
 import 'BaseRepository.dart';
 import '../model/entities/Notification.dart';
 import '../model/enums/NotificationType.dart';
+import '../utils/AppException.dart';
 
 class NotificationRepository extends BaseRepository {
-  final pg.PostgreSQLConnection _connection;
+  NotificationRepository(PostgreSQLConnection connection) : super(connection);
 
-  NotificationRepository(this._connection) : super(_connection);
+  Future<Notification?> findById(int notificationId) async {
+    final result = await queryOne(
+      'SELECT * FROM notifications WHERE id = @id',
+      params: {'id': notificationId},
+    );
+    return result == null ? null : Notification.fromJson(result);
+  }
 
   Future<Notification> create(Notification notification) async {
     try {
@@ -35,7 +42,7 @@ class NotificationRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания уведомления');
+        throw const InternalServerException();
       }
 
       return Notification.fromJson(result);
@@ -68,6 +75,25 @@ class NotificationRepository extends BaseRepository {
     }
   }
 
+  Future<List<Notification>> findByUserIdAndType(
+    int userId,
+    NotificationType type,
+  ) async {
+    final results = await query(
+      '''
+      SELECT *
+      FROM notifications
+      WHERE user_id = @userId AND type = @type::notification_type
+      ORDER BY created_at DESC
+      ''',
+      params: {
+        'userId': userId,
+        'type': type.toString().split('.').last,
+      },
+    );
+    return results.map((map) => Notification.fromJson(map)).toList();
+  }
+
   Future<List<Notification>> findUnread(int userId) async {
     try {
       final results = await query(
@@ -78,6 +104,25 @@ class NotificationRepository extends BaseRepository {
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<bool> existsByIdAndUserId({
+    required int notificationId,
+    required int userId,
+  }) async {
+    final result = await queryOne(
+      '''
+      SELECT 1
+      FROM notifications
+      WHERE id = @notificationId AND user_id = @userId
+      LIMIT 1
+      ''',
+      params: {
+        'notificationId': notificationId,
+        'userId': userId,
+      },
+    );
+    return result != null;
   }
 
   Future<List<Notification>> findRecent({int limit = 100}) async {

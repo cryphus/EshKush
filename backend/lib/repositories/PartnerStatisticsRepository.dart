@@ -1,11 +1,11 @@
 import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/PartnerStatistics.dart';
+import '../utils/AppException.dart';
 
 class PartnerStatisticsRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  PartnerStatisticsRepository(this._connection) : super(_connection);
+  PartnerStatisticsRepository(PostgreSQLConnection connection)
+      : super(connection);
 
   Future<PartnerStatistics?> findById(int id) async {
     try {
@@ -69,7 +69,7 @@ class PartnerStatisticsRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания статистики');
+        throw const InternalServerException();
       }
       return PartnerStatistics.fromJson(result);
     } catch (e) {
@@ -102,7 +102,8 @@ class PartnerStatisticsRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Статистика не найдена');
+        throw const NotFoundException(
+            'Р РЋРЎвЂљР В°РЎвЂљР С‘РЎРѓРЎвЂљР С‘Р С”Р В° Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
       return PartnerStatistics.fromJson(result);
     } catch (e) {

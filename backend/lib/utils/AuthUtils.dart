@@ -4,6 +4,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'dart:io';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:uuid/uuid.dart';
+import 'AppException.dart';
 
 class AuthUtils {
   static String? _jwtSecretCached;
@@ -17,7 +18,10 @@ class AuthUtils {
 
   static String _readRequired(String key) {
     final v = Platform.environment[key];
-    if (v == null || v.isEmpty) throw Exception('$key не установлен в переменных окружения');
+    if (v == null || v.isEmpty) {
+      throw InternalServerException(
+          '$key не установлен в переменных окружения');
+    }
     return v;
   }
 
@@ -70,8 +74,10 @@ class AuthUtils {
     final now = DateTime.now();
     final refreshJti = _generateJTI();
     final refreshExp = now.add(Duration(days: _refreshTokenExpirationInDays));
-    final accessToken = _generateAccessToken(userId, role, refreshJti: refreshJti, issuedAt: now);
-    final refreshToken = _generateRefreshToken(userId, refreshJti: refreshJti, issuedAt: now);
+    final accessToken = _generateAccessToken(userId, role,
+        refreshJti: refreshJti, issuedAt: now);
+    final refreshToken =
+        _generateRefreshToken(userId, refreshJti: refreshJti, issuedAt: now);
 
     return {
       'access_token': accessToken,
@@ -81,7 +87,8 @@ class AuthUtils {
     };
   }
 
-  static String _generateAccessToken(int userId, String role, {required String refreshJti, required DateTime issuedAt}) {
+  static String _generateAccessToken(int userId, String role,
+      {required String refreshJti, required DateTime issuedAt}) {
     final iat = issuedAt.millisecondsSinceEpoch ~/ 1000;
     final payload = {
       'id': userId,
@@ -89,7 +96,10 @@ class AuthUtils {
       'type': 'access',
       'iat': iat,
       'nbf': iat,
-      'exp': issuedAt.add(Duration(minutes: _tokenExpirationInMinutes)).millisecondsSinceEpoch ~/ 1000,
+      'exp': issuedAt
+              .add(Duration(minutes: _tokenExpirationInMinutes))
+              .millisecondsSinceEpoch ~/
+          1000,
       'jti': _generateJTI(),
       'rtj': refreshJti,
     };
@@ -98,7 +108,7 @@ class AuthUtils {
     final aud = _jwtAudience;
     if (iss != null) payload['iss'] = iss;
     if (aud != null) payload['aud'] = aud;
-    
+
     final header = {
       'alg': 'HS256',
       'typ': 'JWT',
@@ -107,14 +117,18 @@ class AuthUtils {
     return _encodeJWT(header, payload, _jwtSecret);
   }
 
-  static String _generateRefreshToken(int userId, {required String refreshJti, required DateTime issuedAt}) {
+  static String _generateRefreshToken(int userId,
+      {required String refreshJti, required DateTime issuedAt}) {
     final iat = issuedAt.millisecondsSinceEpoch ~/ 1000;
     final payload = {
       'id': userId,
       'type': 'refresh',
       'iat': iat,
       'nbf': iat,
-      'exp': issuedAt.add(Duration(days: _refreshTokenExpirationInDays)).millisecondsSinceEpoch ~/ 1000,
+      'exp': issuedAt
+              .add(Duration(days: _refreshTokenExpirationInDays))
+              .millisecondsSinceEpoch ~/
+          1000,
       'jti': refreshJti,
     };
 
@@ -122,7 +136,7 @@ class AuthUtils {
     final aud = _jwtAudience;
     if (iss != null) payload['iss'] = iss;
     if (aud != null) payload['aud'] = aud;
-    
+
     final header = {
       'alg': 'HS256',
       'typ': 'JWT',
@@ -138,23 +152,25 @@ class AuthUtils {
     return _uuid.v4();
   }
 
-  static String _encodeJWT(Map<String, dynamic> header, Map<String, dynamic> payload, String secret) {
+  static String _encodeJWT(Map<String, dynamic> header,
+      Map<String, dynamic> payload, String secret) {
     final headerBase64 = base64Url.encode(utf8.encode(json.encode(header)));
     final payloadBase64 = base64Url.encode(utf8.encode(json.encode(payload)));
-    
+
     final signature = Hmac(sha256, utf8.encode(secret))
         .convert(utf8.encode('$headerBase64.$payloadBase64'))
         .bytes;
     final signatureBase64 = base64Url.encode(signature);
-    
+
     return '$headerBase64.$payloadBase64.$signatureBase64';
   }
 
-  static Map<String, dynamic> verifyToken(String token, {bool isRefreshToken = false}) {
+  static Map<String, dynamic> verifyToken(String token,
+      {bool isRefreshToken = false}) {
     try {
       final parts = token.split('.');
       if (parts.length != 3) {
-        throw Exception('Неверный формат токена');
+        throw const UnauthorizedException('Неверный формат токена');
       }
 
       final header = _decodeSegment(parts[0]);
@@ -162,17 +178,17 @@ class AuthUtils {
 
       final alg = header['alg']?.toString();
       if (alg != 'HS256') {
-        throw Exception('Неподдерживаемый алгоритм подписи');
+        throw const UnauthorizedException('Неподдерживаемый алгоритм подписи');
       }
       final typ = header['typ']?.toString();
       if (typ != null && typ != 'JWT') {
-        throw Exception('Неверный тип токена');
+        throw const UnauthorizedException('Неверный тип токена');
       }
 
       final secret = isRefreshToken ? _refreshSecret : _jwtSecret;
       final expectedSignature = _sign(parts[0], parts[1], secret);
       if (!_constantTimeEqual(parts[2], expectedSignature)) {
-        throw Exception('Неверная подпись токена');
+        throw const UnauthorizedException('Неверная подпись токена');
       }
 
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -180,47 +196,49 @@ class AuthUtils {
 
       final exp = _readInt(payload['exp']);
       if (exp == null) {
-        throw Exception('Отсутствует exp в токене');
+        throw const UnauthorizedException('Отсутствует exp в токене');
       }
       if (now - skew >= exp) {
-        throw Exception('Токен истёк');
+        throw const UnauthorizedException('Токен истёк');
       }
 
       final nbf = _readInt(payload['nbf']);
       if (nbf != null && now + skew < nbf) {
-        throw Exception('Токен ещё не активен (nbf)');
+        throw const UnauthorizedException('Токен ещё не активен (nbf)');
       }
 
       final iat = _readInt(payload['iat']);
       if (iat != null && now + skew < iat) {
-        throw Exception('Недопустимое время выпуска (iat)');
+        throw const UnauthorizedException('Недопустимое время выпуска (iat)');
       }
 
       final expectedIss = _jwtIssuer;
       if (expectedIss != null && payload['iss']?.toString() != expectedIss) {
-        throw Exception('Неверный issuer (iss)');
+        throw const UnauthorizedException('Неверный issuer (iss)');
       }
 
       final expectedAud = _jwtAudience;
-      if (expectedAud != null && !_audienceMatches(payload['aud'], expectedAud)) {
-        throw Exception('Неверный audience (aud)');
+      if (expectedAud != null &&
+          !_audienceMatches(payload['aud'], expectedAud)) {
+        throw const UnauthorizedException('Неверный audience (aud)');
       }
-      
+
       if (isRefreshToken && payload['type'] != 'refresh') {
-        throw Exception('Неверный тип токена');
+        throw const UnauthorizedException('Неверный тип токена');
       }
-      
+
       if (!isRefreshToken && payload['type'] != 'access') {
-        throw Exception('Неверный тип токена');
+        throw const UnauthorizedException('Неверный тип токена');
       }
 
       if (payload['jti'] == null) {
-        throw Exception('Отсутствует JTI в токене');
+        throw const UnauthorizedException('Отсутствует JTI в токене');
       }
 
       return payload;
     } catch (e) {
-      throw Exception('Недействительный токен: $e');
+      if (e is AppException) rethrow;
+      throw const UnauthorizedException('Недействительный токен');
     }
   }
 
@@ -271,4 +289,4 @@ class AuthUtils {
     }
     return false;
   }
-} 
+}

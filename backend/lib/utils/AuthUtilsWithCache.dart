@@ -4,12 +4,14 @@ import 'dart:io';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:uuid/uuid.dart';
 import '../services/CacheService.dart';
+import 'AppException.dart';
 
 class AuthUtils {
   static String get _jwtSecret {
     final secret = Platform.environment['JWT_SECRET'];
     if (secret == null || secret.isEmpty) {
-      throw Exception('JWT_SECRET не установлен в переменных окружения');
+      throw InternalServerException(
+          'JWT_SECRET не установлен в переменных окружения');
     }
     return secret;
   }
@@ -17,7 +19,7 @@ class AuthUtils {
   static String get _refreshSecret {
     final secret = Platform.environment['JWT_REFRESH_SECRET'];
     if (secret == null || secret.isEmpty) {
-      throw Exception(
+      throw InternalServerException(
           'JWT_REFRESH_SECRET не установлен в переменных окружения');
     }
     return secret;
@@ -167,7 +169,7 @@ class AuthUtils {
     try {
       final parts = token.split('.');
       if (parts.length != 3) {
-        throw Exception('Неверный формат токена');
+        throw const UnauthorizedException('Неверный формат токена');
       }
 
       final header = _decodeSegment(parts[0]);
@@ -175,17 +177,17 @@ class AuthUtils {
 
       final alg = header['alg']?.toString();
       if (alg != 'HS256') {
-        throw Exception('Неподдерживаемый алгоритм подписи');
+        throw const UnauthorizedException('Неподдерживаемый алгоритм подписи');
       }
       final typ = header['typ']?.toString();
       if (typ != null && typ != 'JWT') {
-        throw Exception('Неверный тип токена');
+        throw const UnauthorizedException('Неверный тип токена');
       }
 
       final secret = isRefreshToken ? _refreshSecret : _jwtSecret;
       final expectedSignature = _sign(parts[0], parts[1], secret);
       if (!_constantTimeEqual(parts[2], expectedSignature)) {
-        throw Exception('Неверная подпись токена');
+        throw const UnauthorizedException('Неверная подпись токена');
       }
 
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -193,48 +195,49 @@ class AuthUtils {
 
       final exp = _readInt(payload['exp']);
       if (exp == null) {
-        throw Exception('Отсутствует exp в токене');
+        throw const UnauthorizedException('Отсутствует exp в токене');
       }
       if (now - skew >= exp) {
-        throw Exception('Токен истёк');
+        throw const UnauthorizedException('Токен истёк');
       }
 
       final nbf = _readInt(payload['nbf']);
       if (nbf != null && now + skew < nbf) {
-        throw Exception('Токен ещё не активен (nbf)');
+        throw const UnauthorizedException('Токен ещё не активен (nbf)');
       }
 
       final iat = _readInt(payload['iat']);
       if (iat != null && now + skew < iat) {
-        throw Exception('Недопустимое время выпуска (iat)');
+        throw const UnauthorizedException('Недопустимое время выпуска (iat)');
       }
 
       final expectedIss = _jwtIssuer;
       if (expectedIss != null && payload['iss']?.toString() != expectedIss) {
-        throw Exception('Неверный issuer (iss)');
+        throw const UnauthorizedException('Неверный issuer (iss)');
       }
 
       final expectedAud = _jwtAudience;
       if (expectedAud != null &&
           !_audienceMatches(payload['aud'], expectedAud)) {
-        throw Exception('Неверный audience (aud)');
+        throw const UnauthorizedException('Неверный audience (aud)');
       }
 
       if (isRefreshToken && payload['type'] != 'refresh') {
-        throw Exception('Неверный тип токена');
+        throw const UnauthorizedException('Неверный тип токена');
       }
 
       if (!isRefreshToken && payload['type'] != 'access') {
-        throw Exception('Неверный тип токена');
+        throw const UnauthorizedException('Неверный тип токена');
       }
 
       if (payload['jti'] == null) {
-        throw Exception('Отсутствует JTI в токене');
+        throw const UnauthorizedException('Отсутствует JTI в токене');
       }
 
       return payload;
     } catch (e) {
-      throw Exception('Недействительный токен: $e');
+      if (e is AppException) rethrow;
+      throw const UnauthorizedException('Недействительный токен');
     }
   }
 
@@ -276,7 +279,9 @@ class AuthUtils {
       final blacklistKey =
           'blacklist:${isRefreshToken ? 'refresh' : 'access'}:$token';
       await cacheService.set(blacklistKey, true, ttl: Duration(days: 30));
-    } catch (e) {}
+    } catch (_) {
+      // Cache/blacklist writes are best-effort.
+    }
   }
 
   static Future<bool> isTokenBlacklisted(String token,
@@ -300,7 +305,9 @@ class AuthUtils {
 
       final userBlacklistKey = 'blacklist:user:$userId';
       await cacheService.set(userBlacklistKey, true, ttl: Duration(minutes: 5));
-    } catch (e) {}
+    } catch (_) {
+      // Cache invalidation is best-effort.
+    }
   }
 
   static Future<bool> isUserBlacklisted(int userId) async {
@@ -320,7 +327,7 @@ class AuthUtils {
       final role = payload['role'] as String? ?? 'user';
 
       if (await isUserBlacklisted(userId)) {
-        throw Exception('Пользователь заблокирован');
+        throw const ForbiddenException('Пользователь заблокирован');
       }
 
       await invalidateToken(refreshToken, isRefreshToken: true);
@@ -329,7 +336,8 @@ class AuthUtils {
 
       return newTokens;
     } catch (e) {
-      throw Exception('Ошибка обновления токенов: $e');
+      if (e is AppException) rethrow;
+      throw const UnauthorizedException('Ошибка обновления токенов');
     }
   }
 
@@ -354,7 +362,9 @@ class AuthUtils {
       final cacheService = CacheService();
 
       await cacheService.deleteByPattern('blacklist:*');
-    } catch (e) {}
+    } catch (_) {
+      // Periodic cleanup is best-effort.
+    }
   }
 
   static String hashRefreshJti(String jti) {

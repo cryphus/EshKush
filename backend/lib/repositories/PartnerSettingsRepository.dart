@@ -1,11 +1,11 @@
 import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/PartnerSettings.dart';
+import '../utils/AppException.dart';
 
 class PartnerSettingsRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  PartnerSettingsRepository(this._connection) : super(_connection);
+  PartnerSettingsRepository(PostgreSQLConnection connection)
+      : super(connection);
 
   Future<PartnerSettings?> findById(int id) async {
     try {
@@ -71,7 +71,7 @@ class PartnerSettingsRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания настроек партнера');
+        throw const InternalServerException();
       }
 
       return PartnerSettings.fromJson(result);
@@ -107,7 +107,8 @@ class PartnerSettingsRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Настройки партнера не найдены');
+        throw const NotFoundException(
+            'Р СњР В°РЎРѓРЎвЂљРЎР‚Р С•Р в„–Р С”Р С‘ Р С—Р В°РЎР‚РЎвЂљР Р…Р ВµРЎР‚Р В° Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…РЎвЂ№');
       }
       return PartnerSettings.fromJson(result);
     } catch (e) {
@@ -122,7 +123,8 @@ class PartnerSettingsRepository extends BaseRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Настройки партнера не найдены');
+        throw const NotFoundException(
+            'Р СњР В°РЎРѓРЎвЂљРЎР‚Р С•Р в„–Р С”Р С‘ Р С—Р В°РЎР‚РЎвЂљР Р…Р ВµРЎР‚Р В° Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…РЎвЂ№');
       }
     } catch (e) {
       rethrow;

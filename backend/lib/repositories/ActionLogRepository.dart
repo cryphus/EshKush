@@ -3,11 +3,10 @@ import 'BaseRepository.dart';
 import '../model/entities/ActionLog.dart';
 import '../model/enums/ActionType.dart';
 import '../model/enums/EntityType.dart';
+import '../utils/AppException.dart';
 
 class ActionLogRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  ActionLogRepository(this._connection) : super(_connection);
+  ActionLogRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<ActionLog> create(ActionLog log) async {
     try {
@@ -42,7 +41,7 @@ class ActionLogRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания лога действия');
+        throw const InternalServerException();
       }
 
       return ActionLog.fromJson(result);

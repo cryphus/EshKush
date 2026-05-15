@@ -728,6 +728,15 @@ class MockPointRepository extends _i1.Mock implements _i14.PointRepository {
   }
 
   @override
+  _i2.PostgreSQLConnection get connection => (super.noSuchMethod(
+        Invocation.getter(#connection),
+        returnValue: _FakePostgreSQLConnection_0(
+          this,
+          Invocation.getter(#connection),
+        ),
+      ) as _i2.PostgreSQLConnection);
+
+  @override
   _i4.Future<List<_i6.Point>> findAll({
     int? limit = 20,
     int? offset = 0,
@@ -904,6 +913,62 @@ class MockPointRepository extends _i1.Mock implements _i14.PointRepository {
           ),
         )),
       ) as _i4.Future<_i7.PointReview>);
+
+  @override
+  _i4.Future<List<Map<String, dynamic>>> query(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #query,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i4.Future<List<Map<String, dynamic>>>);
+
+  @override
+  _i4.Future<Map<String, dynamic>?> queryOne(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #queryOne,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
+      ) as _i4.Future<Map<String, dynamic>?>);
+
+  @override
+  _i4.Future<T> transaction<T>(
+          _i4.Future<T> Function(_i2.PostgreSQLExecutionContext)? callback) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #transaction,
+          [callback],
+        ),
+        returnValue: _i12.ifNotNull(
+              _i12.dummyValueOrNull<T>(
+                this,
+                Invocation.method(
+                  #transaction,
+                  [callback],
+                ),
+              ),
+              (T v) => _i4.Future<T>.value(v),
+            ) ??
+            _FakeFuture_2<T>(
+              this,
+              Invocation.method(
+                #transaction,
+                [callback],
+              ),
+            ),
+      ) as _i4.Future<T>);
 }
 
 /// A class which mocks [ProductsRepository].

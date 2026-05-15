@@ -1,6 +1,7 @@
 import 'package:postgres/postgres.dart';
 import '../model/entities/PaymentTransactions.dart';
 import 'BaseRepository.dart';
+import '../utils/AppException.dart';
 
 class PaymentTransactionsRepository extends BaseRepository {
   PaymentTransactionsRepository(PostgreSQLConnection connection)
@@ -28,6 +29,26 @@ class PaymentTransactionsRepository extends BaseRepository {
     return results
         .map((row) => PaymentTransactions.fromJson(row.values.first))
         .toList();
+  }
+
+  Future<bool> isOwnedByUser({
+    required int transactionId,
+    required int userId,
+  }) async {
+    final results = await connection.mappedResultsQuery(
+      '''
+      SELECT 1 AS owns
+      FROM payment_transactions pt
+      JOIN orders o ON pt.order_id = o.id
+      WHERE pt.id = @transactionId AND o.user_id = @userId
+      LIMIT 1
+      ''',
+      substitutionValues: {
+        'transactionId': transactionId,
+        'userId': userId,
+      },
+    );
+    return results.isNotEmpty;
   }
 
   Future<List<PaymentTransactions>> findByOrderId(int orderId) async {
@@ -99,7 +120,7 @@ class PaymentTransactionsRepository extends BaseRepository {
       },
     );
     if (results.isEmpty) {
-      throw Exception('Транзакция не найдена');
+      throw const NotFoundException();
     }
     return PaymentTransactions.fromJson(results.first.values.first);
   }

@@ -5,7 +5,6 @@ import 'package:backend/repositories/UserRepository.dart';
 import 'package:backend/repositories/UserSessionRepository.dart';
 
 import '../../helpers/TestDb.dart';
-import '../../helpers/TestEnv.dart';
 
 void main() {
   if (!TestDb.isAvailable) {

@@ -22,7 +22,7 @@ class ProfileRepository extends BaseRepository {
           to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at
         FROM profiles
         WHERE id = @id
-        ''' ,
+        ''',
         params: {'id': id},
       );
       return result == null ? null : Profile.fromJson(result);
@@ -57,7 +57,7 @@ class ProfileRepository extends BaseRepository {
       if (result == null) {
         return null;
       }
-      
+
       return Profile.fromJson(result);
     } catch (e) {
       rethrow;
@@ -66,7 +66,6 @@ class ProfileRepository extends BaseRepository {
 
   Future<Profile> create(Profile profile) async {
     try {
-      
       if (profile.userId <= 0) {
         throw ArgumentError('Некорректный ID пользователя');
       }

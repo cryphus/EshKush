@@ -73,35 +73,6 @@ class MockCityRepository extends _i1.Mock implements _i5.CityRepository {
       ) as _i2.PostgreSQLConnection);
 
   @override
-  _i4.Future<Map<String, dynamic>?> queryOne(
-    String? query, {
-    Map<String, dynamic>? params,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #queryOne,
-          [query],
-          {#params: params},
-        ),
-        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
-      ) as _i4.Future<Map<String, dynamic>?>);
-
-  @override
-  _i4.Future<List<Map<String, dynamic>>> query(
-    String? query, {
-    Map<String, dynamic>? params,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #query,
-          [query],
-          {#params: params},
-        ),
-        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
-            <Map<String, dynamic>>[]),
-      ) as _i4.Future<List<Map<String, dynamic>>>);
-
-  @override
   _i4.Future<_i3.City?> findById(int? id) => (super.noSuchMethod(
         Invocation.method(
           #findById,
@@ -158,6 +129,35 @@ class MockCityRepository extends _i1.Mock implements _i5.CityRepository {
         returnValue: _i4.Future<void>.value(),
         returnValueForMissingStub: _i4.Future<void>.value(),
       ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<List<Map<String, dynamic>>> query(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #query,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i4.Future<List<Map<String, dynamic>>>);
+
+  @override
+  _i4.Future<Map<String, dynamic>?> queryOne(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #queryOne,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
+      ) as _i4.Future<Map<String, dynamic>?>);
 
   @override
   _i4.Future<T> transaction<T>(

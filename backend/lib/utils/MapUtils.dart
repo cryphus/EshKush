@@ -11,7 +11,7 @@ class MapUtils {
   static T require<T>(Map<String, dynamic> map, String key) {
     final value = map[key];
     if (value == null) {
-      throw ArgumentError.notNull('$key');
+      throw ArgumentError.notNull(key);
     }
     if (value is T) return value;
 

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shelf/shelf.dart';
@@ -45,12 +44,6 @@ void main() {
   Request _get(String path, {Map<String, Object>? user}) =>
       Request('GET', Uri.parse('http://localhost/$path'), context: _ctx(user));
 
-  Request _post(String path, Map<String, dynamic> body, {Map<String, Object>? user}) =>
-      Request('POST', Uri.parse('http://localhost/$path'),
-          body: jsonEncode(body),
-          headers: {'content-type': 'application/json'},
-          context: _ctx(user));
-
   // ── GET / (my transactions) ────────────────────────────────────────────────
   group('GET /', () {
     test('401 без авторизации', () async {
@@ -79,7 +72,8 @@ void main() {
 
     test('200 возвращает транзакцию', () async {
       when(txService.getTransactionById(1)).thenAnswer((_) async => _tx());
-      when(txService.getTransactionsByUserId(1)).thenAnswer((_) async => [_tx()]);
+      when(txService.isTransactionOwnedByUser(transactionId: 1, userId: 1))
+          .thenAnswer((_) async => true);
       final resp = await handler(Request('GET',
           Uri.parse('http://localhost/transaction?id=1'),
           context: _ctx(_authUser)));

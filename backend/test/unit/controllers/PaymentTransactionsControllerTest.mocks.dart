@@ -72,6 +72,23 @@ class MockPaymentTransactionsService extends _i1.Mock
       ) as _i4.Future<List<_i2.PaymentTransactions>>);
 
   @override
+  _i4.Future<bool> isTransactionOwnedByUser({
+    required int? transactionId,
+    required int? userId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #isTransactionOwnedByUser,
+          [],
+          {
+            #transactionId: transactionId,
+            #userId: userId,
+          },
+        ),
+        returnValue: _i4.Future<bool>.value(false),
+      ) as _i4.Future<bool>);
+
+  @override
   _i4.Future<List<_i2.PaymentTransactions>> getTransactionsByOrderId(
           int? orderId) =>
       (super.noSuchMethod(

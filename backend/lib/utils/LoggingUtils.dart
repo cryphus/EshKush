@@ -45,7 +45,7 @@ class LoggingUtils {
       'requestId': requestId,
       'message': message,
       'error': errStr,
-      'errorType': error != null ? error.runtimeType.toString() : null,
+      'errorType': error?.runtimeType.toString(),
       'stack': SafeLoggingUtils.sanitizeStackTrace(stackStr),
     };
     _print(payload);
@@ -86,7 +86,9 @@ class LoggingUtils {
       try {
         print(jsonEncode(entry));
         return;
-      } catch (_) {}
+      } catch (_) {
+        // Fallback to plain string output below.
+      }
     }
     print(entry.toString());
   }

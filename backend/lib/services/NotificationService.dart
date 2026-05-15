@@ -30,12 +30,33 @@ class NotificationService {
     return await _repository.findByUserId(userId);
   }
 
+  Future<Notification?> getNotificationById(int notificationId) async {
+    return await _repository.findById(notificationId);
+  }
+
   Future<List<Notification>> getNotificationsByType(NotificationType type) async {
     return await _repository.findByType(type);
   }
 
+  Future<List<Notification>> getUserNotificationsByType(
+    int userId,
+    NotificationType type,
+  ) async {
+    return await _repository.findByUserIdAndType(userId, type);
+  }
+
   Future<List<Notification>> getUnreadNotifications(int userId) async {
     return await _repository.findUnread(userId);
+  }
+
+  Future<bool> isNotificationOwnedByUser({
+    required int notificationId,
+    required int userId,
+  }) async {
+    return await _repository.existsByIdAndUserId(
+      notificationId: notificationId,
+      userId: userId,
+    );
   }
 
   Future<List<Notification>> getRecentNotifications({int limit = 100}) async {

@@ -1,11 +1,10 @@
 import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/Partner.dart';
+import '../utils/AppException.dart';
 
 class PartnerRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  PartnerRepository(this._connection) : super(_connection);
+  PartnerRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<Partner?> findById(int id) async {
     try {
@@ -72,10 +71,10 @@ class PartnerRepository extends BaseRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания партнера');
+        throw const InternalServerException();
       }
 
-      // Добавляем created_at, если его нет в результате
+      // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С created_at, Р ВµРЎРѓР В»Р С‘ Р ВµР С–Р С• Р Р…Р ВµРЎвЂљ Р Р† РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљР Вµ
       if (!result.containsKey('created_at')) {
         result['created_at'] = partner.createdAt.toIso8601String();
       }
@@ -88,7 +87,7 @@ class PartnerRepository extends BaseRepository {
 
   Future<Partner> update(int id, Map<String, dynamic> data) async {
     try {
-      // Строим динамический SQL-запрос
+      // Р РЋРЎвЂљРЎР‚Р С•Р С‘Р С Р Т‘Р С‘Р Р…Р В°Р СР С‘РЎвЂЎР ВµРЎРѓР С”Р С‘Р в„– SQL-Р В·Р В°Р С—РЎР‚Р С•РЎРѓ
       final updateFields = <String>[];
       final params = <String, dynamic>{'id': id};
 
@@ -118,7 +117,8 @@ class PartnerRepository extends BaseRepository {
       }
 
       if (updateFields.isEmpty) {
-        throw Exception('Нет полей для обновления');
+        throw const BadRequestException(
+            'Р СњР ВµРЎвЂљ Р С—Р С•Р В»Р ВµР в„– Р Т‘Р В»РЎРЏ Р С•Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘РЎРЏ');
       }
 
       final updateQuery = '''
@@ -140,7 +140,8 @@ class PartnerRepository extends BaseRepository {
       final result = await queryOne(updateQuery, params: params);
 
       if (result == null) {
-        throw Exception('Партнер не найден');
+        throw const NotFoundException(
+            'Р СџР В°РЎР‚РЎвЂљР Р…Р ВµРЎР‚ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…');
       }
 
       return Partner.fromJson(result);
@@ -156,7 +157,8 @@ class PartnerRepository extends BaseRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Партнер не найден');
+        throw const NotFoundException(
+            'Р СџР В°РЎР‚РЎвЂљР Р…Р ВµРЎР‚ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…');
       }
     } catch (e) {
       rethrow;

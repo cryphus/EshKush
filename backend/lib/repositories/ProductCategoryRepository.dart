@@ -1,11 +1,11 @@
 import 'package:postgres/postgres.dart';
 import 'BaseRepository.dart';
 import '../model/entities/ProductCategory.dart';
+import '../utils/AppException.dart';
 
 class ProductCategoryRepository extends BaseRepository {
-  final PostgreSQLConnection _connection;
-
-  ProductCategoryRepository(this._connection) : super(_connection);
+  ProductCategoryRepository(PostgreSQLConnection connection)
+      : super(connection);
 
   Future<ProductCategory?> findById(int id) async {
     try {
@@ -43,7 +43,7 @@ class ProductCategoryRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания категории');
+        throw const InternalServerException();
       }
       return ProductCategory.fromJson(result);
     } catch (e) {
@@ -67,7 +67,8 @@ class ProductCategoryRepository extends BaseRepository {
         },
       );
       if (result == null) {
-        throw Exception('Категория не найдена');
+        throw const NotFoundException(
+            'Р С™Р В°РЎвЂљР ВµР С–Р С•РЎР‚Р С‘РЎРЏ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
       return ProductCategory.fromJson(result);
     } catch (e) {
@@ -82,7 +83,8 @@ class ProductCategoryRepository extends BaseRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Категория не найдена');
+        throw const NotFoundException(
+            'Р С™Р В°РЎвЂљР ВµР С–Р С•РЎР‚Р С‘РЎРЏ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
     } catch (e) {
       rethrow;
