@@ -59,7 +59,7 @@ void main() {
       when(orderService.getAllOrders(status: anyNamed('status'), limit: anyNamed('limit'), offset: anyNamed('offset')))
           .thenAnswer((_) async => [_order(id: 1), _order(id: 2)]);
 
-      final resp = await handler(_get(''));
+      final resp = await handler(_get('', user: {'id': 1, 'role': 'admin'}));
       expect(resp.statusCode, 200);
 
       final body = jsonDecode(await resp.readAsString()) as Map<String, dynamic>;
@@ -70,7 +70,7 @@ void main() {
       when(orderService.getAllOrders(status: anyNamed('status'), limit: anyNamed('limit'), offset: anyNamed('offset')))
           .thenAnswer((_) async => []);
 
-      final resp = await handler(_get(''));
+      final resp = await handler(_get('', user: {'id': 1, 'role': 'admin'}));
       expect(resp.statusCode, 200);
     });
   });
@@ -80,14 +80,14 @@ void main() {
     test('200 если заказ найден', () async {
       when(orderService.getOrderById(1)).thenAnswer((_) async => _order());
 
-      final resp = await handler(_get('1'));
+      final resp = await handler(_get('1', user: {'id': 1, 'role': 'user'}));
       expect(resp.statusCode, 200);
     });
 
     test('404 если заказ не найден', () async {
       when(orderService.getOrderById(99)).thenThrow(Exception('Заказ не найден'));
 
-      final resp = await handler(_get('99'));
+      final resp = await handler(_get('99', user: {'id': 1, 'role': 'user'}));
       expect(resp.statusCode, 404);
     });
   });

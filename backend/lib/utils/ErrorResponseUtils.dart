@@ -10,6 +10,7 @@ enum ErrorCode {
   forbidden('FORBIDDEN'),
   notFound('NOT_FOUND'),
   conflict('CONFLICT'),
+  tooManyRequests('TOO_MANY_REQUESTS'),
   badRequest('BAD_REQUEST'),
   internalError('INTERNAL_ERROR');
 
@@ -26,11 +27,13 @@ class ErrorResponseUtils {
     if (e == null) return fallback ?? defaultClientMessage;
     if (e is ValidationException) return e.message;
     if (e is AppException) return e.message;
+    if (e is FormatException) {
+      return 'Некорректный JSON в теле запроса';
+    }
     return fallback ?? defaultClientMessage;
   }
 
-  /// Определяет код ошибки по типу исключения, с fallback на строковый поиск
-  /// для обратной совместимости с generic Exception().
+  /// Определяет код ошибки строго по типу исключения.
   static ErrorCode errorCodeFromException(dynamic e) {
     if (e == null) return ErrorCode.internalError;
     if (e is ValidationException) return ErrorCode.validationError;
@@ -38,14 +41,13 @@ class ErrorResponseUtils {
     if (e is ForbiddenException) return ErrorCode.forbidden;
     if (e is UnauthorizedException) return ErrorCode.unauthorized;
     if (e is ConflictException) return ErrorCode.conflict;
-    // Fallback: string matching for legacy generic exceptions.
-    final msg = e.toString().toLowerCase();
-    if (msg.contains('unauthorized') || msg.contains('токен') || msg.contains('авториз') ||
-        msg.contains('неверный') || msg.contains('недействительный') || msg.contains('token') ||
-        msg.contains('неверные') || msg.contains('invalid')) return ErrorCode.unauthorized;
-    if (msg.contains('forbidden') || msg.contains('доступ')) return ErrorCode.forbidden;
-    if (msg.contains('not found') || msg.contains('не найден')) return ErrorCode.notFound;
-    if (msg.contains('conflict') || msg.contains('уже существует')) return ErrorCode.conflict;
+    if (e is TooManyRequestsException) return ErrorCode.tooManyRequests;
+    if (e is BadRequestException ||
+        e is FormatException ||
+        e is ArgumentError) {
+      return ErrorCode.badRequest;
+    }
+    if (e is AppException) return ErrorCode.badRequest;
     return ErrorCode.internalError;
   }
 
@@ -62,6 +64,8 @@ class ErrorResponseUtils {
         return 404;
       case ErrorCode.conflict:
         return 409;
+      case ErrorCode.tooManyRequests:
+        return 429;
       case ErrorCode.internalError:
         return 500;
     }

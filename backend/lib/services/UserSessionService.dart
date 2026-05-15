@@ -1,5 +1,6 @@
 import '../repositories/UserSessionRepository.dart';
 import '../model/entities/UserSessions.dart';
+import '../utils/AppException.dart';
 
 class UserSessionService {
   final UserSessionRepository _sessionRepository;
@@ -10,7 +11,7 @@ class UserSessionService {
     try {
       final session = await _sessionRepository.findById(id);
       if (session == null) {
-        throw Exception('Сессия не найдена');
+        throw const NotFoundException('Сессия не найдена');
       }
       return session;
     } catch (e) {
@@ -123,4 +124,4 @@ class UserSessionService {
       rethrow;
     }
   }
-} 
+}

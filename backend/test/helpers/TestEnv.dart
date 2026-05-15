@@ -11,7 +11,7 @@ const String kTestRefreshSecret = 'testrefreshsecretforjwttests32chars__';
 
 /// Базовый URL для интеграционных тестов.
 String get integrationBase =>
-    Platform.environment['TEST_BASE_URL'] ?? 'http://localhost:8080';
+    Platform.environment['TEST_BASE_URL'] ?? 'http://localhost:3000';
 
 /// Учётные данные администратора для интеграционных тестов.
 const String kAdminUser = 'adminuser';

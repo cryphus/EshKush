@@ -263,7 +263,7 @@ CREATE TABLE profiles (
 CREATE TABLE user_sessions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token VARCHAR(255) NOT NULL,
+    token TEXT NOT NULL,
     refresh_jti_hash VARCHAR(64) NOT NULL,
     device_info TEXT,
     ip_address VARCHAR(45),

@@ -48,7 +48,7 @@ cp telegramAuth/.env.example telegramAuth/.env.test
 | `JWT_SECRET` | Секрет для access-токенов (≥32 символа) | `EshKushDev2024...` |
 | `JWT_REFRESH_SECRET` | Секрет для refresh-токенов | `EshKushDev2024...` |
 | `ALLOWED_ORIGINS` | Разрешённые CORS-origin через запятую | `http://localhost:3000` |
-| `API_BASE_URL` | URL backend (для Flutter сборки) | `http://localhost:8080` |
+| `API_BASE_URL` | URL backend (для Flutter сборки) | `http://localhost:3000` |
 | `TELEGRAM_API_URL` | URL Flask-сервиса бота (для Flutter) | `http://localhost:5000/api` |
 | `GOOGLE_CLIENT_ID` | Google OAuth 2.0 Client ID (для Flutter) | `672295...apps.googleusercontent.com` |
 | `IMAGE_BASE_URL` | Базовый URL сервера изображений (для Flutter) | `http://91.186.217.192` |
@@ -73,8 +73,8 @@ docker-compose --env-file .env.production up -d --build
 
 | Сервис | URL |
 |---|---|
-| Backend API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger |
+| Backend API | http://localhost:3000 |
+| Swagger UI | http://localhost:3000/swagger |
 | Nginx | http://localhost:80 |
 | Postgres | localhost:**5433** (БД `flutter_auth`) |
 | Redis | localhost:6379 |
@@ -101,7 +101,7 @@ cp ../.env.test .env
 dart run bin/Service.dart
 ```
 
-API будет доступно на `http://localhost:8080`, Swagger — `http://localhost:8080/swagger`.
+API будет доступно на `http://localhost:3000`, Swagger — `http://localhost:3000/swagger`.
 
 ---
 
@@ -122,7 +122,7 @@ bash scripts/run_test.sh -d android   # Android-устройство
 cd frontend
 flutter pub get
 flutter run -d chrome \
-  --dart-define=API_BASE_URL=http://localhost:8080 \
+  --dart-define=API_BASE_URL=http://localhost:3000 \
   --dart-define=TELEGRAM_API_URL=http://localhost:5000/api \
   --dart-define=GOOGLE_CLIENT_ID=ВАШ_CLIENT_ID \
   --dart-define=BOT_USERNAME=eshkush_bot \
@@ -145,7 +145,7 @@ Flutter **не умеет читать .env в runtime**. Все конфиги 
 // frontend/lib/config/app_config.dart
 class AppConfig {
   static const String apiBaseUrl =
-      String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8080');
+      String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:3000');
   // ...
 }
 ```
@@ -169,24 +169,9 @@ python -m app.bot
 | Переменная | Описание |
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Токен от @BotFather |
-| `BACKEND_URL` | URL Dart backend (`http://localhost:8080` / `http://backend:8080`) |
+| `BACKEND_URL` | URL Dart backend (`http://localhost:3000` / `http://backend:3000`) |
 | `APP_URL` | URL frontend-приложения (для deep link) |
 | `FLASK_PORT` | Порт Flask API (default: `5000`) |
-
----
-
-## Сборка frontend в Docker
-
-```bash
-docker build -t eshkush-frontend -f frontend/Dockerfile \
-  --build-arg API_BASE_URL=https://api.eshkush.ru \
-  --build-arg TELEGRAM_API_URL=https://tgauth.eshkush.ru/api \
-  --build-arg GOOGLE_CLIENT_ID=ВАШ_CLIENT_ID \
-  --build-arg IMAGE_BASE_URL=https://cdn.eshkush.ru \
-  .
-```
-
-> `frontend/Dockerfile` должен принимать `ARG` и передавать их как `--dart-define` в `flutter build web`.
 
 ---
 

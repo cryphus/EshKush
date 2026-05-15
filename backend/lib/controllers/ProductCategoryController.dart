@@ -5,6 +5,7 @@ import '../services/ProductCategoryService.dart';
 import '../model/entities/ProductCategory.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 
 class ProductCategoryController {
   final ProductCategoryService _service;
@@ -24,11 +25,15 @@ class ProductCategoryController {
     try {
       final categoryId = int.tryParse(id);
       if (categoryId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
       final category = await _service.getById(categoryId);
       if (category == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Категория не найдена', code: ErrorCode.notFound, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Категория не найдена',
+            code: ErrorCode.notFound,
+            headers: _getCorsHeaders());
       }
       return Response.ok(
         jsonEncode(category.toJson()),
@@ -53,7 +58,7 @@ class ProductCategoryController {
 
   Future<Response> _create(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final data = await RequestBodyUtils.readJsonObject(request);
       final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
 
       final category = ProductCategory(
@@ -77,11 +82,12 @@ class ProductCategoryController {
     try {
       final categoryId = int.tryParse(id);
       if (categoryId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
-      final data = jsonDecode(await request.readAsString());
+      final data = await RequestBodyUtils.readJsonObject(request);
       final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
-      
+
       final category = ProductCategory(
         id: categoryId,
         name: sanitized['name'] as String,
@@ -103,7 +109,8 @@ class ProductCategoryController {
     try {
       final categoryId = int.tryParse(id);
       if (categoryId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
       await _service.delete(categoryId);
       return Response.ok(
@@ -118,4 +125,4 @@ class ProductCategoryController {
   Map<String, String> _getCorsHeaders() {
     return {'Content-Type': 'application/json'};
   }
-} 
+}

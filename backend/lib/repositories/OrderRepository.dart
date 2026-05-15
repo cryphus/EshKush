@@ -3,30 +3,10 @@ import '../model/entities/Order.dart';
 import '../model/enums/OrderStatus.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../model/enums/ActionType.dart';
+import 'BaseRepository.dart';
 
-class OrderRepository {
-  final PostgreSQLConnection _connection;
-
-  OrderRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+class OrderRepository extends BaseRepository {
+  OrderRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<Order?> findById(int id) async {
     try {
@@ -60,16 +40,22 @@ class OrderRepository {
   Future<Order> createWithPayment(Map<String, dynamic> data) async {
     SafeLoggingUtils.logData('Создание заказа с данными', data);
 
-    final userId = data['user_id'] is String ? int.parse(data['user_id']) : (data['user_id'] as num).toInt();
-    final pointId = data['point_id'] is String ? int.parse(data['point_id']) : (data['point_id'] as num).toInt();
-    final totalPrice = data['total_price'] is String ? double.parse(data['total_price']) : (data['total_price'] as num).toDouble();
+    final userId = data['user_id'] is String
+        ? int.parse(data['user_id'])
+        : (data['user_id'] as num).toInt();
+    final pointId = data['point_id'] is String
+        ? int.parse(data['point_id'])
+        : (data['point_id'] as num).toInt();
+    final totalPrice = data['total_price'] is String
+        ? double.parse(data['total_price'])
+        : (data['total_price'] as num).toDouble();
     final productsId = (data['products_id'] as List).map((e) {
       if (e is String) return int.parse(e);
       return e as int;
     }).toList();
 
     late Order order;
-    await _connection.transaction((txn) async {
+    await transaction((txn) async {
       final orderResult = await txn.mappedResultsQuery(
         '''
         WITH inserted_order AS (
@@ -188,7 +174,7 @@ class OrderRepository {
     required double totalSum,
     required OrderStatus status,
   }) async {
-    await _connection.execute(
+    await connection.execute(
       '''
       INSERT INTO order_history (
         order_id, point_id, user_id, order_date, total_sum, status
@@ -213,7 +199,7 @@ class OrderRepository {
     required String actionDescription,
     required ActionType actionType,
   }) async {
-    await _connection.execute(
+    await connection.execute(
       '''
       INSERT INTO order_actions (
         order_id, partner_id, action_description, action_type
@@ -236,7 +222,8 @@ class OrderRepository {
     int offset = 0,
   }) async {
     try {
-      final where = status != null ? 'WHERE status = @status::order_status' : '';
+      final where =
+          status != null ? 'WHERE status = @status::order_status' : '';
       final query = '''
         SELECT
           id,
@@ -260,10 +247,11 @@ class OrderRepository {
       final params = <String, dynamic>{'limit': limit, 'offset': offset};
       if (status != null) params['status'] = status.name.toLowerCase();
 
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
+      final results = await connection.mappedResultsQuery(query,
+          substitutionValues: params);
       return results.map((row) => Order.fromJson(row.values.first)).toList();
     } catch (e) {
       rethrow;
     }
   }
-} 
+}

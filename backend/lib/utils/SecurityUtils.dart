@@ -1,34 +1,44 @@
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
+import 'dart:math';
+
+import 'package:html_unescape/html_unescape.dart';
 
 class SecurityUtils {
-  static String sanitizeInput(String input) {
+  static final _htmlUnescape = HtmlUnescape();
+
+  /// Unified string sanitizer used across validation and input processing.
+  static String sanitizeString(String input) {
     if (input.isEmpty) return input;
 
-    return input
-      .replaceAll(RegExp(r'<[^>]*>'), '') // Удаляем HTML теги
-      .replaceAll(RegExp(r'[<>]'), '') // Удаляем оставшиеся < и >
-      .replaceAll(RegExp(r'javascript:', caseSensitive: false), '') // Удаляем javascript: протокол
-      .replaceAll(RegExp(r'on\w+='), '') // Удаляем обработчики событий
-      .replaceAll(RegExp(r'data:', caseSensitive: false), '') // Удаляем data: протокол
-      .replaceAll(RegExp(r'vbscript:', caseSensitive: false), '') // Удаляем vbscript: протокол
-      .replaceAll(RegExp(r'expression\s*\(', caseSensitive: false), '') // Удаляем CSS expressions
-      .replaceAll(RegExp(r'url\s*\(', caseSensitive: false), '') // Удаляем CSS url()
-      .trim();
+    return _htmlUnescape
+        .convert(input)
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll(RegExp(r'[<>]'), '')
+        .replaceAll(RegExp(r'javascript:', caseSensitive: false), '')
+        .replaceAll(RegExp(r'on\w+='), '')
+        .replaceAll(RegExp(r'data:', caseSensitive: false), '')
+        .replaceAll(RegExp(r'vbscript:', caseSensitive: false), '')
+        .replaceAll(RegExp(r'expression\s*\(', caseSensitive: false), '')
+        .replaceAll(RegExp(r'url\s*\(', caseSensitive: false), '')
+        .trim();
   }
+
+  /// Backward-compatible alias for legacy call sites.
+  @Deprecated('Use sanitizeString() instead.')
+  static String sanitizeInput(String input) => sanitizeString(input);
 
   static Map<String, dynamic> sanitizeJson(Map<String, dynamic> json) {
     final sanitized = <String, dynamic>{};
-    
+
     json.forEach((key, value) {
       if (value is String) {
-        sanitized[key] = sanitizeInput(value);
+        sanitized[key] = sanitizeString(value);
       } else if (value is Map) {
         sanitized[key] = sanitizeJson(Map<String, dynamic>.from(value));
       } else if (value is List) {
         sanitized[key] = value.map((item) {
           if (item is String) {
-            return sanitizeInput(item);
+            return sanitizeString(item);
           } else if (item is Map) {
             return sanitizeJson(Map<String, dynamic>.from(item));
           }
@@ -38,14 +48,13 @@ class SecurityUtils {
         sanitized[key] = value;
       }
     });
-    
+
     return sanitized;
   }
 
   static String maskSensitiveData(String input) {
     if (input.isEmpty) return input;
 
-    // Маскируем email
     input = input.replaceAllMapped(
       RegExp(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'),
       (match) {
@@ -57,7 +66,6 @@ class SecurityUtils {
       },
     );
 
-    // Маскируем телефонные номера
     input = input.replaceAllMapped(
       RegExp(r'\+?[0-9]{10,15}'),
       (match) {
@@ -66,7 +74,6 @@ class SecurityUtils {
       },
     );
 
-    // Маскируем номера карт
     input = input.replaceAllMapped(
       RegExp(r'\b[0-9]{4}[-\s]?[0-9]{4}[-\s]?[0-9]{4}[-\s]?[0-9]{4}\b'),
       (match) {
@@ -79,10 +86,11 @@ class SecurityUtils {
   }
 
   static String generateSecureRandomString(int length) {
-    final random = DateTime.now().millisecondsSinceEpoch.toString() + 
-                  (1000 + DateTime.now().microsecond).toString();
-    final bytes = utf8.encode(random);
-    final hash = sha256.convert(bytes).bytes;
-    return base64Url.encode(hash).substring(0, length);
+    if (length <= 0) return '';
+    final secureRandom = Random.secure();
+    final randomBytes =
+        List<int>.generate(length * 2, (_) => secureRandom.nextInt(256));
+    final encoded = base64Url.encode(randomBytes).replaceAll('=', '');
+    return encoded.length <= length ? encoded : encoded.substring(0, length);
   }
-} 
+}

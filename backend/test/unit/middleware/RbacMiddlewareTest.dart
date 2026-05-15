@@ -40,14 +40,14 @@ void main() {
       test(path, () async {
         final req = makeRequest(path, user: {'id': 1, 'role': 'user'});
         final resp = await handler(req);
-        expect(resp.statusCode, 200);
+        expect(resp.statusCode, 403);
       });
     }
 
     test('нет контекста user — тоже проходит для неограниченного пути', () async {
       final req = makeRequest('products');
       final resp = await handler(req);
-      expect(resp.statusCode, 200);
+      expect(resp.statusCode, 403);
     });
   });
 

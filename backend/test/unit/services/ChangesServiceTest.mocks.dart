@@ -5,11 +5,13 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
-import 'package:backend/model/entities/Changes.dart' as _i2;
-import 'package:backend/model/enums/ChangeType.dart' as _i6;
-import 'package:backend/model/enums/EntityType.dart' as _i5;
-import 'package:backend/repositories/ChangesRepository.dart' as _i3;
+import 'package:backend/model/entities/Changes.dart' as _i3;
+import 'package:backend/model/enums/ChangeType.dart' as _i7;
+import 'package:backend/model/enums/EntityType.dart' as _i6;
+import 'package:backend/repositories/ChangesRepository.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i8;
+import 'package:postgres/postgres.dart' as _i2;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -24,8 +26,29 @@ import 'package:mockito/mockito.dart' as _i1;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakeChanges_0 extends _i1.SmartFake implements _i2.Changes {
-  _FakeChanges_0(
+class _FakePostgreSQLConnection_0 extends _i1.SmartFake
+    implements _i2.PostgreSQLConnection {
+  _FakePostgreSQLConnection_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeChanges_1 extends _i1.SmartFake implements _i3.Changes {
+  _FakeChanges_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeFuture_2<T1> extends _i1.SmartFake implements _i4.Future<T1> {
+  _FakeFuture_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -37,58 +60,38 @@ class _FakeChanges_0 extends _i1.SmartFake implements _i2.Changes {
 /// A class which mocks [ChangesRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockChangesRepository extends _i1.Mock implements _i3.ChangesRepository {
+class MockChangesRepository extends _i1.Mock implements _i5.ChangesRepository {
   MockChangesRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<Map<String, dynamic>?> queryOne(
-    String? query, {
-    Map<String, dynamic>? params,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #queryOne,
-          [query],
-          {#params: params},
+  _i2.PostgreSQLConnection get connection => (super.noSuchMethod(
+        Invocation.getter(#connection),
+        returnValue: _FakePostgreSQLConnection_0(
+          this,
+          Invocation.getter(#connection),
         ),
-        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
-      ) as _i4.Future<Map<String, dynamic>?>);
+      ) as _i2.PostgreSQLConnection);
 
   @override
-  _i4.Future<List<Map<String, dynamic>>> query(
-    String? query, {
-    Map<String, dynamic>? params,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #query,
-          [query],
-          {#params: params},
-        ),
-        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
-            <Map<String, dynamic>>[]),
-      ) as _i4.Future<List<Map<String, dynamic>>>);
-
-  @override
-  _i4.Future<_i2.Changes> create(_i2.Changes? change) => (super.noSuchMethod(
+  _i4.Future<_i3.Changes> create(_i3.Changes? change) => (super.noSuchMethod(
         Invocation.method(
           #create,
           [change],
         ),
-        returnValue: _i4.Future<_i2.Changes>.value(_FakeChanges_0(
+        returnValue: _i4.Future<_i3.Changes>.value(_FakeChanges_1(
           this,
           Invocation.method(
             #create,
             [change],
           ),
         )),
-      ) as _i4.Future<_i2.Changes>);
+      ) as _i4.Future<_i3.Changes>);
 
   @override
-  _i4.Future<List<_i2.Changes>> findByEntity(
-    _i5.EntityType? entityType,
+  _i4.Future<List<_i3.Changes>> findByEntity(
+    _i6.EntityType? entityType,
     int? entityId,
   ) =>
       (super.noSuchMethod(
@@ -99,38 +102,38 @@ class MockChangesRepository extends _i1.Mock implements _i3.ChangesRepository {
             entityId,
           ],
         ),
-        returnValue: _i4.Future<List<_i2.Changes>>.value(<_i2.Changes>[]),
-      ) as _i4.Future<List<_i2.Changes>>);
+        returnValue: _i4.Future<List<_i3.Changes>>.value(<_i3.Changes>[]),
+      ) as _i4.Future<List<_i3.Changes>>);
 
   @override
-  _i4.Future<List<_i2.Changes>> findByUser(int? userId) => (super.noSuchMethod(
+  _i4.Future<List<_i3.Changes>> findByUser(int? userId) => (super.noSuchMethod(
         Invocation.method(
           #findByUser,
           [userId],
         ),
-        returnValue: _i4.Future<List<_i2.Changes>>.value(<_i2.Changes>[]),
-      ) as _i4.Future<List<_i2.Changes>>);
+        returnValue: _i4.Future<List<_i3.Changes>>.value(<_i3.Changes>[]),
+      ) as _i4.Future<List<_i3.Changes>>);
 
   @override
-  _i4.Future<List<_i2.Changes>> findByChangeType(_i6.ChangeType? changeType) =>
+  _i4.Future<List<_i3.Changes>> findByChangeType(_i7.ChangeType? changeType) =>
       (super.noSuchMethod(
         Invocation.method(
           #findByChangeType,
           [changeType],
         ),
-        returnValue: _i4.Future<List<_i2.Changes>>.value(<_i2.Changes>[]),
-      ) as _i4.Future<List<_i2.Changes>>);
+        returnValue: _i4.Future<List<_i3.Changes>>.value(<_i3.Changes>[]),
+      ) as _i4.Future<List<_i3.Changes>>);
 
   @override
-  _i4.Future<List<_i2.Changes>> findRecent({int? limit = 100}) =>
+  _i4.Future<List<_i3.Changes>> findRecent({int? limit = 100}) =>
       (super.noSuchMethod(
         Invocation.method(
           #findRecent,
           [],
           {#limit: limit},
         ),
-        returnValue: _i4.Future<List<_i2.Changes>>.value(<_i2.Changes>[]),
-      ) as _i4.Future<List<_i2.Changes>>);
+        returnValue: _i4.Future<List<_i3.Changes>>.value(<_i3.Changes>[]),
+      ) as _i4.Future<List<_i3.Changes>>);
 
   @override
   _i4.Future<void> revertChange(
@@ -150,4 +153,60 @@ class MockChangesRepository extends _i1.Mock implements _i3.ChangesRepository {
         returnValue: _i4.Future<void>.value(),
         returnValueForMissingStub: _i4.Future<void>.value(),
       ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<List<Map<String, dynamic>>> query(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #query,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i4.Future<List<Map<String, dynamic>>>);
+
+  @override
+  _i4.Future<Map<String, dynamic>?> queryOne(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #queryOne,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
+      ) as _i4.Future<Map<String, dynamic>?>);
+
+  @override
+  _i4.Future<T> transaction<T>(
+          _i4.Future<T> Function(_i2.PostgreSQLExecutionContext)? callback) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #transaction,
+          [callback],
+        ),
+        returnValue: _i8.ifNotNull(
+              _i8.dummyValueOrNull<T>(
+                this,
+                Invocation.method(
+                  #transaction,
+                  [callback],
+                ),
+              ),
+              (T v) => _i4.Future<T>.value(v),
+            ) ??
+            _FakeFuture_2<T>(
+              this,
+              Invocation.method(
+                #transaction,
+                [callback],
+              ),
+            ),
+      ) as _i4.Future<T>);
 }

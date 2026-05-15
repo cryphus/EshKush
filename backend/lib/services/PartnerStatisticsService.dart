@@ -1,5 +1,6 @@
 import '../repositories/PartnerStatisticsRepository.dart';
 import '../model/entities/PartnerStatistics.dart';
+import '../utils/AppException.dart';
 
 class PartnerStatisticsService {
   final PartnerStatisticsRepository _repository;
@@ -10,7 +11,7 @@ class PartnerStatisticsService {
     try {
       final statistics = await _repository.findById(id);
       if (statistics == null) {
-        throw Exception('Статистика не найдена');
+        throw const NotFoundException('Статистика не найдена');
       }
       return statistics;
     } catch (e) {
@@ -22,7 +23,7 @@ class PartnerStatisticsService {
     try {
       final statistics = await _repository.findByPartnerId(partnerId);
       if (statistics == null) {
-        throw Exception('Статистика партнера не найдена');
+        throw const NotFoundException('Статистика партнера не найдена');
       }
       return statistics;
     } catch (e) {
@@ -34,7 +35,7 @@ class PartnerStatisticsService {
     try {
       final statistics = await _repository.findByPointId(pointId);
       if (statistics == null) {
-        throw Exception('Статистика точки не найдена');
+        throw const NotFoundException('Статистика точки не найдена');
       }
       return statistics;
     } catch (e) {
@@ -45,7 +46,7 @@ class PartnerStatisticsService {
   Future<PartnerStatistics> createStatistics(Map<String, dynamic> data) async {
     try {
       _validateStatisticsData(data);
-      
+
       final statistics = PartnerStatistics(
         id: 0, // ID будет присвоен базой данных
         partnerId: data['partner_id'],
@@ -64,11 +65,12 @@ class PartnerStatisticsService {
     }
   }
 
-  Future<PartnerStatistics> updateStatistics(int id, Map<String, dynamic> data) async {
+  Future<PartnerStatistics> updateStatistics(
+      int id, Map<String, dynamic> data) async {
     try {
       final currentStatistics = await _repository.findById(id);
       if (currentStatistics == null) {
-        throw Exception('Статистика не найдена');
+        throw const NotFoundException('Статистика не найдена');
       }
 
       _validateUpdateData(data);
@@ -91,7 +93,7 @@ class PartnerStatisticsService {
     try {
       final statistics = await _repository.findById(id);
       if (statistics == null) {
-        throw Exception('Статистика не найдена');
+        throw const NotFoundException('Статистика не найдена');
       }
 
       statistics.addOrder(revenue);
@@ -105,7 +107,7 @@ class PartnerStatisticsService {
     try {
       final statistics = await _repository.findById(id);
       if (statistics == null) {
-        throw Exception('Статистика не найдена');
+        throw const NotFoundException('Статистика не найдена');
       }
 
       statistics.addCancel();
@@ -119,7 +121,7 @@ class PartnerStatisticsService {
     try {
       final statistics = await _repository.findById(id);
       if (statistics == null) {
-        throw Exception('Статистика не найдена');
+        throw const NotFoundException('Статистика не найдена');
       }
 
       statistics.updateRating(rating);
@@ -147,43 +149,53 @@ class PartnerStatisticsService {
 
   void _validateStatisticsData(Map<String, dynamic> data) {
     if (data['partner_id'] == null || data['partner_id'] <= 0) {
-      throw Exception('Некорректный ID партнера');
+      throw const BadRequestException('Некорректный ID партнера');
     }
     if (data['point_id'] == null || data['point_id'] <= 0) {
-      throw Exception('Некорректный ID точки');
+      throw const BadRequestException('Некорректный ID точки');
     }
     if (data['total_orders'] != null && data['total_orders'] < 0) {
-      throw Exception('Количество заказов не может быть отрицательным');
+      throw const BadRequestException(
+          'Количество заказов не может быть отрицательным');
     }
     if (data['total_revenue'] != null && data['total_revenue'] < 0) {
-      throw Exception('Выручка не может быть отрицательной');
+      throw const BadRequestException('Выручка не может быть отрицательной');
     }
     if (data['total_cancel'] != null && data['total_cancel'] < 0) {
-      throw Exception('Количество отмен не может быть отрицательным');
+      throw const BadRequestException(
+          'Количество отмен не может быть отрицательным');
     }
-    if (data['average_rating'] != null && (data['average_rating'] < 0 || data['average_rating'] > 5)) {
-      throw Exception('Некорректный ID');
+    if (data['average_rating'] != null &&
+        (data['average_rating'] < 0 || data['average_rating'] > 5)) {
+      throw const BadRequestException(
+          'Некорректный рейтинг (должен быть в диапазоне 0..5)');
     }
     if (data['total_reviews'] != null && data['total_reviews'] < 0) {
-      throw Exception('Количество отзывов не может быть отрицательным');
+      throw const BadRequestException(
+          'Количество отзывов не может быть отрицательным');
     }
   }
 
   void _validateUpdateData(Map<String, dynamic> data) {
     if (data['total_orders'] != null && data['total_orders'] < 0) {
-      throw Exception('Количество заказов не может быть отрицательным');
+      throw const BadRequestException(
+          'Количество заказов не может быть отрицательным');
     }
     if (data['total_revenue'] != null && data['total_revenue'] < 0) {
-      throw Exception('Выручка не может быть отрицательной');
+      throw const BadRequestException('Выручка не может быть отрицательной');
     }
     if (data['total_cancel'] != null && data['total_cancel'] < 0) {
-      throw Exception('Количество отмен не может быть отрицательным');
+      throw const BadRequestException(
+          'Количество отмен не может быть отрицательным');
     }
-    if (data['average_rating'] != null && (data['average_rating'] < 0 || data['average_rating'] > 5)) {
-      throw Exception('Некорректный ID');
+    if (data['average_rating'] != null &&
+        (data['average_rating'] < 0 || data['average_rating'] > 5)) {
+      throw const BadRequestException(
+          'Некорректный рейтинг (должен быть в диапазоне 0..5)');
     }
     if (data['total_reviews'] != null && data['total_reviews'] < 0) {
-      throw Exception('Количество отзывов не может быть отрицательным');
+      throw const BadRequestException(
+          'Количество отзывов не может быть отрицательным');
     }
   }
-} 
+}

@@ -1,29 +1,11 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/Partner.dart';
 
-class PartnerRepository {
+class PartnerRepository extends BaseRepository {
   final PostgreSQLConnection _connection;
 
-  PartnerRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  PartnerRepository(this._connection) : super(_connection);
 
   Future<Partner?> findById(int id) async {
     try {
@@ -52,7 +34,6 @@ class PartnerRepository {
 
   Future<Partner> create(Partner partner) async {
     try {
-
       final result = await queryOne(
         '''
         WITH inserted AS (
@@ -89,16 +70,16 @@ class PartnerRepository {
           'created_at': partner.createdAt.toIso8601String(),
         },
       );
-      
+
       if (result == null) {
         throw Exception('Ошибка создания партнера');
       }
-      
+
       // Добавляем created_at, если его нет в результате
       if (!result.containsKey('created_at')) {
         result['created_at'] = partner.createdAt.toIso8601String();
       }
-      
+
       return Partner.fromJson(result);
     } catch (e) {
       rethrow;
@@ -156,7 +137,6 @@ class PartnerRepository {
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
       ''';
 
-
       final result = await queryOne(updateQuery, params: params);
 
       if (result == null) {
@@ -185,8 +165,7 @@ class PartnerRepository {
 
   Future<List<Partner>> findAll() async {
     try {
-      final results = await query(
-        '''
+      final results = await query('''
         SELECT 
           id,
           user_id,
@@ -198,11 +177,10 @@ class PartnerRepository {
           max_discount,
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
         FROM partners
-        '''
-      );
+        ''');
       return results.map((map) => Partner.fromJson(map)).toList();
     } catch (e) {
       rethrow;
     }
   }
-} 
+}

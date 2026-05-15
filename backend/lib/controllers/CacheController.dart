@@ -5,6 +5,7 @@ import '../services/CacheService.dart';
 import '../utils/AuthUtilsWithCache.dart' as AuthCache;
 import '../utils/ErrorResponseUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 
 class CacheController {
   final CacheService _cacheService;
@@ -42,7 +43,9 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -57,7 +60,9 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -73,7 +78,9 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -90,13 +97,15 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
   Future<Response> _setValue(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final data = await RequestBodyUtils.readJsonObject(request);
       final key = data['key'] as String;
       final value = data['value'];
       final ttlSeconds = data['ttl'] as int?;
@@ -107,12 +116,16 @@ class CacheController {
       return Response.ok(
         jsonEncode({
           'success': success,
-          'message': success ? 'Значение успешно сохранено' : 'Ошибка установки значения',
+          'message': success
+              ? 'Значение успешно сохранено'
+              : 'Ошибка установки значения',
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -127,7 +140,9 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -143,7 +158,9 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -155,21 +172,26 @@ class CacheController {
           'success': true,
           'key': key,
           'ttl': ttl,
-          'message': ttl == -1 ? 'Ключ не имеет TTL или не существует' : 'TTL в секундах',
+          'message': ttl == -1
+              ? 'Ключ не имеет TTL или не существует'
+              : 'TTL в секундах',
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
   Future<Response> _setTTL(Request request, String key) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final data = await RequestBodyUtils.readJsonObject(request);
       final ttlSeconds = data['ttl'] as int;
 
-      final success = await _cacheService.expire(key, Duration(seconds: ttlSeconds));
+      final success =
+          await _cacheService.expire(key, Duration(seconds: ttlSeconds));
 
       return Response.ok(
         jsonEncode({
@@ -179,7 +201,9 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -194,17 +218,20 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
   Future<Response> _invalidateToken(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final data = await RequestBodyUtils.readJsonObject(request);
       final token = data['token'] as String;
       final isRefreshToken = data['isRefreshToken'] as bool? ?? false;
 
-      await AuthCache.AuthUtils.invalidateToken(token, isRefreshToken: isRefreshToken);
+      await AuthCache.AuthUtils.invalidateToken(token,
+          isRefreshToken: isRefreshToken);
 
       return Response.ok(
         jsonEncode({
@@ -214,13 +241,15 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
   Future<Response> _invalidateUserTokens(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final data = await RequestBodyUtils.readJsonObject(request);
       final userId = data['userId'] as int;
 
       await AuthCache.AuthUtils.invalidateUserTokens(userId);
@@ -233,7 +262,9 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 
@@ -249,7 +280,9 @@ class CacheController {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: {'Content-Type': 'application/json'});
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: {'Content-Type': 'application/json'});
     }
   }
 }

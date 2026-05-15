@@ -14,7 +14,7 @@ cp .env.example .env.test
 docker compose --env-file .env.test up -d --build
 
 # 3. Проверить готовность
-curl http://localhost:8080/health
+curl http://localhost:3000/health
 ```
 
 ---
@@ -27,7 +27,7 @@ curl http://localhost:8080/health
 | Переменная | Обязательна | По умолчанию | Описание |
 |---|---|---|---|
 | `ENVIRONMENT` | — | `development` | `development` / `production` / `test` |
-| `PORT` | — | `8080` | Порт HTTP-сервера |
+| `PORT` | — | `3000` | Порт HTTP-сервера |
 | `JWT_SECRET` | **да** | — | Секрет access-токена (≥32 символа) |
 | `JWT_REFRESH_SECRET` | **да** | — | Секрет refresh-токена (≥32 символа) |
 | `DB_HOST` | — | `localhost` | Хост PostgreSQL |
@@ -107,7 +107,7 @@ GET /health
 | `503` | `error` | БД недоступна — сервис не готов |
 
 ```bash
-curl -s http://localhost:8080/health | jq .
+curl -s http://localhost:3000/health | jq .
 ```
 
 ---

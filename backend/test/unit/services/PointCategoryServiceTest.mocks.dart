@@ -5,9 +5,11 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
-import 'package:backend/model/entities/PointCategory.dart' as _i2;
-import 'package:backend/repositories/PointCategoryRepository.dart' as _i3;
+import 'package:backend/model/entities/PointCategory.dart' as _i3;
+import 'package:backend/repositories/PointCategoryRepository.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:postgres/postgres.dart' as _i2;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -22,8 +24,29 @@ import 'package:mockito/mockito.dart' as _i1;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakePointCategory_0 extends _i1.SmartFake implements _i2.PointCategory {
-  _FakePointCategory_0(
+class _FakePostgreSQLConnection_0 extends _i1.SmartFake
+    implements _i2.PostgreSQLConnection {
+  _FakePostgreSQLConnection_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakePointCategory_1 extends _i1.SmartFake implements _i3.PointCategory {
+  _FakePointCategory_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeFuture_2<T1> extends _i1.SmartFake implements _i4.Future<T1> {
+  _FakeFuture_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -36,10 +59,19 @@ class _FakePointCategory_0 extends _i1.SmartFake implements _i2.PointCategory {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockPointCategoryRepository extends _i1.Mock
-    implements _i3.PointCategoryRepository {
+    implements _i5.PointCategoryRepository {
   MockPointCategoryRepository() {
     _i1.throwOnMissingStub(this);
   }
+
+  @override
+  _i2.PostgreSQLConnection get connection => (super.noSuchMethod(
+        Invocation.getter(#connection),
+        returnValue: _FakePostgreSQLConnection_0(
+          this,
+          Invocation.getter(#connection),
+        ),
+      ) as _i2.PostgreSQLConnection);
 
   @override
   _i4.Future<Map<String, dynamic>?> queryOne(
@@ -71,42 +103,42 @@ class MockPointCategoryRepository extends _i1.Mock
       ) as _i4.Future<List<Map<String, dynamic>>>);
 
   @override
-  _i4.Future<_i2.PointCategory?> findById(int? id) => (super.noSuchMethod(
+  _i4.Future<_i3.PointCategory?> findById(int? id) => (super.noSuchMethod(
         Invocation.method(
           #findById,
           [id],
         ),
-        returnValue: _i4.Future<_i2.PointCategory?>.value(),
-      ) as _i4.Future<_i2.PointCategory?>);
+        returnValue: _i4.Future<_i3.PointCategory?>.value(),
+      ) as _i4.Future<_i3.PointCategory?>);
 
   @override
-  _i4.Future<List<_i2.PointCategory>> findAll() => (super.noSuchMethod(
+  _i4.Future<List<_i3.PointCategory>> findAll() => (super.noSuchMethod(
         Invocation.method(
           #findAll,
           [],
         ),
         returnValue:
-            _i4.Future<List<_i2.PointCategory>>.value(<_i2.PointCategory>[]),
-      ) as _i4.Future<List<_i2.PointCategory>>);
+            _i4.Future<List<_i3.PointCategory>>.value(<_i3.PointCategory>[]),
+      ) as _i4.Future<List<_i3.PointCategory>>);
 
   @override
-  _i4.Future<_i2.PointCategory> create(_i2.PointCategory? category) =>
+  _i4.Future<_i3.PointCategory> create(_i3.PointCategory? category) =>
       (super.noSuchMethod(
         Invocation.method(
           #create,
           [category],
         ),
-        returnValue: _i4.Future<_i2.PointCategory>.value(_FakePointCategory_0(
+        returnValue: _i4.Future<_i3.PointCategory>.value(_FakePointCategory_1(
           this,
           Invocation.method(
             #create,
             [category],
           ),
         )),
-      ) as _i4.Future<_i2.PointCategory>);
+      ) as _i4.Future<_i3.PointCategory>);
 
   @override
-  _i4.Future<_i2.PointCategory> update(
+  _i4.Future<_i3.PointCategory> update(
     int? id,
     Map<String, dynamic>? data,
   ) =>
@@ -118,7 +150,7 @@ class MockPointCategoryRepository extends _i1.Mock
             data,
           ],
         ),
-        returnValue: _i4.Future<_i2.PointCategory>.value(_FakePointCategory_0(
+        returnValue: _i4.Future<_i3.PointCategory>.value(_FakePointCategory_1(
           this,
           Invocation.method(
             #update,
@@ -128,7 +160,7 @@ class MockPointCategoryRepository extends _i1.Mock
             ],
           ),
         )),
-      ) as _i4.Future<_i2.PointCategory>);
+      ) as _i4.Future<_i3.PointCategory>);
 
   @override
   _i4.Future<void> delete(int? id) => (super.noSuchMethod(
@@ -139,4 +171,31 @@ class MockPointCategoryRepository extends _i1.Mock
         returnValue: _i4.Future<void>.value(),
         returnValueForMissingStub: _i4.Future<void>.value(),
       ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<T> transaction<T>(
+          _i4.Future<T> Function(_i2.PostgreSQLExecutionContext)? callback) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #transaction,
+          [callback],
+        ),
+        returnValue: _i6.ifNotNull(
+              _i6.dummyValueOrNull<T>(
+                this,
+                Invocation.method(
+                  #transaction,
+                  [callback],
+                ),
+              ),
+              (T v) => _i4.Future<T>.value(v),
+            ) ??
+            _FakeFuture_2<T>(
+              this,
+              Invocation.method(
+                #transaction,
+                [callback],
+              ),
+            ),
+      ) as _i4.Future<T>);
 }

@@ -7,6 +7,7 @@ import '../utils/ErrorResponseUtils.dart';
 import '../repositories/UserSessionRepository.dart';
 import '../utils/AuthUtils.dart';
 import '../model/entities/UserSessions.dart';
+import '../middleware/SecurityMiddleware.dart';
 
 /// Обработчик VK-авторизации. Не привязан к маршрутизации,
 /// чтобы вызываться из Service.dart.
@@ -72,9 +73,7 @@ Future<Response> handleVkAuth(
         expiresAt: refreshExpiresAt,
         lastActive: DateTime.now(),
         userAgent: request.headers['user-agent'] ?? 'unknown',
-        ipAddress: request.headers['x-forwarded-for'] ??
-            request.headers['x-real-ip'] ??
-            'unknown',
+        ipAddress: SecurityMiddleware.extractClientIp(request),
         token: bundle['access_token'] as String,
         refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
       ),
@@ -99,4 +98,3 @@ Future<Response> handleVkAuth(
     );
   }
 }
-

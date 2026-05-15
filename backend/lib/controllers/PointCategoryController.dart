@@ -5,6 +5,7 @@ import '../services/PointCategoryService.dart';
 import '../model/entities/PointCategory.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 
 class PointCategoryController {
   final PointCategoryService _categoryService;
@@ -24,12 +25,16 @@ class PointCategoryController {
     try {
       final categoryId = int.tryParse(id);
       if (categoryId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
       final category = await _categoryService.getCategory(categoryId);
-      
+
       if (category == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Категория не найдена', code: ErrorCode.notFound, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Категория не найдена',
+            code: ErrorCode.notFound,
+            headers: _getCorsHeaders());
       }
 
       return Response.ok(
@@ -55,7 +60,7 @@ class PointCategoryController {
 
   Future<Response> _createCategory(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final data = await RequestBodyUtils.readJsonObject(request);
       final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
 
       final category = PointCategory(
@@ -79,12 +84,14 @@ class PointCategoryController {
     try {
       final categoryId = int.tryParse(id);
       if (categoryId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
-      final data = jsonDecode(await request.readAsString());
+      final data = await RequestBodyUtils.readJsonObject(request);
       final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
-      
-      final updatedCategory = await _categoryService.updateCategory(categoryId, sanitized);
+
+      final updatedCategory =
+          await _categoryService.updateCategory(categoryId, sanitized);
       return Response.ok(
         jsonEncode(updatedCategory.toJson()),
         headers: _getCorsHeaders(),
@@ -98,7 +105,8 @@ class PointCategoryController {
     try {
       final categoryId = int.tryParse(id);
       if (categoryId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
       await _categoryService.deleteCategory(categoryId);
       return Response.ok(
@@ -113,4 +121,4 @@ class PointCategoryController {
   Map<String, String> _getCorsHeaders() {
     return {'Content-Type': 'application/json'};
   }
-} 
+}

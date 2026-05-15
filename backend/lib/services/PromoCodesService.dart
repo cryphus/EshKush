@@ -1,6 +1,7 @@
 import '../repositories/PromoCodesRepository.dart';
 import '../model/entities/PromoCodes.dart';
 import '../model/enums/DiscountType.dart';
+import '../utils/AppException.dart';
 
 class PromoCodesService {
   final PromoCodesRepository _promoCodesRepository;
@@ -11,7 +12,7 @@ class PromoCodesService {
     try {
       final promoCode = await _promoCodesRepository.findById(id);
       if (promoCode == null) {
-        throw Exception('Промокод не найден');
+        throw const NotFoundException('Промокод не найден');
       }
       return promoCode;
     } catch (e) {
@@ -23,7 +24,7 @@ class PromoCodesService {
     try {
       final promoCode = await _promoCodesRepository.findByCode(code);
       if (promoCode == null) {
-        throw Exception('Промокод не найден');
+        throw const NotFoundException('Промокод не найден');
       }
       return promoCode;
     } catch (e) {
@@ -90,32 +91,34 @@ class PromoCodesService {
     }
   }
 
-  Future<double> calculateDiscount(String code, double orderSum, int? productId, int? pointId) async {
+  Future<double> calculateDiscount(
+      String code, double orderSum, int? productId, int? pointId) async {
     try {
       final promoCode = await getPromoCodeByCode(code);
-      
+
       if (!promoCode.isValid) {
-        throw Exception('Промокод недействителен');
+        throw const BadRequestException('Промокод недействителен');
       }
 
       if (orderSum < promoCode.minOrderSum) {
-        throw Exception('Сумма заказа меньше минимальной');
+        throw const BadRequestException('Сумма заказа меньше минимальной');
       }
 
       if (productId != null && !promoCode.isApplicableToProduct(productId)) {
-        throw Exception('Промокод не применим к данному товару');
+        throw const BadRequestException(
+            'Промокод не применим к данному товару');
       }
 
       if (pointId != null && !promoCode.isApplicableToPoint(pointId)) {
-        throw Exception('Промокод не применим к данной точке');
+        throw const BadRequestException('Промокод не применим к данной точке');
       }
 
       final discount = promoCode.calculateDiscount(orderSum);
       await _promoCodesRepository.incrementUsage(promoCode.id);
-      
+
       return discount;
     } catch (e) {
       rethrow;
     }
   }
-} 
+}

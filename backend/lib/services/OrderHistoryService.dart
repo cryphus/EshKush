@@ -1,6 +1,7 @@
 import '../repositories/OrderHistoryRepository.dart';
 import '../model/entities/OrderHistory.dart';
 import '../model/enums/HistoryStatus.dart';
+import '../utils/AppException.dart';
 
 class OrderHistoryService {
   final OrderHistoryRepository _orderHistoryRepository;
@@ -11,7 +12,7 @@ class OrderHistoryService {
     try {
       final orderHistory = await _orderHistoryRepository.findById(id);
       if (orderHistory == null) {
-        throw Exception('История заказа не найдена');
+        throw const NotFoundException('История заказа не найдена');
       }
       return orderHistory;
     } catch (e) {
@@ -102,11 +103,12 @@ class OrderHistoryService {
     }
   }
 
-  Future<List<OrderHistory>> getOrdersByDateRange(DateTime startDate, DateTime endDate) async {
+  Future<List<OrderHistory>> getOrdersByDateRange(
+      DateTime startDate, DateTime endDate) async {
     try {
       return await _orderHistoryRepository.getByDateRange(startDate, endDate);
     } catch (e) {
       rethrow;
     }
   }
-} 
+}

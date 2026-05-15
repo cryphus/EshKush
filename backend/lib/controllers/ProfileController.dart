@@ -10,6 +10,7 @@ import '../utils/RequestContextUtils.dart';
 import '../model/dto/responses/ProfileResponseDto.dart';
 import '../model/dto/requests/CreateProfileDto.dart';
 import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 
 class ProfileController {
   final ProfileService _profileService;
@@ -37,13 +38,15 @@ class ProfileController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
       final payload = RequestContextUtils.getUser(request)!;
       final profile = await _profileService.getProfile(payload['id']);
 
       if (profile == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Профиль не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Профиль не найден',
+            code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       final profileDto = ProfileResponseDto.fromEntity(profile);
@@ -65,8 +68,11 @@ class ProfileController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения профиля', e, requestId: RequestContextUtils.getRequestId(request));
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
+      await LoggingUtils.logError('Ошибка получения профиля', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -80,18 +86,23 @@ class ProfileController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
 
       final profileId = int.tryParse(id);
       if (profileId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
       final profile = await _profileService.getProfileById(profileId);
-      await LoggingUtils.logInfo('Результат поиска профиля', context: {'found': profile != null}, requestId: RequestContextUtils.getRequestId(request));
+      await LoggingUtils.logInfo('Результат поиска профиля',
+          context: {'found': profile != null},
+          requestId: RequestContextUtils.getRequestId(request));
 
       if (profile == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Профиль не найден', code: ErrorCode.notFound, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Профиль не найден',
+            code: ErrorCode.notFound, headers: _getCorsHeaders());
       }
 
       final profileDto = ProfileResponseDto.fromEntity(profile);
@@ -113,14 +124,17 @@ class ProfileController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка получения профиля по ID', e, requestId: RequestContextUtils.getRequestId(request));
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
+      await LoggingUtils.logError('Ошибка получения профиля по ID', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _createProfile(Request request) async {
     try {
-      final body = await request.readAsString();
+      final body = await RequestBodyUtils.readRequiredBody(request);
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
@@ -129,15 +143,16 @@ class ProfileController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
       final payload = RequestContextUtils.getUser(request)!;
-      final data = jsonDecode(body) as Map<String, dynamic>;
+      final data = RequestBodyUtils.decodeJsonObject(body);
       data['user_id'] = payload['id'];
       SafeLoggingUtils.logData('Данные для создания профиля', data);
 
       final createDto = CreateProfileDto.fromJson(data);
-      
+
       final now = DateTime.now();
       final profile = Profile(
         id: 0,
@@ -154,41 +169,47 @@ class ProfileController {
       );
 
       final createdProfile = await _profileService.createProfile(profile);
-      
+
       final profileDto = ProfileResponseDto.fromEntity(createdProfile);
       final responseBody = jsonEncode(profileDto.toJson());
 
-        final response = Response.ok(
+      final response = Response.ok(
         responseBody,
-          headers: _getCorsHeaders(),
-        );
+        headers: _getCorsHeaders(),
+      );
 
-        await LoggingUtils.logResponse(
-          response.statusCode,
-          response.headers,
+      await LoggingUtils.logResponse(
+        response.statusCode,
+        response.headers,
         responseBody,
         requestId: RequestContextUtils.getRequestId(request),
-        );
+      );
 
-        return response;
+      return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка создания профиля', e, requestId: RequestContextUtils.getRequestId(request));
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
+      await LoggingUtils.logError('Ошибка создания профиля', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _updateProfile(Request request, String id) async {
     try {
-      final body = await request.readAsString();
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final body = await RequestBodyUtils.readRequiredBody(request);
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
       final payload = RequestContextUtils.getUser(request)!;
-      final data = jsonDecode(body);
-      final sanitizedData = ValidationUtils.validateAndSanitizeProfileData(data);
-      
+      final data = RequestBodyUtils.decodeJsonObject(body);
+      final sanitizedData =
+          ValidationUtils.validateAndSanitizeProfileData(data);
+
       final profileId = int.tryParse(id);
       if (profileId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID', code: ErrorCode.badRequest, headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
       }
       final profile = Profile(
         id: profileId,
@@ -203,7 +224,7 @@ class ProfileController {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      
+
       final updatedProfile = await _profileService.update(profile);
       return Response.ok(
         jsonEncode(updatedProfile.toJson()),
@@ -213,7 +234,9 @@ class ProfileController {
         },
       );
     } catch (e) {
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -227,7 +250,8 @@ class ProfileController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
       final payload = RequestContextUtils.getUser(request)!;
       await _profileService.deleteProfile(payload['id']);
@@ -252,8 +276,11 @@ class ProfileController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('Ошибка удаления профиля', e, requestId: RequestContextUtils.getRequestId(request));
-      return ErrorResponseUtils.errorResponse(e, requestId: RequestContextUtils.getRequestId(request), headers: _getCorsHeaders());
+      await LoggingUtils.logError('Ошибка удаления профиля', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 

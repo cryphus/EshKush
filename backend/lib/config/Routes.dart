@@ -70,18 +70,46 @@ class Routes {
     'cache',
     'notifications',
     'payment-transactions',
+    'payments',
     'swagger',
   ];
 
   /// Правила RBAC: префикс пути -> {HTTP-метод -> роли}.
   /// '*' = все методы; пустое множество ролей = разрешено любому аутентифицированному.
+  static const Set<String> authenticatedRoles = {
+    'user',
+    'partner',
+    'support',
+    'admin',
+  };
+
   static const Map<String, Map<String, Set<String>>> rbacRoleRules = {
-    'action-logs':        {'*': {'admin'}},
-    'error-logs':         {'*': {'admin'}},
-    'cache':              {'*': {'admin'}},
-    'partner-statistics': {'GET': {}, '*': {'admin', 'support'}},
-    'promo-codes':        {'GET': {}, '*': {'admin', 'support'}},
-    'product-categories': {'GET': {}, '*': {'admin', 'support'}},
-    'point-categories':   {'GET': {}, '*': {'admin', 'support'}},
+    'users':                {'*': authenticatedRoles},
+    'profiles':             {'*': authenticatedRoles},
+    'sessions':             {'*': authenticatedRoles},
+    'favorites':            {'*': authenticatedRoles},
+    'notifications':        {'*': authenticatedRoles},
+    'orders':               {'*': authenticatedRoles},
+    'order-actions':        {'*': authenticatedRoles},
+    'order-history':        {'*': authenticatedRoles},
+    'payment-transactions': {'*': authenticatedRoles},
+    'payments':             {'*': authenticatedRoles},
+
+    'points':               {'*': authenticatedRoles},
+    'cities':               {'*': authenticatedRoles},
+    'products':             {'*': authenticatedRoles},
+    'reviews':              {'*': authenticatedRoles},
+    'partners':             {'*': authenticatedRoles},
+    'partner-settings':     {'*': authenticatedRoles},
+
+    'action-logs':          {'*': {'admin'}},
+    'error-logs':           {'*': {'admin'}},
+    'cache':                {'*': {'admin'}},
+    'changes':              {'*': {'admin', 'support'}},
+
+    'partner-statistics':   {'GET': {'admin', 'support', 'partner'}, '*': {'admin', 'support'}},
+    'promo-codes':          {'GET': authenticatedRoles, '*': {'admin', 'support'}},
+    'product-categories':   {'GET': authenticatedRoles, '*': {'admin', 'support'}},
+    'point-categories':     {'GET': authenticatedRoles, '*': {'admin', 'support'}},
   };
 }

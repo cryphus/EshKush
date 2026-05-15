@@ -1,30 +1,12 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/OrderHistory.dart';
 import '../model/enums/HistoryStatus.dart';
 
-class OrderHistoryRepository {
+class OrderHistoryRepository extends BaseRepository {
   final PostgreSQLConnection _connection;
 
-  OrderHistoryRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  OrderHistoryRepository(this._connection) : super(_connection);
 
   Future<OrderHistory?> findById(int id) async {
     try {
@@ -156,7 +138,8 @@ class OrderHistoryRepository {
     }
   }
 
-  Future<List<OrderHistory>> getByDateRange(DateTime startDate, DateTime endDate) async {
+  Future<List<OrderHistory>> getByDateRange(
+      DateTime startDate, DateTime endDate) async {
     try {
       final results = await query(
         '''
@@ -173,4 +156,4 @@ class OrderHistoryRepository {
       rethrow;
     }
   }
-} 
+}

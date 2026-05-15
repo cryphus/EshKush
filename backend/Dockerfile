@@ -53,9 +53,9 @@ COPY --from=build /app/bin/server  /app/server
 COPY --from=build /app/bin/migrate /app/migrate
 COPY --from=build /app/lib/config/swagger.json /app/lib/config/swagger.json
 
-EXPOSE 8080
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8080/health/ || exit 1
+  CMD curl -f http://localhost:3000/health/ || exit 1
 
 CMD ["/app/server"]

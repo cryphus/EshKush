@@ -1,15 +1,18 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/PointReview.dart';
 
-class PointReviewRepository {
+class PointReviewRepository extends BaseRepository {
   final PostgreSQLConnection _connection;
 
-  PointReviewRepository(this._connection);
+  PointReviewRepository(this._connection) : super(_connection);
 
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
+  Future<Map<String, dynamic>?> queryOne(String query,
+      {Map<String, dynamic>? params}) async {
     try {
       await _connection.execute('SET client_encoding TO \'UTF8\'');
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
+      final results = await _connection.mappedResultsQuery(query,
+          substitutionValues: params);
       if (results.isEmpty) return null;
       return results.first.values.first;
     } catch (e) {
@@ -17,10 +20,12 @@ class PointReviewRepository {
     }
   }
 
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
+  Future<List<Map<String, dynamic>>> query(String query,
+      {Map<String, dynamic>? params}) async {
     try {
       await _connection.execute('SET client_encoding TO \'UTF8\'');
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
+      final results = await _connection.mappedResultsQuery(query,
+          substitutionValues: params);
       return results.map((row) => row.values.first).toList();
     } catch (e) {
       rethrow;
@@ -168,4 +173,4 @@ class PointReviewRepository {
       rethrow;
     }
   }
-} 
+}

@@ -6,10 +6,10 @@ import 'package:shelf_router/shelf_router.dart';
 import '../model/enums/PaymentMethod.dart';
 import '../services/PaymentGatewayService.dart';
 import '../services/YooKassaService.dart';
-import '../utils/AuthUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 
 class PaymentGatewayController {
   final PaymentGatewayService _gatewayService;
@@ -27,15 +27,22 @@ class PaymentGatewayController {
   Future<Response> createPayment(Request request) async {
     final requestId = RequestContextUtils.getRequestId(request);
     try {
-      final token = _requireToken(request);
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _corsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final user = RequestContextUtils.getUser(request)!;
+      final requestingUserId = _isElevated(request) ? null : user['id'] as int;
 
       final raw = await request.readAsString();
       await LoggingUtils.logRequest(
-          request.method, request.url.path, request.headers, raw,
-          requestId: requestId);
+        request.method,
+        request.url.path,
+        request.headers,
+        raw,
+        requestId: requestId,
+      );
 
-      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final data = RequestBodyUtils.decodeJsonObject(raw);
       final orderId = data['order_id'];
       if (orderId is! int) {
         return _bad('order_id обязателен и должен быть числом');
@@ -47,25 +54,37 @@ class PaymentGatewayController {
         description: data['description'] as String?,
         returnUrl: data['return_url'] as String?,
         paymentMethod: paymentMethod,
+        requestingUserId: requestingUserId,
       );
 
       final body = jsonEncode(result.toJson());
       final response = Response.ok(body, headers: _corsHeaders());
       await LoggingUtils.logResponse(
-          response.statusCode, response.headers, body,
-          requestId: requestId);
+        response.statusCode,
+        response.headers,
+        body,
+        requestId: requestId,
+      );
       return response;
     } on YooKassaException catch (e) {
-      await LoggingUtils.logError('Ошибка YooKassa при создании платежа', e,
-          requestId: requestId);
-      return Response(e.statusCode == 0 ? 502 : 502,
-          body: jsonEncode({'error': e.message}), headers: _corsHeaders());
+      await LoggingUtils.logError(
+        'Ошибка YooKassa при создании платежа',
+        e,
+        requestId: requestId,
+      );
+      return Response(
+        502,
+        body: jsonEncode({'error': e.message}),
+        headers: _corsHeaders(),
+      );
     } catch (e) {
       await LoggingUtils.logError('Ошибка создания платежа', e,
           requestId: requestId);
-      return Response(400,
-          body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-          headers: _corsHeaders());
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: requestId,
+        headers: _corsHeaders(),
+      );
     }
   }
 
@@ -74,37 +93,50 @@ class PaymentGatewayController {
     try {
       final raw = await request.readAsString();
       await LoggingUtils.logRequest(
-          request.method, request.url.path, request.headers, raw,
-          requestId: requestId);
+        request.method,
+        request.url.path,
+        request.headers,
+        raw,
+        requestId: requestId,
+      );
 
-      final payload = jsonDecode(raw) as Map<String, dynamic>;
+      final payload = RequestBodyUtils.decodeJsonObject(raw);
       final sharedSecret = request.headers['x-webhook-secret'];
       await _gatewayService.handleWebhook(payload, sharedSecret: sharedSecret);
-      return Response.ok(jsonEncode({'received': true}),
-          headers: _corsHeaders());
+      return Response.ok(
+        jsonEncode({'received': true}),
+        headers: _corsHeaders(),
+      );
     } catch (e) {
       await LoggingUtils.logError('Ошибка обработки webhook YooKassa', e,
           requestId: requestId);
-      // YooKassa будет ретраить webhook при не-2xx — возвращаем 400
-      // только на валидационные ошибки, чтобы избежать бесконечных ретраев.
-      return Response(400,
-          body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-          headers: _corsHeaders());
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: requestId,
+        headers: _corsHeaders(),
+      );
     }
   }
 
   Future<Response> refund(Request request) async {
     final requestId = RequestContextUtils.getRequestId(request);
     try {
-      final token = _requireToken(request);
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _corsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final user = RequestContextUtils.getUser(request)!;
+      final requestingUserId = _isElevated(request) ? null : user['id'] as int;
 
       final raw = await request.readAsString();
       await LoggingUtils.logRequest(
-          request.method, request.url.path, request.headers, raw,
-          requestId: requestId);
+        request.method,
+        request.url.path,
+        request.headers,
+        raw,
+        requestId: requestId,
+      );
 
-      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final data = RequestBodyUtils.decodeJsonObject(raw);
       final orderId = data['order_id'];
       if (orderId is! int) {
         return _bad('order_id обязателен и должен быть числом');
@@ -118,6 +150,7 @@ class PaymentGatewayController {
         orderId: orderId,
         amount: amount,
         description: data['description'] as String?,
+        requestingUserId: requestingUserId,
       );
 
       final body = jsonEncode(saved.toJson());
@@ -125,23 +158,25 @@ class PaymentGatewayController {
     } on YooKassaException catch (e) {
       await LoggingUtils.logError('Ошибка YooKassa при возврате', e,
           requestId: requestId);
-      return Response(502,
-          body: jsonEncode({'error': e.message}), headers: _corsHeaders());
+      return Response(
+        502,
+        body: jsonEncode({'error': e.message}),
+        headers: _corsHeaders(),
+      );
     } catch (e) {
       await LoggingUtils.logError('Ошибка возврата платежа', e,
           requestId: requestId);
-      return Response(400,
-          body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-          headers: _corsHeaders());
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: requestId,
+        headers: _corsHeaders(),
+      );
     }
   }
 
-  String _requireToken(Request request) {
-    final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-    if (token == null) {
-      throw Exception('Требуется авторизация');
-    }
-    return token;
+  bool _isElevated(Request request) {
+    final role = RequestContextUtils.getRole(request);
+    return role == 'admin' || role == 'support';
   }
 
   PaymentMethod _parsePaymentMethod(dynamic value) {
@@ -152,8 +187,11 @@ class PaymentGatewayController {
     );
   }
 
-  Response _bad(String message) => Response(400,
-      body: jsonEncode({'error': message}), headers: _corsHeaders());
+  Response _bad(String message) => Response(
+        400,
+        body: jsonEncode({'error': message}),
+        headers: _corsHeaders(),
+      );
 
   Map<String, String> _corsHeaders() => {
         'Content-Type': 'application/json',

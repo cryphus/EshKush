@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/AppConfig.dart';
+import '../utils/AppException.dart';
 
 class OAuthService {
   final AppConfig _config;
@@ -11,13 +12,17 @@ class OAuthService {
 
   // ── Yandex ──────────────────────────────────────────────────────────────────
 
-  String buildYandexAuthUrl() {
-    return Uri.https('oauth.yandex.ru', '/authorize', {
+  String buildYandexAuthUrl({String? state}) {
+    final query = <String, String>{
       'response_type': 'code',
       'client_id': _config.yandexClientId,
       'redirect_uri': _config.yandexRedirectUri,
-      'force_confirm': 'no',
-    }).toString();
+      'force_confirm': 'yes',
+    };
+    if (state != null && state.isNotEmpty) {
+      query['state'] = state;
+    }
+    return Uri.https('oauth.yandex.ru', '/authorize', query).toString();
   }
 
   /// Обменивает код авторизации на информацию о пользователе Яндекс.
@@ -36,7 +41,9 @@ class OAuthService {
     );
 
     if (tokenResponse.statusCode != 200) {
-      throw Exception('Ошибка получения токена Яндекс: ${tokenResponse.body}');
+      throw BadRequestException(
+        'Ошибка получения токена Яндекс (HTTP ${tokenResponse.statusCode})',
+      );
     }
 
     final tokenData = jsonDecode(tokenResponse.body) as Map<String, dynamic>;
@@ -48,7 +55,9 @@ class OAuthService {
     );
 
     if (infoResponse.statusCode != 200) {
-      throw Exception('Ошибка получения данных Яндекс: ${infoResponse.body}');
+      throw BadRequestException(
+        'Ошибка получения данных Яндекс (HTTP ${infoResponse.statusCode})',
+      );
     }
 
     return jsonDecode(infoResponse.body) as Map<String, dynamic>;
@@ -79,13 +88,17 @@ class OAuthService {
     final tokenResponse = await _client.get(tokenUri);
 
     if (tokenResponse.statusCode != 200) {
-      throw Exception('Ошибка получения токена ВКонтакте: ${tokenResponse.body}');
+      throw BadRequestException(
+        'Ошибка получения токена ВКонтакте (HTTP ${tokenResponse.statusCode})',
+      );
     }
 
     final tokenData = jsonDecode(tokenResponse.body) as Map<String, dynamic>;
 
     if (tokenData.containsKey('error')) {
-      throw Exception('ВКонтакте OAuth ошибка: ${tokenData['error_description'] ?? tokenData['error']}');
+      throw BadRequestException(
+        'ВКонтакте OAuth ошибка: ${tokenData['error_description'] ?? tokenData['error']}',
+      );
     }
 
     final accessToken = tokenData['access_token'] as String;
@@ -103,7 +116,8 @@ class OAuthService {
 
     final userResponse = await _client.get(userUri);
     final userData = jsonDecode(userResponse.body) as Map<String, dynamic>;
-    final userInfo = ((userData['response'] as List?)?.first as Map<String, dynamic>?) ?? {};
+    final userInfo =
+        ((userData['response'] as List?)?.first as Map<String, dynamic>?) ?? {};
 
     return {
       'id': userIdStr,

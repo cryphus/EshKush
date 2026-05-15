@@ -1,29 +1,11 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/UserSessions.dart';
 
-class UserSessionRepository {
+class UserSessionRepository extends BaseRepository {
   final PostgreSQLConnection _connection;
 
-  UserSessionRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  UserSessionRepository(this._connection) : super(_connection);
 
   Future<UserSessions?> findById(int id) async {
     try {
@@ -65,7 +47,9 @@ class UserSessionRepository {
           'userId': session.userId,
           'createdAt': session.createdAt,
           'expiresAt': session.expiresAt,
-          'deviceInfo': session.userAgent.isNotEmpty ? session.userAgent : (session.deviceId ?? ''),
+          'deviceInfo': session.userAgent.isNotEmpty
+              ? session.userAgent
+              : (session.deviceId ?? ''),
           'ipAddress': session.ipAddress,
           'status': session.status.toString().split('.').last,
           'token': session.token,
@@ -155,11 +139,11 @@ class UserSessionRepository {
         ''',
         params: {'jtiHash': jtiHash, 'expiresAt': expiresAt},
       );
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
-  Future<void> addManyToBlacklist(List<String> jtiHashes, DateTime expiresAt) async {
+  Future<void> addManyToBlacklist(
+      List<String> jtiHashes, DateTime expiresAt) async {
     try {
       await queryOne(
         '''
@@ -170,11 +154,11 @@ class UserSessionRepository {
         ''',
         params: {'hashes': jtiHashes, 'expiresAt': expiresAt},
       );
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
-  Future<UserSessions?> findActiveByRefreshJtiHash(String refreshJtiHash) async {
+  Future<UserSessions?> findActiveByRefreshJtiHash(
+      String refreshJtiHash) async {
     try {
       if (await isBlacklisted(refreshJtiHash)) return null;
       final result = await queryOne(
@@ -265,8 +249,7 @@ class UserSessionRepository {
         ''',
         params: {'id': sessionId},
       );
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   /// Удаление истёкших сессий (TTL/auto-expire cleanup).
@@ -286,7 +269,6 @@ class UserSessionRepository {
       await _connection.execute(
         'DELETE FROM token_blacklist WHERE expires_at < NOW()',
       );
-    } catch (e) {
-    }
+    } catch (e) {}
   }
-} 
+}

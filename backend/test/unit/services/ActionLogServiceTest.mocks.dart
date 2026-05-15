@@ -5,11 +5,13 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
-import 'package:backend/model/entities/ActionLog.dart' as _i2;
-import 'package:backend/model/enums/ActionType.dart' as _i6;
-import 'package:backend/model/enums/EntityType.dart' as _i5;
-import 'package:backend/repositories/ActionLogRepository.dart' as _i3;
+import 'package:backend/model/entities/ActionLog.dart' as _i3;
+import 'package:backend/model/enums/ActionType.dart' as _i7;
+import 'package:backend/model/enums/EntityType.dart' as _i6;
+import 'package:backend/repositories/ActionLogRepository.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i8;
+import 'package:postgres/postgres.dart' as _i2;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -24,8 +26,29 @@ import 'package:mockito/mockito.dart' as _i1;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakeActionLog_0 extends _i1.SmartFake implements _i2.ActionLog {
-  _FakeActionLog_0(
+class _FakePostgreSQLConnection_0 extends _i1.SmartFake
+    implements _i2.PostgreSQLConnection {
+  _FakePostgreSQLConnection_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeActionLog_1 extends _i1.SmartFake implements _i3.ActionLog {
+  _FakeActionLog_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeFuture_2<T1> extends _i1.SmartFake implements _i4.Future<T1> {
+  _FakeFuture_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -38,68 +61,48 @@ class _FakeActionLog_0 extends _i1.SmartFake implements _i2.ActionLog {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockActionLogRepository extends _i1.Mock
-    implements _i3.ActionLogRepository {
+    implements _i5.ActionLogRepository {
   MockActionLogRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<Map<String, dynamic>?> queryOne(
-    String? query, {
-    Map<String, dynamic>? params,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #queryOne,
-          [query],
-          {#params: params},
+  _i2.PostgreSQLConnection get connection => (super.noSuchMethod(
+        Invocation.getter(#connection),
+        returnValue: _FakePostgreSQLConnection_0(
+          this,
+          Invocation.getter(#connection),
         ),
-        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
-      ) as _i4.Future<Map<String, dynamic>?>);
+      ) as _i2.PostgreSQLConnection);
 
   @override
-  _i4.Future<List<Map<String, dynamic>>> query(
-    String? query, {
-    Map<String, dynamic>? params,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #query,
-          [query],
-          {#params: params},
-        ),
-        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
-            <Map<String, dynamic>>[]),
-      ) as _i4.Future<List<Map<String, dynamic>>>);
-
-  @override
-  _i4.Future<_i2.ActionLog> create(_i2.ActionLog? log) => (super.noSuchMethod(
+  _i4.Future<_i3.ActionLog> create(_i3.ActionLog? log) => (super.noSuchMethod(
         Invocation.method(
           #create,
           [log],
         ),
-        returnValue: _i4.Future<_i2.ActionLog>.value(_FakeActionLog_0(
+        returnValue: _i4.Future<_i3.ActionLog>.value(_FakeActionLog_1(
           this,
           Invocation.method(
             #create,
             [log],
           ),
         )),
-      ) as _i4.Future<_i2.ActionLog>);
+      ) as _i4.Future<_i3.ActionLog>);
 
   @override
-  _i4.Future<List<_i2.ActionLog>> findByUserId(int? userId) =>
+  _i4.Future<List<_i3.ActionLog>> findByUserId(int? userId) =>
       (super.noSuchMethod(
         Invocation.method(
           #findByUserId,
           [userId],
         ),
-        returnValue: _i4.Future<List<_i2.ActionLog>>.value(<_i2.ActionLog>[]),
-      ) as _i4.Future<List<_i2.ActionLog>>);
+        returnValue: _i4.Future<List<_i3.ActionLog>>.value(<_i3.ActionLog>[]),
+      ) as _i4.Future<List<_i3.ActionLog>>);
 
   @override
-  _i4.Future<List<_i2.ActionLog>> findByEntity(
-    _i5.EntityType? entityType,
+  _i4.Future<List<_i3.ActionLog>> findByEntity(
+    _i6.EntityType? entityType,
     int? entityId,
   ) =>
       (super.noSuchMethod(
@@ -110,28 +113,84 @@ class MockActionLogRepository extends _i1.Mock
             entityId,
           ],
         ),
-        returnValue: _i4.Future<List<_i2.ActionLog>>.value(<_i2.ActionLog>[]),
-      ) as _i4.Future<List<_i2.ActionLog>>);
+        returnValue: _i4.Future<List<_i3.ActionLog>>.value(<_i3.ActionLog>[]),
+      ) as _i4.Future<List<_i3.ActionLog>>);
 
   @override
-  _i4.Future<List<_i2.ActionLog>> findByActionType(
-          _i6.ActionType? actionType) =>
+  _i4.Future<List<_i3.ActionLog>> findByActionType(
+          _i7.ActionType? actionType) =>
       (super.noSuchMethod(
         Invocation.method(
           #findByActionType,
           [actionType],
         ),
-        returnValue: _i4.Future<List<_i2.ActionLog>>.value(<_i2.ActionLog>[]),
-      ) as _i4.Future<List<_i2.ActionLog>>);
+        returnValue: _i4.Future<List<_i3.ActionLog>>.value(<_i3.ActionLog>[]),
+      ) as _i4.Future<List<_i3.ActionLog>>);
 
   @override
-  _i4.Future<List<_i2.ActionLog>> findRecent({int? limit = 100}) =>
+  _i4.Future<List<_i3.ActionLog>> findRecent({int? limit = 100}) =>
       (super.noSuchMethod(
         Invocation.method(
           #findRecent,
           [],
           {#limit: limit},
         ),
-        returnValue: _i4.Future<List<_i2.ActionLog>>.value(<_i2.ActionLog>[]),
-      ) as _i4.Future<List<_i2.ActionLog>>);
+        returnValue: _i4.Future<List<_i3.ActionLog>>.value(<_i3.ActionLog>[]),
+      ) as _i4.Future<List<_i3.ActionLog>>);
+
+  @override
+  _i4.Future<List<Map<String, dynamic>>> query(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #query,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i4.Future<List<Map<String, dynamic>>>);
+
+  @override
+  _i4.Future<Map<String, dynamic>?> queryOne(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #queryOne,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
+      ) as _i4.Future<Map<String, dynamic>?>);
+
+  @override
+  _i4.Future<T> transaction<T>(
+          _i4.Future<T> Function(_i2.PostgreSQLExecutionContext)? callback) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #transaction,
+          [callback],
+        ),
+        returnValue: _i8.ifNotNull(
+              _i8.dummyValueOrNull<T>(
+                this,
+                Invocation.method(
+                  #transaction,
+                  [callback],
+                ),
+              ),
+              (T v) => _i4.Future<T>.value(v),
+            ) ??
+            _FakeFuture_2<T>(
+              this,
+              Invocation.method(
+                #transaction,
+                [callback],
+              ),
+            ),
+      ) as _i4.Future<T>);
 }

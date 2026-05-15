@@ -28,7 +28,7 @@ cd "$(dirname "$0")/../frontend"
 
 exec flutter run \
   "${@:--d chrome}" \
-  --dart-define=API_BASE_URL="${API_BASE_URL:-http://localhost:8080}" \
+  --dart-define=API_BASE_URL="${API_BASE_URL:-http://localhost:3000}" \
   --dart-define=TELEGRAM_API_URL="${TELEGRAM_API_URL:-http://localhost:5000/api}" \
   --dart-define=GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}" \
   --dart-define=BOT_USERNAME="${BOT_USERNAME:-eshkush_bot}" \

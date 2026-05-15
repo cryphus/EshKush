@@ -1,29 +1,11 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/PartnerSettings.dart';
 
-class PartnerSettingsRepository {
+class PartnerSettingsRepository extends BaseRepository {
   final PostgreSQLConnection _connection;
 
-  PartnerSettingsRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  PartnerSettingsRepository(this._connection) : super(_connection);
 
   Future<PartnerSettings?> findById(int id) async {
     try {
@@ -149,8 +131,7 @@ class PartnerSettingsRepository {
 
   Future<List<PartnerSettings>> findAll() async {
     try {
-      final results = await query(
-        '''
+      final results = await query('''
         SELECT 
           id,
           partner_id,
@@ -158,11 +139,10 @@ class PartnerSettingsRepository {
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
           to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
         FROM partner_settings
-        '''
-      );
+        ''');
       return results.map((map) => PartnerSettings.fromJson(map)).toList();
     } catch (e) {
       rethrow;
     }
   }
-} 
+}

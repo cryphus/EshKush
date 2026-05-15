@@ -11,6 +11,7 @@ import 'screens/AuthScreen.dart';
 import 'screens/SimpleRegisterScreen.dart';
 import 'state/app_state.dart';
 import 'utils/snackbar.dart';
+import 'utils/web_url_cleanup.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,14 +19,29 @@ void main() async {
   // Обрабатываем OAuth callback: бэкенд редиректит на /?access_token=...&refresh_token=...
   if (kIsWeb) {
     final uri = Uri.base;
-    final oauthToken = uri.queryParameters['access_token'];
-    final oauthRefresh = uri.queryParameters['refresh_token'];
+    var fragmentParams = <String, String>{};
+    if (uri.fragment.isNotEmpty) {
+      try {
+        fragmentParams = Uri.splitQueryString(uri.fragment);
+      } catch (_) {
+        fragmentParams = <String, String>{};
+      }
+    }
+    final oauthToken =
+        uri.queryParameters['access_token'] ?? fragmentParams['access_token'];
+    final oauthRefresh =
+        uri.queryParameters['refresh_token'] ?? fragmentParams['refresh_token'];
+    final oauthError =
+        uri.queryParameters['oauth_error'] ?? fragmentParams['oauth_error'];
     if (oauthToken != null && oauthToken.isNotEmpty) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('access_token', oauthToken);
       if (oauthRefresh != null && oauthRefresh.isNotEmpty) {
         await prefs.setString('refresh_token', oauthRefresh);
       }
+    }
+    if (oauthToken != null || oauthRefresh != null || oauthError != null) {
+      cleanupOAuthParamsFromUrl();
     }
   }
 
@@ -38,7 +54,8 @@ void main() async {
   final container = ProviderContainer();
   await container.read(authProvider.notifier).loadSavedAuth();
 
-  runApp(UncontrolledProviderScope(container: container, child: const EshKush()));
+  runApp(
+      UncontrolledProviderScope(container: container, child: const EshKush()));
 }
 
 class EshKush extends ConsumerWidget {

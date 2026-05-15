@@ -1,29 +1,11 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/UserFavorite.dart';
 
-class UserFavoriteRepository {
+class UserFavoriteRepository extends BaseRepository {
   final PostgreSQLConnection _connection;
 
-  UserFavoriteRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  UserFavoriteRepository(this._connection) : super(_connection);
 
   Future<List<UserFavorite>> findByUserId(int userId) async {
     try {
@@ -112,4 +94,4 @@ class UserFavoriteRepository {
       rethrow;
     }
   }
-} 
+}

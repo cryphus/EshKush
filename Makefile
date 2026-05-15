@@ -50,7 +50,7 @@ help:
 	@echo "  make test-all          — все тесты включая e2e (поэтапно)"
 	@echo "  make test-local        — unit без Docker (нужен dart)"
 	@echo "  make build             — собрать Docker-образы"
-	@echo "  make up                — поднять бекенд"
+	@echo "  make up                — поднять backend"
 	@echo "  make down              — остановить всё"
 	@echo "  make logs s=backend    — логи сервиса"
 	@echo ""

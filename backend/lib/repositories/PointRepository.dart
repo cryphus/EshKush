@@ -3,15 +3,14 @@ import '../model/entities/Point.dart';
 import '../model/entities/PointCategory.dart';
 import '../model/entities/PointReview.dart';
 import '../model/entities/NearbyPoint.dart';
+import 'BaseRepository.dart';
 
-class PointRepository {
-  final PostgreSQLConnection _connection;
-
-  PointRepository(this._connection);
+class PointRepository extends BaseRepository {
+  PointRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<List<Point>> findAll({int limit = 20, int offset = 0}) async {
     try {
-      final result = await _connection.mappedResultsQuery('''
+      final result = await connection.mappedResultsQuery('''
         WITH point_ratings AS (
           SELECT point_id, COALESCE(AVG(rating), 0) as current_rating
           FROM point_reviews
@@ -32,7 +31,7 @@ class PointRepository {
 
   Future<Point?> findById(int id) async {
     try {
-      final result = await _connection.mappedResultsQuery('''
+      final result = await connection.mappedResultsQuery('''
         WITH point_rating AS (
           SELECT COALESCE(AVG(rating), 0) as current_rating
           FROM point_reviews
@@ -68,7 +67,7 @@ class PointRepository {
     try {
       // Используем raw query вместо mappedResultsQuery, чтобы чисто получить
       // distance_m (вычисляемая колонка не группируется под именем таблицы).
-      final rows = await _connection.query('''
+      final rows = await connection.query('''
         WITH point_ratings AS (
           SELECT point_id, COALESCE(AVG(rating), 0) as current_rating
           FROM point_reviews
@@ -130,15 +129,20 @@ class PointRepository {
     }
   }
 
-  Future<List<Point>> findByCategory(int categoryId, {int limit = 20, int offset = 0}) async {
+  Future<List<Point>> findByCategory(int categoryId,
+      {int limit = 20, int offset = 0}) async {
     try {
-      final results = await _connection.mappedResultsQuery('''
+      final results = await connection.mappedResultsQuery('''
         SELECT p.* FROM points p
         JOIN point_category_map pcm ON p.id = pcm.point_id
         WHERE pcm.category_id = @categoryId
         ORDER BY p.id
         LIMIT @limit OFFSET @offset
-      ''', substitutionValues: {'categoryId': categoryId, 'limit': limit, 'offset': offset});
+      ''', substitutionValues: {
+        'categoryId': categoryId,
+        'limit': limit,
+        'offset': offset
+      });
 
       return results.map((row) => Point.fromJson(row['points']!)).toList();
     } catch (e) {
@@ -148,13 +152,15 @@ class PointRepository {
 
   Future<List<PointCategory>> getCategoriesForPoint(int pointId) async {
     try {
-      final results = await _connection.mappedResultsQuery('''
+      final results = await connection.mappedResultsQuery('''
         SELECT c.* FROM point_categories c
         JOIN point_category_map pcm ON c.id = pcm.category_id
         WHERE pcm.point_id = @pointId
       ''', substitutionValues: {'pointId': pointId});
-      
-      return results.map((row) => PointCategory.fromJson(row['point_categories']!)).toList();
+
+      return results
+          .map((row) => PointCategory.fromJson(row['point_categories']!))
+          .toList();
     } catch (e) {
       rethrow;
     }
@@ -162,7 +168,7 @@ class PointRepository {
 
   Future<Point> createPoint(Map<String, dynamic> data) async {
     try {
-      final result = await _connection.mappedResultsQuery('''
+      final result = await connection.mappedResultsQuery('''
         INSERT INTO points (
           name, address, city_id, products, opening_hours, 
           closing_hours, partner_id, longitude, latitude, tags,
@@ -184,7 +190,7 @@ class PointRepository {
         'latitude': double.parse(data['latitude'].toString()),
         'tags': data['tags'] ?? {},
       });
-      
+
       return Point.fromJson(result.first['points']!);
     } catch (e) {
       rethrow;
@@ -193,16 +199,14 @@ class PointRepository {
 
   Future<Point?> updatePoint(int id, Map<String, dynamic> data) async {
     try {
-      final setClause = data.keys
-          .map((key) => '$key = @$key')
-          .join(', ');
-      
+      final setClause = data.keys.map((key) => '$key = @$key').join(', ');
+
       final substitutionValues = <String, dynamic>{
         'id': id,
         ...data,
       };
-      
-      final result = await _connection.mappedResultsQuery(
+
+      final result = await connection.mappedResultsQuery(
         '''
         UPDATE points 
         SET $setClause, updated_at = CURRENT_TIMESTAMP
@@ -211,11 +215,11 @@ class PointRepository {
         ''',
         substitutionValues: substitutionValues,
       );
-      
+
       if (result.isEmpty) {
         return null;
       }
-      
+
       return Point.fromJson(result.first['points']!);
     } catch (e) {
       rethrow;
@@ -224,15 +228,15 @@ class PointRepository {
 
   Future<Point?> deletePoint(int id) async {
     try {
-      final result = await _connection.mappedResultsQuery(
+      final result = await connection.mappedResultsQuery(
         'DELETE FROM points WHERE id = @id RETURNING *',
         substitutionValues: {'id': id},
       );
-      
+
       if (result.isEmpty) {
         return null;
       }
-      
+
       return Point.fromJson(result.first['points']!);
     } catch (e) {
       rethrow;
@@ -241,7 +245,7 @@ class PointRepository {
 
   Future<Point?> updateRating(int pointId, double rating) async {
     try {
-      final result = await _connection.mappedResultsQuery(
+      final result = await connection.mappedResultsQuery(
         '''
         UPDATE points 
         SET rating = @rating, updated_at = CURRENT_TIMESTAMP
@@ -253,11 +257,11 @@ class PointRepository {
           'rating': rating,
         },
       );
-      
+
       if (result.isEmpty) {
         return null;
       }
-      
+
       return Point.fromJson(result.first['points']!);
     } catch (e) {
       rethrow;
@@ -265,7 +269,7 @@ class PointRepository {
   }
 
   Future<void> updatePointCategories(int pointId, List<int> categoryIds) async {
-    await _connection.transaction((txn) async {
+    await connection.transaction((txn) async {
       await txn.mappedResultsQuery(
         'DELETE FROM point_category_map WHERE point_id = @pointId',
         substitutionValues: {'pointId': pointId},
@@ -285,12 +289,14 @@ class PointRepository {
 
   Future<List<PointReview>> getPointReviews(int pointId) async {
     try {
-      final results = await _connection.mappedResultsQuery(
+      final results = await connection.mappedResultsQuery(
         'SELECT * FROM point_reviews WHERE point_id = @pointId ORDER BY created_at DESC',
         substitutionValues: {'pointId': pointId},
       );
-      
-      return results.map((row) => PointReview.fromJson(row['point_reviews']!)).toList();
+
+      return results
+          .map((row) => PointReview.fromJson(row['point_reviews']!))
+          .toList();
     } catch (e) {
       rethrow;
     }
@@ -298,7 +304,7 @@ class PointRepository {
 
   Future<PointReview> createPointReview(Map<String, dynamic> data) async {
     try {
-      final result = await _connection.mappedResultsQuery('''
+      final result = await connection.mappedResultsQuery('''
         INSERT INTO point_reviews (
           point_id, user_id, rating, comment, created_at
         ) VALUES (
@@ -310,10 +316,10 @@ class PointRepository {
         'rating': double.parse(data['rating'].toString()),
         'comment': data['comment'],
       });
-      
+
       // Обновляем рейтинг точки
       await _updatePointRating(int.parse(data['point_id'].toString()));
-      
+
       return PointReview.fromJson(result.first['point_reviews']!);
     } catch (e) {
       rethrow;
@@ -322,7 +328,7 @@ class PointRepository {
 
   Future<void> _updatePointRating(int pointId) async {
     try {
-      await _connection.mappedResultsQuery('''
+      await connection.mappedResultsQuery('''
         WITH avg_rating AS (
           SELECT AVG(rating) as new_rating
           FROM point_reviews
@@ -339,4 +345,4 @@ class PointRepository {
       rethrow;
     }
   }
-} 
+}

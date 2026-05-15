@@ -21,7 +21,7 @@ DATABASE_PATH = os.getenv('DATABASE_PATH', 'app/database.db')
 # URL frontend-приложения для формирования deep link
 APP_URL = os.getenv('APP_URL', 'http://localhost:3000')
 # URL основного Dart Shelf backend
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8080')
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:3000')
 
 # ── Прочее ────────────────────────────────────────────────────────────────────
 TOKEN_EXPIRATION_MINUTES = int(os.getenv('TOKEN_EXPIRATION_MINUTES', '10'))

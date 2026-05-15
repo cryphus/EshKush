@@ -1,7 +1,7 @@
 /// Конфигурация приложения.
 ///
 /// Значения вшиваются на этапе сборки через `--dart-define`:
-///   flutter run --dart-define=API_BASE_URL=http://localhost:8080 ...
+///   flutter run --dart-define=API_BASE_URL=http://localhost:3000 ...
 ///
 /// Для удобства используй скрипты в scripts/:
 ///   scripts/run_test.sh   — запуск в режиме разработки
@@ -14,7 +14,7 @@ class AppConfig {
   /// URL основного Dart Shelf backend (без trailing slash).
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8080',
+    defaultValue: 'http://localhost:3000',
   );
 
   // ── Telegram Auth Service ──────────────────────────────────────────────────

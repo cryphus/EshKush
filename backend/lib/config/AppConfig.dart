@@ -18,7 +18,8 @@ class AppConfig {
   late final String logLevel; // debug|info|warn|error
   late final bool logJson;
   late final int maxRequestBodyBytes;
-
+  late final bool trustProxyHeaders;
+  late final List<String> trustedProxyIps;
 
   // Redis configuration
   late String redisHost;
@@ -40,10 +41,11 @@ class AppConfig {
   late final String frontendUrl;
 
   String get yandexRedirectUri => '$oauthCallbackBaseUrl/auth/yandex/callback';
-  String get vkRedirectUri     => '$oauthCallbackBaseUrl/auth/vk/callback';
+  String get vkRedirectUri => '$oauthCallbackBaseUrl/auth/vk/callback';
 
-  bool get isYandexConfigured => yandexClientId.isNotEmpty && yandexClientSecret.isNotEmpty;
-  bool get isVkConfigured     => vkClientId.isNotEmpty && vkClientSecret.isNotEmpty;
+  bool get isYandexConfigured =>
+      yandexClientId.isNotEmpty && yandexClientSecret.isNotEmpty;
+  bool get isVkConfigured => vkClientId.isNotEmpty && vkClientSecret.isNotEmpty;
 
   // YooKassa configuration
   late final String yookassaShopId;
@@ -67,7 +69,8 @@ class AppConfig {
     jwtSecret = env['JWT_SECRET'] ?? '';
     jwtRefreshSecret = env['JWT_REFRESH_SECRET'] ?? '';
     final rawDatabaseUrl = env['DATABASE_URL'] ?? '';
-    databaseUrl = rawDatabaseUrl.isNotEmpty ? rawDatabaseUrl : _buildDatabaseUrl(env);
+    databaseUrl =
+        rawDatabaseUrl.isNotEmpty ? rawDatabaseUrl : _buildDatabaseUrl(env);
     port = int.tryParse(env['PORT'] ?? '3000') ?? 3000;
     environment = env['ENVIRONMENT'] ?? 'development';
 
@@ -76,15 +79,24 @@ class AppConfig {
         .map((e) => e.trim())
         .toList();
 
-    rateLimitRequests = int.tryParse(env['RATE_LIMIT_REQUESTS'] ?? '100') ?? 100;
+    rateLimitRequests =
+        int.tryParse(env['RATE_LIMIT_REQUESTS'] ?? '100') ?? 100;
     rateLimitWindow = Duration(
-      minutes: int.tryParse(env['RATE_LIMIT_WINDOW_MINUTES'] ?? '1') ?? 1
-    );
+        minutes: int.tryParse(env['RATE_LIMIT_WINDOW_MINUTES'] ?? '1') ?? 1);
 
     logLevel = (env['LOG_LEVEL'] ?? 'info').toLowerCase();
     logJson = (env['LOG_JSON'] ?? 'true').toLowerCase() == 'true';
-    maxRequestBodyBytes = int.tryParse(env['MAX_REQUEST_BODY_BYTES'] ?? '10485760') ?? 10485760;
-
+    maxRequestBodyBytes =
+        int.tryParse(env['MAX_REQUEST_BODY_BYTES'] ?? '10485760') ?? 10485760;
+    trustProxyHeaders =
+        (env['TRUST_PROXY_HEADERS'] ?? (isProduction ? 'false' : 'true'))
+                .toLowerCase() ==
+            'true';
+    trustedProxyIps = (env['TRUSTED_PROXY_IPS'] ?? '127.0.0.1,::1')
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
 
     // Redis configuration
     redisHost = env['REDIS_HOST'] ?? 'localhost';
@@ -92,20 +104,20 @@ class AppConfig {
     redisPassword = env['REDIS_PASSWORD'] ?? '';
     redisDb = int.tryParse(env['REDIS_DB'] ?? '0') ?? 0;
     redisConnectionTimeout = Duration(
-      seconds: int.tryParse(env['REDIS_CONNECTION_TIMEOUT'] ?? '5') ?? 5
-    );
+        seconds: int.tryParse(env['REDIS_CONNECTION_TIMEOUT'] ?? '5') ?? 5);
 
     // OAuth — Yandex
-    yandexClientId     = env['YANDEX_CLIENT_ID']     ?? '';
+    yandexClientId = env['YANDEX_CLIENT_ID'] ?? '';
     yandexClientSecret = env['YANDEX_CLIENT_SECRET'] ?? '';
 
     // OAuth — VK
-    vkClientId     = env['VK_CLIENT_ID']     ?? '';
+    vkClientId = env['VK_CLIENT_ID'] ?? '';
     vkClientSecret = env['VK_CLIENT_SECRET'] ?? '';
 
     // OAuth — URLs
-    oauthCallbackBaseUrl = env['OAUTH_CALLBACK_BASE_URL'] ?? 'http://localhost:8080';
-    frontendUrl          = env['FRONTEND_URL']            ?? 'http://localhost:3000';
+    oauthCallbackBaseUrl =
+        env['OAUTH_CALLBACK_BASE_URL'] ?? 'http://localhost:3000';
+    frontendUrl = env['FRONTEND_URL'] ?? 'http://localhost:3000';
 
     // YooKassa configuration
     yookassaShopId = env['YOOKASSA_SHOP_ID'] ?? '';
@@ -121,7 +133,8 @@ class AppConfig {
     );
 
     sessionCleanupInterval = Duration(
-      minutes: int.tryParse(env['SESSION_CLEANUP_INTERVAL_MINUTES'] ?? '15') ?? 15,
+      minutes:
+          int.tryParse(env['SESSION_CLEANUP_INTERVAL_MINUTES'] ?? '15') ?? 15,
     );
 
     _validateConfig();
@@ -148,11 +161,13 @@ class AppConfig {
     _instance.redisDb = 0;
     _instance.redisConnectionTimeout = const Duration(seconds: 5);
     _instance.maxRequestBodyBytes = 10485760;
+    _instance.trustProxyHeaders = true;
+    _instance.trustedProxyIps = ['127.0.0.1', '::1'];
     _instance.yandexClientId = '';
     _instance.yandexClientSecret = '';
     _instance.vkClientId = '';
     _instance.vkClientSecret = '';
-    _instance.oauthCallbackBaseUrl = 'http://localhost:8080';
+    _instance.oauthCallbackBaseUrl = 'http://localhost:3000';
     _instance.frontendUrl = 'http://localhost:3000';
     _instance.yookassaShopId = '';
     _instance.yookassaSecretKey = '';
@@ -172,7 +187,8 @@ class AppConfig {
       throw Exception('JWT_SECRET должен быть не менее 32 символов');
     }
     if (jwtRefreshSecret.isEmpty) {
-      throw Exception('JWT_REFRESH_SECRET не установлен в переменных окружения');
+      throw Exception(
+          'JWT_REFRESH_SECRET не установлен в переменных окружения');
     }
     if (jwtRefreshSecret.length < 32) {
       throw Exception('JWT_REFRESH_SECRET должен быть не менее 32 символов');

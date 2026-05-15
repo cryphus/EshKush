@@ -1,31 +1,13 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/ActionLog.dart';
 import '../model/enums/ActionType.dart';
 import '../model/enums/EntityType.dart';
 
-class ActionLogRepository {
+class ActionLogRepository extends BaseRepository {
   final PostgreSQLConnection _connection;
 
-  ActionLogRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  ActionLogRepository(this._connection) : super(_connection);
 
   Future<ActionLog> create(ActionLog log) async {
     try {
@@ -81,7 +63,8 @@ class ActionLogRepository {
     }
   }
 
-  Future<List<ActionLog>> findByEntity(EntityType entityType, int entityId) async {
+  Future<List<ActionLog>> findByEntity(
+      EntityType entityType, int entityId) async {
     try {
       final results = await query(
         '''
@@ -124,4 +107,4 @@ class ActionLogRepository {
       rethrow;
     }
   }
-} 
+}

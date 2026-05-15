@@ -1,30 +1,12 @@
 import 'package:postgres/postgres.dart' as pg;
+import 'BaseRepository.dart';
 import '../model/entities/Notification.dart';
 import '../model/enums/NotificationType.dart';
 
-class NotificationRepository {
+class NotificationRepository extends BaseRepository {
   final pg.PostgreSQLConnection _connection;
 
-  NotificationRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  NotificationRepository(this._connection) : super(_connection);
 
   Future<Notification> create(Notification notification) async {
     try {
@@ -140,4 +122,4 @@ class NotificationRepository {
       rethrow;
     }
   }
-} 
+}

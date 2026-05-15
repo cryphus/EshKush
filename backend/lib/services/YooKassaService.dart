@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
@@ -11,6 +12,7 @@ import '../config/AppConfig.dart';
 /// возврат. Маппинг в доменные сущности (PaymentTransactions) лежит в
 /// [PaymentGatewayService].
 class YooKassaService {
+  static const Duration _requestTimeout = Duration(seconds: 15);
   final AppConfig _config;
   final http.Client _httpClient;
   final Uuid _uuid;
@@ -63,7 +65,17 @@ class YooKassaService {
   Future<Map<String, dynamic>> getPayment(String providerTransactionId) async {
     _assertConfigured();
     final uri = Uri.parse('${_config.yookassaApiBaseUrl}/payments/$providerTransactionId');
-    final response = await _httpClient.get(uri, headers: _authHeaders());
+    http.Response response;
+    try {
+      response = await _httpClient
+          .get(uri, headers: _authHeaders())
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw YooKassaException(
+        statusCode: 504,
+        message: 'YooKassa timeout while fetching payment status',
+      );
+    }
     return _decode(response);
   }
 
@@ -94,15 +106,25 @@ class YooKassaService {
     required String idempotenceKey,
   }) async {
     final uri = Uri.parse('${_config.yookassaApiBaseUrl}$path');
-    final response = await _httpClient.post(
-      uri,
-      headers: {
-        ..._authHeaders(),
-        'Content-Type': 'application/json',
-        'Idempotence-Key': idempotenceKey,
-      },
-      body: jsonEncode(body),
-    );
+    http.Response response;
+    try {
+      response = await _httpClient
+          .post(
+            uri,
+            headers: {
+              ..._authHeaders(),
+              'Content-Type': 'application/json',
+              'Idempotence-Key': idempotenceKey,
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw YooKassaException(
+        statusCode: 504,
+        message: 'YooKassa timeout while calling $path',
+      );
+    }
     return _decode(response);
   }
 

@@ -21,29 +21,42 @@ void main() {
 
   setUp(() {
     userRepo = MockUserRepository();
-    cache    = MockCacheService();
-    sut      = UserService(userRepo, cache);
+    cache = MockCacheService();
+    sut = UserService(userRepo, cache);
 
     // По умолчанию: кеш промахивается, set/delete — no-op
     when(cache.get(any)).thenAnswer((_) async => null);
-    when(cache.set(any, any, ttl: anyNamed('ttl'))).thenAnswer((_) async => true);
+    when(cache.set(any, any, ttl: anyNamed('ttl')))
+        .thenAnswer((_) async => true);
     when(cache.delete(any)).thenAnswer((_) async => true);
     when(cache.deleteByPattern(any)).thenAnswer((_) async => 0);
     when(cache.isConnected).thenReturn(true);
   });
 
   // ────────────────────────────────────────────────────────── fixtures ──────
-  User _user({int id = 1, String username = 'testuser', String password = 'hash'}) => User(
-    id: id, username: username, password: password,
-    number: '+79001234567', email: 'test@example.com',
-    createdAt: DateTime(2024), role: UserRole.user,
-  );
+  User _user(
+          {int id = 1,
+          String username = 'testuser',
+          String password = 'hash'}) =>
+      User(
+        id: id,
+        username: username,
+        password: password,
+        number: '+79001234567',
+        email: 'test@example.com',
+        createdAt: DateTime(2024),
+        role: UserRole.user,
+      );
 
   Map<String, dynamic> _userMap({int id = 1, String username = 'testuser'}) => {
-    'id': id, 'username': username, 'password': 'hash',
-    'email': 'test@example.com', 'number': '+79001234567',
-    'created_at': '2024-01-01T00:00:00.000Z', 'role': 'user',
-  };
+        'id': id,
+        'username': username,
+        'password': 'hash',
+        'email': 'test@example.com',
+        'number': '+79001234567',
+        'created_at': '2024-01-01T00:00:00.000Z',
+        'role': 'user',
+      };
 
   // ── getUserById ───────────────────────────────────────────────────────────
   group('getUserById', () {
@@ -72,8 +85,8 @@ void main() {
   // ── getAllUsers ───────────────────────────────────────────────────────────
   group('getAllUsers', () {
     test('без роли: возвращает всех пользователей из БД', () async {
-      when(userRepo.query(any, params: anyNamed('params')))
-          .thenAnswer((_) async => [_userMap(id: 1), _userMap(id: 2, username: 'other')]);
+      when(userRepo.query(any, params: anyNamed('params'))).thenAnswer(
+          (_) async => [_userMap(id: 1), _userMap(id: 2, username: 'other')]);
       final result = await sut.getAllUsers();
       expect(result.length, 2);
     });
@@ -105,13 +118,16 @@ void main() {
 
     test('бросает если пользователь не найден', () async {
       when(userRepo.findByUsername(any)).thenAnswer((_) async => null);
-      when(userRepo.update(any, any)).thenThrow(Exception('Пользователь не найден'));
-      expect(() => sut.updateUser(1, {'username': 'newname'}), throwsA(isA<Exception>()));
+      when(userRepo.update(any, any))
+          .thenThrow(Exception('Пользователь не найден'));
+      expect(() => sut.updateUser(1, {'username': 'newname'}),
+          throwsA(isA<Exception>()));
     });
 
     test('успешно обновляет и инвалидирует кеш', () async {
       when(userRepo.findByUsername(any)).thenAnswer((_) async => null);
-      when(userRepo.update(any, any)).thenAnswer((_) async => _user(username: 'updated'));
+      when(userRepo.update(any, any))
+          .thenAnswer((_) async => _user(username: 'updated'));
       final result = await sut.updateUser(1, {'username': 'updated'});
       expect(result.username, 'updated');
       verify(cache.delete(any)).called(greaterThan(0));
@@ -123,7 +139,8 @@ void main() {
       when(userRepo.findById(any)).thenAnswer((_) async => mockUser);
       when(userRepo.findByUsername(any)).thenAnswer((_) async => null);
       when(userRepo.update(any, any)).thenAnswer((_) async => _user());
-      await sut.updateUser(1, {'password': 'NewPass1!', 'old_password': 'OldPass1!'});
+      await sut.updateUser(
+          1, {'password': 'NewPass1!', 'old_password': 'OldPass1!'});
       final captured = verify(userRepo.update(captureAny, captureAny)).captured;
       final updatedData = captured[1] as Map<String, dynamic>;
       expect(updatedData['password'], isNot('NewPass1!'));
@@ -163,6 +180,7 @@ void main() {
       when(userRepo.queryOne(any, params: anyNamed('params')))
           .thenAnswer((_) async => {'id': 1});
       await expectLater(sut.updateBalance(1, 500), completes);
+      verify(cache.delete(any)).called(greaterThan(0));
     });
 
     test('принимает отрицательные суммы (списание)', () async {
@@ -196,6 +214,7 @@ void main() {
       when(userRepo.queryOne(any, params: anyNamed('params')))
           .thenAnswer((_) async => {'id': 1});
       await expectLater(sut.addToFavorites(1, 10), completes);
+      verify(cache.delete(any)).called(greaterThan(0));
     });
   });
 
@@ -208,6 +227,7 @@ void main() {
       when(userRepo.queryOne(any, params: anyNamed('params')))
           .thenAnswer((_) async => {'id': 1});
       await expectLater(sut.removeFromFavorites(1, 10), completes);
+      verify(cache.delete(any)).called(greaterThan(0));
     });
   });
 }

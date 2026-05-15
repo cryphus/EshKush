@@ -46,8 +46,8 @@ class AuthScreen extends StatelessWidget {
               const SizedBox(height: 40),
               Expanded(
                 child: Center(
-                  child: Image.network(
-                    'http://91.186.217.192/images/img_start.png',
+                  child: Image.asset(
+                    'assets/images/auth_bag.png',
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) => const Icon(
                       Icons.shopping_bag,

@@ -1,30 +1,12 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/OrderActions.dart';
 import '../model/enums/ActionType.dart';
 
-class OrderActionsRepository {
+class OrderActionsRepository extends BaseRepository {
   final PostgreSQLConnection _connection;
 
-  OrderActionsRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  OrderActionsRepository(this._connection) : super(_connection);
 
   Future<OrderActions?> findById(int id) async {
     try {
@@ -59,7 +41,7 @@ class OrderActionsRepository {
         JOIN orders o ON oa.order_id = o.id
         JOIN points p ON o.point_id = p.id
         WHERE p.partner_id = @partnerId
-        ''' ,
+        ''',
         params: {'partnerId': partnerId},
       );
       return results.map((map) => OrderActions.fromJson(map)).toList();
@@ -141,4 +123,4 @@ class OrderActionsRepository {
       rethrow;
     }
   }
-} 
+}

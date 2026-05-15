@@ -1,6 +1,7 @@
 import '../repositories/OrderActionsRepository.dart';
 import '../model/entities/OrderActions.dart';
 import '../model/enums/ActionType.dart';
+import '../utils/AppException.dart';
 
 class OrderActionsService {
   final OrderActionsRepository _orderActionsRepository;
@@ -11,7 +12,7 @@ class OrderActionsService {
     try {
       final action = await _orderActionsRepository.findById(id);
       if (action == null) {
-        throw Exception('Действие не найдено');
+        throw const NotFoundException('Действие не найдено');
       }
       return action;
     } catch (e) {
@@ -73,7 +74,8 @@ class OrderActionsService {
     }
   }
 
-  Future<OrderActions> updateActionDescription(int id, String newDescription) async {
+  Future<OrderActions> updateActionDescription(
+      int id, String newDescription) async {
     try {
       final action = await getActionById(id);
       action.updateDescription(newDescription);
@@ -120,4 +122,4 @@ class OrderActionsService {
       rethrow;
     }
   }
-} 
+}

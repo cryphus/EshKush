@@ -1,12 +1,14 @@
-import 'package:html_unescape/html_unescape.dart';
 import 'SafeLoggingUtils.dart';
+import 'SecurityUtils.dart';
 import '../model/enums/UserRole.dart';
 
 /// Общий слой валидации: контракты полей (типы, длины, форматы, диапазоны).
 /// Используется DTO (CreateUserDto, LoginDto и др.) и контроллерами.
 /// Константы ограничений: maxNameLength, maxEmailLength, maxPasswordLength и т.д.
 class ValidationUtils {
-  static final _htmlUnescape = HtmlUnescape();
+  static final RegExp _strictEmailRegex = RegExp(
+    r'^[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$',
+  );
 
   // Максимальные длины полей
   static const int maxNameLength = 100;
@@ -22,8 +24,7 @@ class ValidationUtils {
 
   // Валидация email
   static bool isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    return emailRegex.hasMatch(email);
+    return _strictEmailRegex.hasMatch(email);
   }
 
   // Валидация пароля
@@ -31,12 +32,13 @@ class ValidationUtils {
     if (password.length < 8 || password.length > maxPasswordLength) {
       return false;
     }
-    
+
     final hasUpperCase = password.contains(RegExp(r'[A-Z]'));
     final hasLowerCase = password.contains(RegExp(r'[a-z]'));
     final hasDigits = password.contains(RegExp(r'[0-9]'));
-    final hasSpecialCharacters = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-    
+    final hasSpecialCharacters =
+        password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
     return hasUpperCase && hasLowerCase && hasDigits && hasSpecialCharacters;
   }
 
@@ -45,7 +47,7 @@ class ValidationUtils {
     if (name.isEmpty || name.length > maxNameLength) {
       return false;
     }
-    
+
     final nameRegex = RegExp(r'^[а-яА-Яa-zA-Z0-9\s\-.,!?()]+$');
     return nameRegex.hasMatch(name);
   }
@@ -60,7 +62,7 @@ class ValidationUtils {
     if (code.isEmpty || code.length > maxCodeLength) {
       return false;
     }
-    
+
     final codeRegex = RegExp(r'^[a-zA-Z0-9-_]+$');
     return codeRegex.hasMatch(code);
   }
@@ -73,13 +75,13 @@ class ValidationUtils {
   // Валидация числовых значений
   static bool isValidNumber(dynamic value, {double? min, double? max}) {
     if (value == null) return false;
-    
+
     final number = double.tryParse(value.toString());
     if (number == null) return false;
-    
+
     if (min != null && number < min) return false;
     if (max != null && number > max) return false;
-    
+
     return true;
   }
 
@@ -95,43 +97,21 @@ class ValidationUtils {
 
   // Санитизация строки
   static String sanitizeString(String input) {
-    return _htmlUnescape.convert(input)
-        .replaceAll(RegExp(r'<[^>]*>'), '') // Удаляем HTML теги
-        .replaceAll(RegExp(r'[<>]'), '') // Удаляем оставшиеся < и >
-        .trim();
+    return SecurityUtils.sanitizeString(input);
   }
 
   // Санитизация JSON
   static Map<String, dynamic> sanitizeJson(Map<String, dynamic> json) {
-    final sanitized = <String, dynamic>{};
-    
-    json.forEach((key, value) {
-      if (value is String) {
-        sanitized[key] = sanitizeString(value);
-      } else if (value is Map) {
-        sanitized[key] = sanitizeJson(Map<String, dynamic>.from(value));
-      } else if (value is List) {
-        sanitized[key] = value.map((item) {
-          if (item is String) {
-            return sanitizeString(item);
-          } else if (item is Map) {
-            return sanitizeJson(Map<String, dynamic>.from(item));
-          }
-          return item;
-        }).toList();
-      } else {
-        sanitized[key] = value;
-      }
-    });
-    
-    return sanitized;
+    return SecurityUtils.sanitizeJson(json);
   }
 
   // Валидация и санитизация данных заказа
-  static Map<String, dynamic> validateAndSanitizeOrderData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeOrderData(
+      Map<String, dynamic> data) {
     SafeLoggingUtils.logData('ValidationUtils: Входящие данные', data);
     final sanitized = sanitizeJson(data);
-    SafeLoggingUtils.logData('ValidationUtils: Санитизированные данные', sanitized);
+    SafeLoggingUtils.logData(
+        'ValidationUtils: Санитизированные данные', sanitized);
     final errors = <String, String>{};
 
     // Валидация обязательных полей - проверяем все возможные варианты
@@ -164,7 +144,8 @@ class ValidationUtils {
     }
 
     // Валидация опциональных полей
-    if (sanitized['totalSum'] != null && !isValidNumber(sanitized['totalSum'], min: 0)) {
+    if (sanitized['totalSum'] != null &&
+        !isValidNumber(sanitized['totalSum'], min: 0)) {
       errors['totalSum'] = 'Некорректная сумма заказа';
     }
 
@@ -190,26 +171,35 @@ class ValidationUtils {
   }
 
   // Валидация и санитизация заказа (создание)
-  static Map<String, dynamic> validateAndSanitizeOrderCreateData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeOrderCreateData(
+      Map<String, dynamic> data) {
     final sanitized = sanitizeJson(data);
     final errors = <String, String>{};
 
-    if (sanitized['user_id'] == null || !isValidNumber(sanitized['user_id'], min: 1)) {
+    if (sanitized['user_id'] == null ||
+        !isValidNumber(sanitized['user_id'], min: 1)) {
       errors['user_id'] = 'Некорректный ID пользователя';
     }
-    if (sanitized['point_id'] == null || !isValidNumber(sanitized['point_id'], min: 1)) {
+    if (sanitized['point_id'] == null ||
+        !isValidNumber(sanitized['point_id'], min: 1)) {
       errors['point_id'] = 'Некорректный ID точки';
     }
-    if (sanitized['products_id'] == null || sanitized['products_id'] is! List || (sanitized['products_id'] as List).isEmpty) {
+    if (sanitized['products_id'] == null ||
+        sanitized['products_id'] is! List ||
+        (sanitized['products_id'] as List).isEmpty) {
       errors['products_id'] = 'Список продуктов обязателен';
     }
-    if (sanitized['total_price'] == null || !isValidNumber(sanitized['total_price'], min: 0)) {
+    if (sanitized['total_price'] == null ||
+        !isValidNumber(sanitized['total_price'], min: 0)) {
       errors['total_price'] = 'Некорректная сумма заказа';
     }
-    if (sanitized['partner_id'] != null && !isValidNumber(sanitized['partner_id'], min: 1)) {
+    if (sanitized['partner_id'] != null &&
+        !isValidNumber(sanitized['partner_id'], min: 1)) {
       errors['partner_id'] = 'Некорректный ID партнера';
     }
-    if (sanitized['date'] != null && sanitized['date'] is String && !isValidDate(sanitized['date'])) {
+    if (sanitized['date'] != null &&
+        sanitized['date'] is String &&
+        !isValidDate(sanitized['date'])) {
       errors['date'] = 'Некорректная дата заказа';
     }
 
@@ -222,13 +212,16 @@ class ValidationUtils {
       'point_id': int.parse(sanitized['point_id'].toString()),
       'products_id': List<dynamic>.from(sanitized['products_id']),
       'total_price': double.parse(sanitized['total_price'].toString()),
-      'partner_id': sanitized['partner_id'] != null ? int.parse(sanitized['partner_id'].toString()) : null,
+      'partner_id': sanitized['partner_id'] != null
+          ? int.parse(sanitized['partner_id'].toString())
+          : null,
       'date': sanitized['date'] ?? DateTime.now().toIso8601String(),
     };
   }
 
   // Валидация и санитизация данных действия
-  static Map<String, dynamic> validateAndSanitizeActionData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeActionData(
+      Map<String, dynamic> data) {
     final sanitized = sanitizeJson(data);
     final errors = <String, String>{};
 
@@ -258,14 +251,15 @@ class ValidationUtils {
     return sanitized;
   }
 
-  static Map<String, dynamic> validateAndSanitizePointDataForCreate(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizePointDataForCreate(
+      Map<String, dynamic> data) {
     final errors = <String>[];
-    
+
     // Проверка обязательных полей для создания
     if (data['name'] == null || data['name'].toString().trim().isEmpty) {
       errors.add('Название точки обязательно');
     }
-    
+
     if (data['address'] == null || data['address'].toString().trim().isEmpty) {
       errors.add('Адрес точки обязателен');
     }
@@ -285,19 +279,20 @@ class ValidationUtils {
     if (data['longitude'] == null) {
       errors.add('Долгота обязательна');
     }
-    
+
     // Вызываем общую валидацию
     return validateAndSanitizePointData(data);
   }
 
-  static Map<String, dynamic> validateAndSanitizePointDataForUpdate(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizePointDataForUpdate(
+      Map<String, dynamic> data) {
     final errors = <String>[];
-    
+
     // Проверка только переданных полей
     if (data['name'] != null && data['name'].toString().trim().isEmpty) {
       errors.add('Название точки не может быть пустым');
     }
-    
+
     if (data['address'] != null && data['address'].toString().trim().isEmpty) {
       errors.add('Адрес точки не может быть пустым');
     }
@@ -350,7 +345,7 @@ class ValidationUtils {
       try {
         data['rating'] = double.parse(data['rating'].toString());
         if (data['rating'] < 0 || data['rating'] > 5) {
-          errors.add('Некорректный ID');
+          errors.add('Некорректный рейтинг');
         }
       } catch (e) {
         errors.add('Рейтинг должен быть числом');
@@ -360,18 +355,19 @@ class ValidationUtils {
     if (errors.isNotEmpty) {
       throw ValidationException(errors.join(', '));
     }
-    
+
     return data;
   }
 
-  static Map<String, dynamic> validateAndSanitizePointData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizePointData(
+      Map<String, dynamic> data) {
     final errors = <String>[];
-    
+
     // Проверка обязательных полей только если они переданы
     if (data['name'] != null && data['name'].toString().trim().isEmpty) {
       errors.add('Название точки не может быть пустым');
     }
-    
+
     if (data['address'] != null && data['address'].toString().trim().isEmpty) {
       errors.add('Адрес точки не может быть пустым');
     }
@@ -398,7 +394,7 @@ class ValidationUtils {
         errors.add('ID партнера должен быть числом');
       }
     }
-    
+
     // Валидация координат
     if (data['latitude'] != null) {
       try {
@@ -410,7 +406,7 @@ class ValidationUtils {
         errors.add('Широта должна быть числом');
       }
     }
-    
+
     if (data['longitude'] != null) {
       try {
         data['longitude'] = double.parse(data['longitude'].toString());
@@ -421,19 +417,19 @@ class ValidationUtils {
         errors.add('Долгота должна быть числом');
       }
     }
-    
+
     // Валидация рейтинга
     if (data['rating'] != null) {
       try {
         data['rating'] = double.parse(data['rating'].toString());
         if (data['rating'] < 0 || data['rating'] > 5) {
-          errors.add('Некорректный ID');
+          errors.add('Некорректный рейтинг');
         }
       } catch (e) {
         errors.add('Рейтинг должен быть числом');
       }
     }
-    
+
     // Валидация описания (если поле существует в таблице)
     if (data['description'] != null) {
       data['description'] = sanitizeString(data['description'].toString());
@@ -441,7 +437,7 @@ class ValidationUtils {
         errors.add('Описание слишком длинное');
       }
     }
-    
+
     // Валидация контактной информации (если поля существуют в таблице)
     if (data['phone'] != null) {
       data['phone'] = sanitizeString(data['phone'].toString());
@@ -449,47 +445,57 @@ class ValidationUtils {
         errors.add('Некорректный формат телефона');
       }
     }
-    
+
     if (data['email'] != null) {
       data['email'] = sanitizeString(data['email'].toString());
       if (!isValidEmail(data['email'])) {
         errors.add('Некорректный формат email');
       }
     }
-    
+
     if (errors.isNotEmpty) {
       throw ValidationException(errors.join(', '));
     }
-    
+
     return data;
   }
-  
+
   static bool isValidPhone(String phone) {
     final phoneRegex = RegExp(r'^\+?[0-9]{10,15}$');
     return phoneRegex.hasMatch(phone);
   }
-  
+
   static bool isValidWorkingHours(dynamic workingHours) {
     if (workingHours is! Map<String, dynamic>) return false;
-    
-    final days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    final days = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday'
+    ];
     final timeRegex = RegExp(r'^([01]?[0-9]|2[0-3]):[0-5][0-9]$');
-    
+
     for (final day in days) {
       if (workingHours[day] != null) {
         final hours = workingHours[day].toString().split('-');
         if (hours.length != 2) return false;
-        
-        if (!timeRegex.hasMatch(hours[0].trim()) || !timeRegex.hasMatch(hours[1].trim())) {
+
+        if (!timeRegex.hasMatch(hours[0].trim()) ||
+            !timeRegex.hasMatch(hours[1].trim())) {
           return false;
         }
       }
     }
-    
+
     return true;
   }
 
-  static Map<String, dynamic> validateAndSanitizeProductDataForUpdate(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeProductDataForUpdate(
+      Map<String, dynamic> data) {
     final errors = <String>[];
 
     // Проверка только переданных полей
@@ -564,7 +570,8 @@ class ValidationUtils {
     return data;
   }
 
-  static Map<String, dynamic> validateAndSanitizeProductData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeProductData(
+      Map<String, dynamic> data) {
     final errors = <String>[];
 
     if (data['name'] == null) {
@@ -647,15 +654,19 @@ class ValidationUtils {
   }
 
   // Валидация категорий продуктов/точек
-  static Map<String, dynamic> validateAndSanitizeCategoryData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeCategoryData(
+      Map<String, dynamic> data) {
     final sanitized = sanitizeJson(data);
     final errors = <String>[];
-    if (sanitized['name'] == null || sanitized['name'].toString().trim().isEmpty) {
+    if (sanitized['name'] == null ||
+        sanitized['name'].toString().trim().isEmpty) {
       errors.add('Поле name обязательно');
     } else if (sanitized['name'].toString().length > maxCategoryNameLength) {
       errors.add('Название категории слишком длинное');
     }
-    if (sanitized['description'] != null && sanitized['description'].toString().length > maxCategoryDescriptionLength) {
+    if (sanitized['description'] != null &&
+        sanitized['description'].toString().length >
+            maxCategoryDescriptionLength) {
       errors.add('Описание категории слишком длинное');
     }
     if (errors.isNotEmpty) {
@@ -665,78 +676,101 @@ class ValidationUtils {
   }
 
   // Валидация партнёра (create/update)
-  static Map<String, dynamic> validateAndSanitizePartnerData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizePartnerData(
+      Map<String, dynamic> data) {
     final sanitized = sanitizeJson(data);
     final errors = <String>[];
-    if (sanitized['user_id'] != null && !isValidNumber(sanitized['user_id'], min: 1)) {
+    if (sanitized['user_id'] != null &&
+        !isValidNumber(sanitized['user_id'], min: 1)) {
       errors.add('Некорректный ID пользователя');
     }
     if (sanitized['name'] != null && !isValidName(sanitized['name'])) {
       errors.add('Некорректное имя партнера');
     }
-    if (sanitized['contact_email'] != null && !isValidEmail(sanitized['contact_email'])) {
+    if (sanitized['contact_email'] != null &&
+        !isValidEmail(sanitized['contact_email'])) {
       errors.add('Некорректный email контактного лица');
     }
-    if (sanitized['contact_phone'] != null && !isValidPhone(sanitized['contact_phone'])) {
+    if (sanitized['contact_phone'] != null &&
+        !isValidPhone(sanitized['contact_phone'])) {
       errors.add('Некорректный телефон контактного лица');
     }
-    if (sanitized['max_discount'] != null && !isValidNumber(sanitized['max_discount'], min: 0, max: 100)) {
+    if (sanitized['max_discount'] != null &&
+        !isValidNumber(sanitized['max_discount'], min: 0, max: 100)) {
       errors.add('Скидка должна быть в диапазоне 0-100');
     }
     if (errors.isNotEmpty) {
       throw ValidationException(errors.join(', '));
     }
     if (sanitized['max_discount'] != null) {
-      sanitized['max_discount'] = double.parse(sanitized['max_discount'].toString());
+      sanitized['max_discount'] =
+          double.parse(sanitized['max_discount'].toString());
     }
     return sanitized;
   }
 
   // Валидация промокода (create/update)
-  static Map<String, dynamic> validateAndSanitizePromoCodeData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizePromoCodeData(
+      Map<String, dynamic> data) {
     final sanitized = sanitizeJson(data);
     final errors = <String>[];
-    if (sanitized['code'] == null || sanitized['code'].toString().isEmpty || sanitized['code'].toString().length > maxPromoCodeLength) {
+    if (sanitized['code'] == null ||
+        sanitized['code'].toString().isEmpty ||
+        sanitized['code'].toString().length > maxPromoCodeLength) {
       errors.add('Некорректный код промокода');
     }
-    if (sanitized['description'] == null || sanitized['description'].toString().isEmpty) {
+    if (sanitized['description'] == null ||
+        sanitized['description'].toString().isEmpty) {
       errors.add('Описание обязательно');
     }
-    if (sanitized['startDate'] == null || sanitized['endDate'] == null || !isValidDate(sanitized['startDate']) || !isValidDate(sanitized['endDate'])) {
+    if (sanitized['startDate'] == null ||
+        sanitized['endDate'] == null ||
+        !isValidDate(sanitized['startDate']) ||
+        !isValidDate(sanitized['endDate'])) {
       errors.add('Некорректные даты промокода');
-    } else if (DateTime.parse(sanitized['endDate']).isBefore(DateTime.parse(sanitized['startDate']))) {
+    } else if (DateTime.parse(sanitized['endDate'])
+        .isBefore(DateTime.parse(sanitized['startDate']))) {
       errors.add('Дата окончания раньше даты начала');
     }
-    if (sanitized['minOrderSum'] == null || !isValidNumber(sanitized['minOrderSum'], min: 0)) {
+    if (sanitized['minOrderSum'] == null ||
+        !isValidNumber(sanitized['minOrderSum'], min: 0)) {
       errors.add('Некорректная минимальная сумма заказа');
     }
     if (sanitized['discountType'] == null) {
       errors.add('Тип скидки обязателен');
     }
-    if (sanitized['discountValue'] == null || !isValidNumber(sanitized['discountValue'], min: 0.01)) {
+    if (sanitized['discountValue'] == null ||
+        !isValidNumber(sanitized['discountValue'], min: 0.01)) {
       errors.add('Некорректное значение скидки');
     }
-    if (sanitized['usageLimit'] != null && !isValidNumber(sanitized['usageLimit'], min: 1)) {
+    if (sanitized['usageLimit'] != null &&
+        !isValidNumber(sanitized['usageLimit'], min: 1)) {
       errors.add('Некорректный лимит использования');
     }
     if (errors.isNotEmpty) {
       throw ValidationException(errors.join(', '));
     }
-    sanitized['minOrderSum'] = double.parse(sanitized['minOrderSum'].toString());
-    sanitized['discountValue'] = double.parse(sanitized['discountValue'].toString());
+    sanitized['minOrderSum'] =
+        double.parse(sanitized['minOrderSum'].toString());
+    sanitized['discountValue'] =
+        double.parse(sanitized['discountValue'].toString());
     return sanitized;
   }
 
   // Валидация уведомления
-  static Map<String, dynamic> validateAndSanitizeNotificationData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeNotificationData(
+      Map<String, dynamic> data) {
     final sanitized = sanitizeJson(data);
     final errors = <String>[];
-    if (sanitized['userId'] == null || !isValidNumber(sanitized['userId'], min: 1)) {
+    if (sanitized['userId'] == null ||
+        !isValidNumber(sanitized['userId'], min: 1)) {
       errors.add('Некорректный пользователь');
     }
-    if (sanitized['message'] == null || sanitized['message'].toString().isEmpty) {
+    if (sanitized['message'] == null ||
+        sanitized['message'].toString().isEmpty) {
       errors.add('Сообщение обязательно');
-    } else if (sanitized['message'].toString().length > maxNotificationMessageLength) {
+    } else if (sanitized['message'].toString().length >
+        maxNotificationMessageLength) {
       errors.add('Сообщение слишком длинное');
     }
     if (sanitized['type'] == null || sanitized['type'].toString().isEmpty) {
@@ -747,9 +781,9 @@ class ValidationUtils {
     }
     return sanitized;
   }
-  
 
-  static Map<String, dynamic> validateAndSanitizeReviewData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeReviewData(
+      Map<String, dynamic> data) {
     final errors = <String>[];
 
     if (data['point_id'] == null) {
@@ -784,7 +818,7 @@ class ValidationUtils {
       try {
         data['rating'] = double.parse(data['rating'].toString());
         if (data['rating'] < 0 || data['rating'] > 5) {
-          errors.add('Некорректный ID');
+          errors.add('Некорректный рейтинг');
         }
       } catch (e) {
         errors.add('Рейтинг должен быть числом');
@@ -810,7 +844,8 @@ class ValidationUtils {
     };
   }
 
-  static Map<String, dynamic> validateAndSanitizeReviewDataForUpdate(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeReviewDataForUpdate(
+      Map<String, dynamic> data) {
     final errors = <String>[];
 
     // Проверка только переданных полей
@@ -818,7 +853,7 @@ class ValidationUtils {
       try {
         data['rating'] = double.parse(data['rating'].toString());
         if (data['rating'] < 0 || data['rating'] > 5) {
-          errors.add('Некорректный ID');
+          errors.add('Некорректный рейтинг');
         }
       } catch (e) {
         errors.add('Рейтинг должен быть числом');
@@ -842,7 +877,8 @@ class ValidationUtils {
     };
   }
 
-  static Map<String, dynamic> validateAndSanitizeProfileData(Map<String, dynamic> data) {
+  static Map<String, dynamic> validateAndSanitizeProfileData(
+      Map<String, dynamic> data) {
     final errors = <String>[];
 
     // Валидация имени
@@ -864,7 +900,8 @@ class ValidationUtils {
     // Валидация URL аватара
     if (data['avatar_url'] != null && data['avatar_url'] is String) {
       data['avatar_url'] = sanitizeString(data['avatar_url']);
-      if (data['avatar_url'].isNotEmpty && !data['avatar_url'].startsWith('http')) {
+      if (data['avatar_url'].isNotEmpty &&
+          !data['avatar_url'].startsWith('http')) {
         errors.add('Некорректный URL аватара');
       }
     }
@@ -893,7 +930,7 @@ class ValidationUtils {
 class ValidationException implements Exception {
   final String message;
   ValidationException(this.message);
-  
+
   @override
   String toString() => message;
 }
@@ -904,32 +941,32 @@ class UserValidationUtils {
   /// Поддерживает форматы: +7XXXXXXXXXX, 8XXXXXXXXXX, XXXXXXXXXX
   static bool isValidPhoneNumber(String phone) {
     if (phone.isEmpty) return false;
-    
+
     // Убираем все пробелы, дефисы и скобки
     final cleanPhone = phone.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-    
+
     // Проверяем различные форматы
     final patterns = [
-      r'^\+7\d{10}$',           // +7XXXXXXXXXX (11 цифр с +7)
-      r'^8\d{10}$',            // 8XXXXXXXXXX (11 цифр с 8)
-      r'^7\d{10}$',            // 7XXXXXXXXXX (11 цифр с 7)
-      r'^\+\d{10,15}$',        // +XXXXXXXXXX (10-15 цифр с +)
-      r'^\d{10,15}$',          // XXXXXXXXXX (10-15 цифр)
+      r'^\+7\d{10}$', // +7XXXXXXXXXX (11 цифр с +7)
+      r'^8\d{10}$', // 8XXXXXXXXXX (11 цифр с 8)
+      r'^7\d{10}$', // 7XXXXXXXXXX (11 цифр с 7)
+      r'^\+\d{10,15}$', // +XXXXXXXXXX (10-15 цифр с +)
+      r'^\d{10,15}$', // XXXXXXXXXX (10-15 цифр)
     ];
-    
+
     return patterns.any((pattern) => RegExp(pattern).hasMatch(cleanPhone));
   }
-  
+
   /// Валидация email
   static bool isValidEmail(String email) {
     if (email.isEmpty) return false;
-    return RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(email);
+    return ValidationUtils.isValidEmail(email);
   }
-  
+
   /// Валидация роли пользователя
   static bool isValidUserRole(String role) {
     if (role.isEmpty) return false;
-    
+
     try {
       // Проверяем, что роль существует в enum
       UserRole.values.firstWhere(
@@ -940,83 +977,89 @@ class UserValidationUtils {
       return false;
     }
   }
-  
+
   /// Валидация username
   static bool isValidUsername(String username) {
     if (username.isEmpty) return false;
     // Username должен быть 3-30 символов, только буквы, цифры, подчеркивания
     return RegExp(r'^[a-zA-Z0-9_]{3,30}$').hasMatch(username);
   }
-  
+
   /// Валидация пароля (строгие требования: 8+ символов, верхний/нижний регистр, цифра, спецсимвол)
   static bool isValidPassword(String password) {
     return ValidationUtils.isValidPassword(password);
   }
-  
+
   /// Полная валидация данных пользователя для регистрации
-  static Map<String, String> validateUserRegistrationData(Map<String, dynamic> data) {
+  static Map<String, String> validateUserRegistrationData(
+      Map<String, dynamic> data) {
     final errors = <String, String>{};
-    
+
     // Username
     if (data['username'] == null || data['username'].toString().isEmpty) {
       errors['username'] = 'Имя пользователя обязательно';
     } else if (!isValidUsername(data['username'].toString())) {
-      errors['username'] = 'Имя пользователя должно содержать 3-30 символов (буквы, цифры, подчеркивания)';
+      errors['username'] =
+          'Имя пользователя должно содержать 3-30 символов (буквы, цифры, подчеркивания)';
     }
-    
+
     // Password
     final password = data['password']?.toString() ?? '';
     if (password.isEmpty) {
       errors['password'] = 'Пароль обязателен';
     } else if (!isValidPassword(password)) {
-      errors['password'] = 'Пароль: минимум 8 символов, заглавная и строчная буквы, цифра и спецсимвол (!@#\$%^&*(),.?":{}|<>).';
+      errors['password'] =
+          'Пароль: минимум 8 символов, заглавная и строчная буквы, цифра и спецсимвол (!@#\$%^&*(),.?":{}|<>).';
     }
-    
+
     // Password confirm
-    final passwordConfirm = data['password_confirm']?.toString() ?? data['passwordConfirm']?.toString() ?? '';
+    final passwordConfirm = data['password_confirm']?.toString() ??
+        data['passwordConfirm']?.toString() ??
+        '';
     if (passwordConfirm.isEmpty) {
       errors['password_confirm'] = 'Подтверждение пароля обязательно';
     } else if (password != passwordConfirm) {
       errors['password_confirm'] = 'Пароли не совпадают';
     }
-    
+
     // Email — опционален; если передан, должен быть валидным
     if (data['email'] != null && data['email'].toString().isNotEmpty) {
       if (!isValidEmail(data['email'].toString())) {
         errors['email'] = 'Некорректный формат email';
       }
     }
-    
+
     // Phone
     if (data['number'] == null || data['number'].toString().isEmpty) {
       errors['number'] = 'Номер телефона обязателен';
     } else if (!isValidPhoneNumber(data['number'].toString())) {
       errors['number'] = 'Некорректный формат номера телефона';
     }
-    
+
     // Role
     if (data['role'] != null) {
       if (!isValidUserRole(data['role'].toString())) {
         errors['role'] = 'Некорректная роль пользователя';
       }
     }
-    
+
     return errors;
   }
-  
+
   /// Валидация данных пользователя для обновления
   static Map<String, String> validateUserUpdateData(Map<String, dynamic> data) {
     final errors = <String, String>{};
-    
+
     // Username
     if (data['username'] != null) {
       if (data['username'].toString().isEmpty) {
         errors['username'] = 'Имя пользователя не может быть пустым';
       } else if (!isValidUsername(data['username'].toString())) {
-        errors['username'] = 'Имя пользователя должно содержать 3-30 символов (буквы, цифры, подчеркивания)';
+        errors['username'] =
+            'Имя пользователя должно содержать 3-30 символов (буквы, цифры, подчеркивания)';
       }
     }
-    
+
     // Email
     if (data['email'] != null) {
       if (data['email'].toString().isEmpty) {
@@ -1025,7 +1068,7 @@ class UserValidationUtils {
         errors['email'] = 'Некорректный формат email';
       }
     }
-    
+
     // Phone
     if (data['number'] != null) {
       if (data['number'].toString().isEmpty) {
@@ -1034,14 +1077,14 @@ class UserValidationUtils {
         errors['number'] = 'Некорректный формат номера телефона';
       }
     }
-    
+
     // Role
     if (data['role'] != null) {
       if (!isValidUserRole(data['role'].toString())) {
         errors['role'] = 'Некорректная роль пользователя';
       }
     }
-    
+
     return errors;
   }
-} 
+}

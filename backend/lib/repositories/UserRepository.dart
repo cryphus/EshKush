@@ -3,11 +3,10 @@ import '../model/entities/User.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/ValidationUtils.dart';
+import 'BaseRepository.dart';
 
-class UserRepository {
-  final PostgreSQLConnection _connection;
-
-  UserRepository(this._connection);
+class UserRepository extends BaseRepository {
+  UserRepository(PostgreSQLConnection connection) : super(connection);
 
   /// Единый список колонок users, который должен возвращаться во всех SELECT.
   /// Дублируется в `fromJson`, поэтому синхронизируется при расширении схемы.
@@ -29,31 +28,6 @@ class UserRepository {
          THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
          ELSE NULL END as updated_at
   ''';
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(
-        query,
-        substitutionValues: params,
-        allowReuse: true,
-      );
-
-      if (results.isEmpty) return null;
-      final result = results.first;
-      return result.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
 
   Future<User?> findById(int id) async {
     final result = await queryOne(
@@ -385,7 +359,8 @@ class UserRepository {
   }
 
   void _validateUserData(Map<String, dynamic> data) {
-    final validationErrors = UserValidationUtils.validateUserRegistrationData(data);
+    final validationErrors =
+        UserValidationUtils.validateUserRegistrationData(data);
     if (validationErrors.isNotEmpty) {
       final errorMessages = validationErrors.values.join(', ');
       throw Exception('Ошибки валидации: $errorMessages');
@@ -429,7 +404,6 @@ class UserRepository {
         RETURNING $_userColumns
       ''';
 
-
       final result = await queryOne(updateQuery, params: params);
 
       if (result == null) {
@@ -443,6 +417,8 @@ class UserRepository {
   }
 
   Future<List<User>> findAll({int limit = 20, int offset = 0}) async {
+    final normalizedLimit = limit.clamp(1, 50);
+    final normalizedOffset = offset < 0 ? 0 : offset;
     final results = await query(
       '''
       SELECT $_userColumns
@@ -450,7 +426,7 @@ class UserRepository {
       ORDER BY id
       LIMIT @limit OFFSET @offset
       ''',
-      params: {'limit': limit, 'offset': offset},
+      params: {'limit': normalizedLimit, 'offset': normalizedOffset},
     );
     return results.map((map) => User.fromJson(map)).toList();
   }

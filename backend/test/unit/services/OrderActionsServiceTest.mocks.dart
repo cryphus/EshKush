@@ -5,10 +5,12 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
-import 'package:backend/model/entities/OrderActions.dart' as _i2;
-import 'package:backend/model/enums/ActionType.dart' as _i5;
-import 'package:backend/repositories/OrderActionsRepository.dart' as _i3;
+import 'package:backend/model/entities/OrderActions.dart' as _i3;
+import 'package:backend/model/enums/ActionType.dart' as _i6;
+import 'package:backend/repositories/OrderActionsRepository.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:postgres/postgres.dart' as _i2;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -23,8 +25,29 @@ import 'package:mockito/mockito.dart' as _i1;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakeOrderActions_0 extends _i1.SmartFake implements _i2.OrderActions {
-  _FakeOrderActions_0(
+class _FakePostgreSQLConnection_0 extends _i1.SmartFake
+    implements _i2.PostgreSQLConnection {
+  _FakePostgreSQLConnection_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeOrderActions_1 extends _i1.SmartFake implements _i3.OrderActions {
+  _FakeOrderActions_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeFuture_2<T1> extends _i1.SmartFake implements _i4.Future<T1> {
+  _FakeFuture_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -37,34 +60,114 @@ class _FakeOrderActions_0 extends _i1.SmartFake implements _i2.OrderActions {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockOrderActionsRepository extends _i1.Mock
-    implements _i3.OrderActionsRepository {
+    implements _i5.OrderActionsRepository {
   MockOrderActionsRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<Map<String, dynamic>?> queryOne(
-    String? query, {
-    Map<String, dynamic>? params,
-  }) =>
+  _i2.PostgreSQLConnection get connection => (super.noSuchMethod(
+        Invocation.getter(#connection),
+        returnValue: _FakePostgreSQLConnection_0(
+          this,
+          Invocation.getter(#connection),
+        ),
+      ) as _i2.PostgreSQLConnection);
+
+  @override
+  _i4.Future<_i3.OrderActions?> findById(int? id) => (super.noSuchMethod(
+        Invocation.method(
+          #findById,
+          [id],
+        ),
+        returnValue: _i4.Future<_i3.OrderActions?>.value(),
+      ) as _i4.Future<_i3.OrderActions?>);
+
+  @override
+  _i4.Future<List<_i3.OrderActions>> findByOrderId(int? orderId) =>
       (super.noSuchMethod(
         Invocation.method(
-          #queryOne,
-          [query],
-          {#params: params},
+          #findByOrderId,
+          [orderId],
         ),
-        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
-      ) as _i4.Future<Map<String, dynamic>?>);
+        returnValue:
+            _i4.Future<List<_i3.OrderActions>>.value(<_i3.OrderActions>[]),
+      ) as _i4.Future<List<_i3.OrderActions>>);
+
+  @override
+  _i4.Future<List<_i3.OrderActions>> findByPartnerId(int? partnerId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #findByPartnerId,
+          [partnerId],
+        ),
+        returnValue:
+            _i4.Future<List<_i3.OrderActions>>.value(<_i3.OrderActions>[]),
+      ) as _i4.Future<List<_i3.OrderActions>>);
+
+  @override
+  _i4.Future<_i3.OrderActions> create(_i3.OrderActions? action) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #create,
+          [action],
+        ),
+        returnValue: _i4.Future<_i3.OrderActions>.value(_FakeOrderActions_1(
+          this,
+          Invocation.method(
+            #create,
+            [action],
+          ),
+        )),
+      ) as _i4.Future<_i3.OrderActions>);
+
+  @override
+  _i4.Future<_i3.OrderActions> update(_i3.OrderActions? action) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #update,
+          [action],
+        ),
+        returnValue: _i4.Future<_i3.OrderActions>.value(_FakeOrderActions_1(
+          this,
+          Invocation.method(
+            #update,
+            [action],
+          ),
+        )),
+      ) as _i4.Future<_i3.OrderActions>);
+
+  @override
+  _i4.Future<List<_i3.OrderActions>> getByActionType(
+          _i6.ActionType? actionType) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getByActionType,
+          [actionType],
+        ),
+        returnValue:
+            _i4.Future<List<_i3.OrderActions>>.value(<_i3.OrderActions>[]),
+      ) as _i4.Future<List<_i3.OrderActions>>);
+
+  @override
+  _i4.Future<List<_i3.OrderActions>> getActiveActions() => (super.noSuchMethod(
+        Invocation.method(
+          #getActiveActions,
+          [],
+        ),
+        returnValue:
+            _i4.Future<List<_i3.OrderActions>>.value(<_i3.OrderActions>[]),
+      ) as _i4.Future<List<_i3.OrderActions>>);
 
   @override
   _i4.Future<List<Map<String, dynamic>>> query(
-    String? query, {
+    String? sql, {
     Map<String, dynamic>? params,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
           #query,
-          [query],
+          [sql],
           {#params: params},
         ),
         returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
@@ -72,87 +175,43 @@ class MockOrderActionsRepository extends _i1.Mock
       ) as _i4.Future<List<Map<String, dynamic>>>);
 
   @override
-  _i4.Future<_i2.OrderActions?> findById(int? id) => (super.noSuchMethod(
-        Invocation.method(
-          #findById,
-          [id],
-        ),
-        returnValue: _i4.Future<_i2.OrderActions?>.value(),
-      ) as _i4.Future<_i2.OrderActions?>);
-
-  @override
-  _i4.Future<List<_i2.OrderActions>> findByOrderId(int? orderId) =>
+  _i4.Future<Map<String, dynamic>?> queryOne(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
-          #findByOrderId,
-          [orderId],
+          #queryOne,
+          [sql],
+          {#params: params},
         ),
-        returnValue:
-            _i4.Future<List<_i2.OrderActions>>.value(<_i2.OrderActions>[]),
-      ) as _i4.Future<List<_i2.OrderActions>>);
+        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
+      ) as _i4.Future<Map<String, dynamic>?>);
 
   @override
-  _i4.Future<List<_i2.OrderActions>> findByPartnerId(int? partnerId) =>
+  _i4.Future<T> transaction<T>(
+          _i4.Future<T> Function(_i2.PostgreSQLExecutionContext)? callback) =>
       (super.noSuchMethod(
         Invocation.method(
-          #findByPartnerId,
-          [partnerId],
+          #transaction,
+          [callback],
         ),
-        returnValue:
-            _i4.Future<List<_i2.OrderActions>>.value(<_i2.OrderActions>[]),
-      ) as _i4.Future<List<_i2.OrderActions>>);
-
-  @override
-  _i4.Future<_i2.OrderActions> create(_i2.OrderActions? action) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #create,
-          [action],
-        ),
-        returnValue: _i4.Future<_i2.OrderActions>.value(_FakeOrderActions_0(
-          this,
-          Invocation.method(
-            #create,
-            [action],
-          ),
-        )),
-      ) as _i4.Future<_i2.OrderActions>);
-
-  @override
-  _i4.Future<_i2.OrderActions> update(_i2.OrderActions? action) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #update,
-          [action],
-        ),
-        returnValue: _i4.Future<_i2.OrderActions>.value(_FakeOrderActions_0(
-          this,
-          Invocation.method(
-            #update,
-            [action],
-          ),
-        )),
-      ) as _i4.Future<_i2.OrderActions>);
-
-  @override
-  _i4.Future<List<_i2.OrderActions>> getByActionType(
-          _i5.ActionType? actionType) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getByActionType,
-          [actionType],
-        ),
-        returnValue:
-            _i4.Future<List<_i2.OrderActions>>.value(<_i2.OrderActions>[]),
-      ) as _i4.Future<List<_i2.OrderActions>>);
-
-  @override
-  _i4.Future<List<_i2.OrderActions>> getActiveActions() => (super.noSuchMethod(
-        Invocation.method(
-          #getActiveActions,
-          [],
-        ),
-        returnValue:
-            _i4.Future<List<_i2.OrderActions>>.value(<_i2.OrderActions>[]),
-      ) as _i4.Future<List<_i2.OrderActions>>);
+        returnValue: _i7.ifNotNull(
+              _i7.dummyValueOrNull<T>(
+                this,
+                Invocation.method(
+                  #transaction,
+                  [callback],
+                ),
+              ),
+              (T v) => _i4.Future<T>.value(v),
+            ) ??
+            _FakeFuture_2<T>(
+              this,
+              Invocation.method(
+                #transaction,
+                [callback],
+              ),
+            ),
+      ) as _i4.Future<T>);
 }

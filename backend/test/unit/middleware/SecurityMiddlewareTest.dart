@@ -119,6 +119,63 @@ void main() {
           headers: {'x-forwarded-for': ip2}));
       expect(resp.statusCode, 200);
     });
+
+    test('pathPrefixes: лимит применяется только к указанным путям', () async {
+      final ip = uniqueIp();
+      final scopedHandler = SecurityMiddleware.rateLimiter(
+        maxRequests: 1,
+        window: const Duration(minutes: 1),
+        pathPrefixes: const ['login'],
+      )(okHandler);
+
+      final nonLimited1 = await scopedHandler(Request(
+        'GET',
+        Uri.parse('http://localhost/protected'),
+        headers: {'x-forwarded-for': ip},
+      ));
+      final nonLimited2 = await scopedHandler(Request(
+        'GET',
+        Uri.parse('http://localhost/protected'),
+        headers: {'x-forwarded-for': ip},
+      ));
+      expect(nonLimited1.statusCode, 200);
+      expect(nonLimited2.statusCode, 200);
+
+      final limited1 = await scopedHandler(Request(
+        'GET',
+        Uri.parse('http://localhost/login'),
+        headers: {'x-forwarded-for': ip},
+      ));
+      final limited2 = await scopedHandler(Request(
+        'GET',
+        Uri.parse('http://localhost/login'),
+        headers: {'x-forwarded-for': ip},
+      ));
+      expect(limited1.statusCode, 200);
+      expect(limited2.statusCode, 429);
+    });
+
+    test('pathPrefixes: segment-match не считает /auth-custom как /auth', () async {
+      final ip = uniqueIp();
+      final scopedHandler = SecurityMiddleware.rateLimiter(
+        maxRequests: 1,
+        window: const Duration(minutes: 1),
+        pathPrefixes: const ['auth'],
+      )(okHandler);
+
+      final resp1 = await scopedHandler(Request(
+        'GET',
+        Uri.parse('http://localhost/auth-custom'),
+        headers: {'x-forwarded-for': ip},
+      ));
+      final resp2 = await scopedHandler(Request(
+        'GET',
+        Uri.parse('http://localhost/auth-custom'),
+        headers: {'x-forwarded-for': ip},
+      ));
+      expect(resp1.statusCode, 200);
+      expect(resp2.statusCode, 200);
+    });
   });
 
   // ─── checkJWT ─────────────────────────────────────────────────────────────

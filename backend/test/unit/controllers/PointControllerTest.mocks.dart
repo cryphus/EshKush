@@ -5,8 +5,9 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
+import 'package:backend/model/entities/NearbyPoint.dart' as _i6;
 import 'package:backend/model/entities/Point.dart' as _i2;
-import 'package:backend/model/entities/PointCategory.dart' as _i6;
+import 'package:backend/model/entities/PointCategory.dart' as _i7;
 import 'package:backend/model/entities/PointReview.dart' as _i3;
 import 'package:backend/services/PointService.dart' as _i4;
 import 'package:mockito/mockito.dart' as _i1;
@@ -85,6 +86,28 @@ class MockPointService extends _i1.Mock implements _i4.PointService {
       ) as _i5.Future<List<_i2.Point>>);
 
   @override
+  _i5.Future<List<_i6.NearbyPoint>> getPointsNearby({
+    required double? lat,
+    required double? lon,
+    required double? radiusM,
+    int? limit = 100,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getPointsNearby,
+          [],
+          {
+            #lat: lat,
+            #lon: lon,
+            #radiusM: radiusM,
+            #limit: limit,
+          },
+        ),
+        returnValue:
+            _i5.Future<List<_i6.NearbyPoint>>.value(<_i6.NearbyPoint>[]),
+      ) as _i5.Future<List<_i6.NearbyPoint>>);
+
+  @override
   _i5.Future<List<_i2.Point>> getPointsByCategory(
     int? categoryId, {
     int? limit = 20,
@@ -103,15 +126,15 @@ class MockPointService extends _i1.Mock implements _i4.PointService {
       ) as _i5.Future<List<_i2.Point>>);
 
   @override
-  _i5.Future<List<_i6.PointCategory>> getPointCategories(int? pointId) =>
+  _i5.Future<List<_i7.PointCategory>> getPointCategories(int? pointId) =>
       (super.noSuchMethod(
         Invocation.method(
           #getPointCategories,
           [pointId],
         ),
         returnValue:
-            _i5.Future<List<_i6.PointCategory>>.value(<_i6.PointCategory>[]),
-      ) as _i5.Future<List<_i6.PointCategory>>);
+            _i5.Future<List<_i7.PointCategory>>.value(<_i7.PointCategory>[]),
+      ) as _i5.Future<List<_i7.PointCategory>>);
 
   @override
   _i5.Future<_i2.Point> createPoint(Map<String, dynamic>? data) =>

@@ -37,6 +37,7 @@ void main() {
   );
 
   final _authUser = <String, Object>{'id': 1, 'role': 'user'};
+  final _authAdmin = <String, Object>{'id': 1, 'role': 'admin'};
 
   Map<String, Object> _ctx(Map<String, Object>? user) =>
       user != null ? {'user': user} : {};
@@ -78,6 +79,7 @@ void main() {
 
     test('200 возвращает транзакцию', () async {
       when(txService.getTransactionById(1)).thenAnswer((_) async => _tx());
+      when(txService.getTransactionsByUserId(1)).thenAnswer((_) async => [_tx()]);
       final resp = await handler(Request('GET',
           Uri.parse('http://localhost/transaction?id=1'),
           context: _ctx(_authUser)));
@@ -93,7 +95,7 @@ void main() {
     });
 
     test('400 если user_id не указан', () async {
-      final resp = await handler(_get('user', user: _authUser));
+      final resp = await handler(_get('user', user: _authAdmin));
       expect(resp.statusCode, greaterThanOrEqualTo(400));
     });
 
@@ -101,7 +103,7 @@ void main() {
       when(txService.getTransactionsByUserId(1)).thenAnswer((_) async => [_tx()]);
       final resp = await handler(Request('GET',
           Uri.parse('http://localhost/user?user_id=1'),
-          context: _ctx(_authUser)));
+          context: _ctx(_authAdmin)));
       expect(resp.statusCode, 200);
     });
   });
@@ -114,7 +116,7 @@ void main() {
     });
 
     test('400 если order_id не указан', () async {
-      final resp = await handler(_get('order', user: _authUser));
+      final resp = await handler(_get('order', user: _authAdmin));
       expect(resp.statusCode, greaterThanOrEqualTo(400));
     });
 
@@ -122,7 +124,7 @@ void main() {
       when(txService.getTransactionsByOrderId(1)).thenAnswer((_) async => [_tx()]);
       final resp = await handler(Request('GET',
           Uri.parse('http://localhost/order?order_id=1'),
-          context: _ctx(_authUser)));
+          context: _ctx(_authAdmin)));
       expect(resp.statusCode, 200);
     });
   });
@@ -135,7 +137,7 @@ void main() {
     });
 
     test('400 если status не указан', () async {
-      final resp = await handler(_get('status', user: _authUser));
+      final resp = await handler(_get('status', user: _authAdmin));
       expect(resp.statusCode, greaterThanOrEqualTo(400));
     });
 
@@ -143,7 +145,7 @@ void main() {
       when(txService.getTransactionsByStatus('completed')).thenAnswer((_) async => [_tx()]);
       final resp = await handler(Request('GET',
           Uri.parse('http://localhost/status?status=completed'),
-          context: _ctx(_authUser)));
+          context: _ctx(_authAdmin)));
       expect(resp.statusCode, 200);
     });
   });
@@ -156,7 +158,7 @@ void main() {
     });
 
     test('400 если payment_method не указан', () async {
-      final resp = await handler(_get('payment-method', user: _authUser));
+      final resp = await handler(_get('payment-method', user: _authAdmin));
       expect(resp.statusCode, greaterThanOrEqualTo(400));
     });
 
@@ -165,7 +167,7 @@ void main() {
           .thenAnswer((_) async => [_tx()]);
       final resp = await handler(Request('GET',
           Uri.parse('http://localhost/payment-method?payment_method=card'),
-          context: _ctx(_authUser)));
+          context: _ctx(_authAdmin)));
       expect(resp.statusCode, 200);
     });
   });

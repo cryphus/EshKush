@@ -20,11 +20,12 @@ void main() {
 
   setUp(() {
     pointRepo = MockPointRepository();
-    cache     = MockCacheService();
-    sut       = PointService(pointRepo, cache);
+    cache = MockCacheService();
+    sut = PointService(pointRepo, cache);
 
     when(cache.get(any)).thenAnswer((_) async => null);
-    when(cache.set(any, any, ttl: anyNamed('ttl'))).thenAnswer((_) async => true);
+    when(cache.set(any, any, ttl: anyNamed('ttl')))
+        .thenAnswer((_) async => true);
     when(cache.delete(any)).thenAnswer((_) async => true);
     when(cache.deleteByPattern(any)).thenAnswer((_) async => 0);
     when(cache.isConnected).thenReturn(true);
@@ -32,16 +33,27 @@ void main() {
 
   // ────────────────────────────────────────────────────────── fixtures ──────
   Point _point({int id = 1, String name = 'Test Point'}) => Point(
-    id: id, name: name, address: 'ул. Пушкина 1', cityId: 1,
-    products: {}, openingHours: '09:00', closingHours: '21:00',
-    partnerId: 1, longitude: 37.6, latitude: 55.7,
-    tags: {}, createdAt: DateTime(2024),
-  );
+        id: id,
+        name: name,
+        address: 'ул. Пушкина 1',
+        cityId: 1,
+        products: {},
+        openingHours: '09:00',
+        closingHours: '21:00',
+        partnerId: 1,
+        longitude: 37.6,
+        latitude: 55.7,
+        tags: {},
+        createdAt: DateTime(2024),
+      );
 
   PointReview _review() => PointReview(
-    id: 1, pointId: 1, userId: 1,
-    createdAt: DateTime(2024), rating: 4.0,
-  );
+        id: 1,
+        pointId: 1,
+        userId: 1,
+        createdAt: DateTime(2024),
+        rating: 4.0,
+      );
 
   // ── getPointById ──────────────────────────────────────────────────────────
   group('getPointById', () {
@@ -68,7 +80,8 @@ void main() {
   // ── getAllPoints ──────────────────────────────────────────────────────────
   group('getAllPoints', () {
     test('дефолтные параметры: использует кеш', () async {
-      when(pointRepo.findAll(limit: anyNamed('limit'), offset: anyNamed('offset')))
+      when(pointRepo.findAll(
+              limit: anyNamed('limit'), offset: anyNamed('offset')))
           .thenAnswer((_) async => [_point(id: 1), _point(id: 2)]);
       final result = await sut.getAllPoints();
       expect(result.length, 2);
@@ -76,7 +89,8 @@ void main() {
     });
 
     test('кастомные параметры: не кешируется', () async {
-      when(pointRepo.findAll(limit: anyNamed('limit'), offset: anyNamed('offset')))
+      when(pointRepo.findAll(
+              limit: anyNamed('limit'), offset: anyNamed('offset')))
           .thenAnswer((_) async => [_point()]);
       final result = await sut.getAllPoints(limit: 5, offset: 10);
       expect(result.length, 1);
@@ -86,7 +100,8 @@ void main() {
     test('кеш-хит при дефолтных параметрах: не обращается к БД', () async {
       when(cache.get(any)).thenAnswer((_) async => [_point().toJson()]);
       await sut.getAllPoints();
-      verifyNever(pointRepo.findAll(limit: anyNamed('limit'), offset: anyNamed('offset')));
+      verifyNever(pointRepo.findAll(
+          limit: anyNamed('limit'), offset: anyNamed('offset')));
     });
   });
 
@@ -94,42 +109,48 @@ void main() {
   group('createPoint', () {
     test('бросает если name пустой', () {
       expect(
-        () => sut.createPoint({'name': '', 'address': 'addr', 'city_id': 1, 'partner_id': 1}),
+        () => sut.createPoint(
+            {'name': '', 'address': 'addr', 'city_id': 1, 'partner_id': 1}),
         throwsA(isA<Exception>()),
       );
     });
 
     test('бросает если address пустой', () {
       expect(
-        () => sut.createPoint({'name': 'Test', 'address': '', 'city_id': 1, 'partner_id': 1}),
+        () => sut.createPoint(
+            {'name': 'Test', 'address': '', 'city_id': 1, 'partner_id': 1}),
         throwsA(isA<Exception>()),
       );
     });
 
     test('бросает если city_id <= 0', () {
       expect(
-        () => sut.createPoint({'name': 'Test', 'address': 'addr', 'city_id': 0, 'partner_id': 1}),
+        () => sut.createPoint(
+            {'name': 'Test', 'address': 'addr', 'city_id': 0, 'partner_id': 1}),
         throwsA(isA<Exception>()),
       );
     });
 
     test('бросает при некорректной долготе (> 180)', () {
       expect(
-        () => sut.createPoint({'name': 'Test', 'address': 'addr', 'longitude': 200.0}),
+        () => sut.createPoint(
+            {'name': 'Test', 'address': 'addr', 'longitude': 200.0}),
         throwsA(isA<Exception>()),
       );
     });
 
     test('бросает при некорректной широте (< -90)', () {
       expect(
-        () => sut.createPoint({'name': 'Test', 'address': 'addr', 'latitude': -100.0}),
+        () => sut.createPoint(
+            {'name': 'Test', 'address': 'addr', 'latitude': -100.0}),
         throwsA(isA<Exception>()),
       );
     });
 
     test('успешно создаёт и инвалидирует кеш', () async {
       when(pointRepo.createPoint(any)).thenAnswer((_) async => _point());
-      final result = await sut.createPoint({'name': 'New Point', 'address': 'addr'});
+      final result =
+          await sut.createPoint({'name': 'New Point', 'address': 'addr'});
       expect(result.id, 1);
       verify(cache.delete(any)).called(greaterThan(0));
     });
@@ -146,7 +167,8 @@ void main() {
     });
 
     test('успешно обновляет и инвалидирует кеш', () async {
-      when(pointRepo.updatePoint(1, any)).thenAnswer((_) async => _point(name: 'Updated'));
+      when(pointRepo.updatePoint(1, any))
+          .thenAnswer((_) async => _point(name: 'Updated'));
       final result = await sut.updatePoint(1, {'name': 'Updated'});
       expect(result.name, 'Updated');
       verify(cache.delete(any)).called(greaterThan(0));
@@ -180,6 +202,7 @@ void main() {
     test('граница: рейтинг 0 допустим', () async {
       when(pointRepo.updateRating(1, 0)).thenAnswer((_) async => _point());
       await expectLater(sut.updateRating(1, 0), completes);
+      verify(cache.delete(any)).called(greaterThan(0));
     });
 
     test('граница: рейтинг 5 допустим', () async {
@@ -194,6 +217,14 @@ void main() {
   });
 
   // ── getPointReviews / createPointReview ───────────────────────────────────
+  group('updatePointCategories', () {
+    test('updates categories and invalidates cache', () async {
+      when(pointRepo.updatePointCategories(1, [1, 2])).thenAnswer((_) async {});
+      await expectLater(sut.updatePointCategories(1, [1, 2]), completes);
+      verify(cache.delete(any)).called(greaterThan(0));
+    });
+  });
+
   group('getPointReviews', () {
     test('возвращает список отзывов', () async {
       when(pointRepo.getPointReviews(1)).thenAnswer((_) async => [_review()]);
@@ -210,8 +241,10 @@ void main() {
   group('createPointReview', () {
     test('успешно создаёт отзыв', () async {
       when(pointRepo.createPointReview(any)).thenAnswer((_) async => _review());
-      final result = await sut.createPointReview({'point_id': 1, 'user_id': 1, 'rating': 4.0});
+      final result = await sut
+          .createPointReview({'point_id': 1, 'user_id': 1, 'rating': 4.0});
       expect(result.rating, 4.0);
+      verify(cache.delete(any)).called(greaterThan(0));
     });
   });
 }

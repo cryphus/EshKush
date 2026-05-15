@@ -1,41 +1,9 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/City.dart';
 
-class CityRepository {
-  final PostgreSQLConnection _connection;
-
-  CityRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      final map = results.first.values.first;
-      // Преобразуем DateTime в строку
-      if (map['created_at'] is DateTime) {
-        map['created_at'] = (map['created_at'] as DateTime).toIso8601String();
-      }
-      return map;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) {
-        final map = row.values.first;
-        // Преобразуем DateTime в строку
-        if (map['created_at'] is DateTime) {
-          map['created_at'] = (map['created_at'] as DateTime).toIso8601String();
-        }
-        return map;
-      }).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+class CityRepository extends BaseRepository {
+  CityRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<City?> findById(int id) async {
     try {
@@ -87,11 +55,11 @@ class CityRepository {
           'name': city.name,
         },
       );
-      
+
       if (result == null) {
         throw Exception('Ошибка создания города: результат запроса пустой');
       }
-      
+
       return City.fromJson(result);
     } catch (e) {
       rethrow;
@@ -137,4 +105,4 @@ class CityRepository {
       rethrow;
     }
   }
-} 
+}

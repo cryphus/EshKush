@@ -110,6 +110,17 @@ class MockPaymentTransactionsRepository extends _i1.Mock
       ) as _i4.Future<_i2.PaymentTransactions>);
 
   @override
+  _i4.Future<_i2.PaymentTransactions?> findByProviderTransactionId(
+          String? providerTransactionId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #findByProviderTransactionId,
+          [providerTransactionId],
+        ),
+        returnValue: _i4.Future<_i2.PaymentTransactions?>.value(),
+      ) as _i4.Future<_i2.PaymentTransactions?>);
+
+  @override
   _i4.Future<void> deactivate(int? id) => (super.noSuchMethod(
         Invocation.method(
           #deactivate,

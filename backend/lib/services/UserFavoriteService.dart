@@ -1,5 +1,6 @@
 import '../model/entities/UserFavorite.dart';
 import '../repositories/UserFavoriteRepository.dart';
+import '../utils/AppException.dart';
 
 class UserFavoriteService {
   final UserFavoriteRepository _repository;
@@ -17,7 +18,7 @@ class UserFavoriteService {
   Future<UserFavorite> addToFavorites(UserFavorite favorite) async {
     final exists = await _repository.exists(favorite.userId, favorite.pointId);
     if (exists) {
-      throw Exception('Место уже добавлено в избранное');
+      throw const ConflictException('Место уже добавлено в избранное');
     }
     return await _repository.create(favorite);
   }
@@ -29,4 +30,4 @@ class UserFavoriteService {
   Future<bool> isFavorite(int userId, int pointId) async {
     return await _repository.exists(userId, pointId);
   }
-} 
+}

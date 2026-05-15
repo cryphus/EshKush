@@ -6,7 +6,7 @@
 
 Swagger UI доступен по адресу: **http://localhost:8081**
 
-Для доступа к API напрямую: **http://localhost:8080**
+Для доступа к API напрямую: **http://localhost:3000**
 
 ---
 
@@ -319,7 +319,7 @@ GET /products?search=хлеб&categoryId=2&page=1&limit=50
 
 ### Пример curl команды
 ```bash
-curl -X GET "http://localhost:8080/points?page=1&limit=20" \
+curl -X GET "http://localhost:3000/points?page=1&limit=20" \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
@@ -328,7 +328,7 @@ curl -X GET "http://localhost:8080/points?page=1&limit=20" \
 $headers = @{
   "Authorization" = "Bearer YOUR_TOKEN_HERE"
 }
-Invoke-RestMethod -Uri "http://localhost:8080/points" -Headers $headers -Method GET
+Invoke-RestMethod -Uri "http://localhost:3000/points" -Headers $headers -Method GET
 ```
 
 ---
@@ -362,25 +362,25 @@ Invoke-WebRequest -Uri http://localhost:8081/swagger.json -OutFile api-spec.json
 ### Тест 1: Проверка кеша
 ```bash
 # 1. Получить статистику
-GET http://localhost:8080/cache/stats
+GET http://localhost:3000/cache/stats
 
 # 2. Получить список точек (закешируется)
-GET http://localhost:8080/points
+GET http://localhost:3000/points
 
 # 3. Проверить, что появился ключ
-GET http://localhost:8080/cache/get/points:all
+GET http://localhost:3000/cache/get/points:all
 
 # 4. Очистить кеш
-DELETE http://localhost:8080/cache/clear
+DELETE http://localhost:3000/cache/clear
 
 # 5. Проверить статистику снова
-GET http://localhost:8080/cache/stats
+GET http://localhost:3000/cache/stats
 ```
 
 ### Тест 2: Проверка авторизации
 ```bash
 # 1. Регистрация
-POST http://localhost:8080/auth/register
+POST http://localhost:3000/auth/register
 {
   "email": "test@example.com",
   "username": "testuser",
@@ -389,7 +389,7 @@ POST http://localhost:8080/auth/register
 }
 
 # 2. Получить профиль (с токеном)
-GET http://localhost:8080/user/profile
+GET http://localhost:3000/user/profile
 Authorization: Bearer <ваш_токен>
 ```
 
@@ -418,7 +418,7 @@ Authorization: Bearer <ваш_токен>
 ## 🔗 Полезные ссылки
 
 - **Swagger UI**: http://localhost:8081
-- **Backend API**: http://localhost:8080
+- **Backend API**: http://localhost:3000
 - **pgAdmin**: http://localhost:5050
 - **Frontend**: http://localhost:3000
 - **Nginx**: http://localhost:80

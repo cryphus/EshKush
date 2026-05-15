@@ -5,11 +5,12 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
+import 'package:backend/model/entities/NearbyPoint.dart' as _i6;
 import 'package:backend/model/entities/Point.dart' as _i2;
-import 'package:backend/model/entities/PointCategory.dart' as _i6;
+import 'package:backend/model/entities/PointCategory.dart' as _i7;
 import 'package:backend/model/entities/PointReview.dart' as _i3;
 import 'package:backend/repositories/PointRepository.dart' as _i4;
-import 'package:backend/services/CacheService.dart' as _i7;
+import 'package:backend/services/CacheService.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint
@@ -80,6 +81,28 @@ class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
       ) as _i5.Future<_i2.Point?>);
 
   @override
+  _i5.Future<List<_i6.NearbyPoint>> findNearby({
+    required double? lat,
+    required double? lon,
+    required double? radiusM,
+    int? limit = 100,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #findNearby,
+          [],
+          {
+            #lat: lat,
+            #lon: lon,
+            #radiusM: radiusM,
+            #limit: limit,
+          },
+        ),
+        returnValue:
+            _i5.Future<List<_i6.NearbyPoint>>.value(<_i6.NearbyPoint>[]),
+      ) as _i5.Future<List<_i6.NearbyPoint>>);
+
+  @override
   _i5.Future<List<_i2.Point>> findByCategory(
     int? categoryId, {
     int? limit = 20,
@@ -98,15 +121,15 @@ class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
       ) as _i5.Future<List<_i2.Point>>);
 
   @override
-  _i5.Future<List<_i6.PointCategory>> getCategoriesForPoint(int? pointId) =>
+  _i5.Future<List<_i7.PointCategory>> getCategoriesForPoint(int? pointId) =>
       (super.noSuchMethod(
         Invocation.method(
           #getCategoriesForPoint,
           [pointId],
         ),
         returnValue:
-            _i5.Future<List<_i6.PointCategory>>.value(<_i6.PointCategory>[]),
-      ) as _i5.Future<List<_i6.PointCategory>>);
+            _i5.Future<List<_i7.PointCategory>>.value(<_i7.PointCategory>[]),
+      ) as _i5.Future<List<_i7.PointCategory>>);
 
   @override
   _i5.Future<_i2.Point> createPoint(Map<String, dynamic>? data) =>
@@ -213,7 +236,7 @@ class MockPointRepository extends _i1.Mock implements _i4.PointRepository {
 /// A class which mocks [CacheService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockCacheService extends _i1.Mock implements _i7.CacheService {
+class MockCacheService extends _i1.Mock implements _i8.CacheService {
   MockCacheService() {
     _i1.throwOnMissingStub(this);
   }

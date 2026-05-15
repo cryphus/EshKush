@@ -6,6 +6,7 @@ import '../model/enums/ActionType.dart';
 import '../model/enums/EntityType.dart';
 import '../utils/RequestContextUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 
 class ActionLogController {
   final ActionLogService _service;
@@ -26,12 +27,15 @@ class ActionLogController {
 
   Future<Response> getUserLogs(Request request) async {
     try {
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
-      
+
       if (userId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID пользователя', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID пользователя',
+            headers: _getCorsHeaders());
       }
 
       final logs = await _service.getUserLogs(userId);
@@ -46,18 +50,24 @@ class ActionLogController {
 
   Future<Response> getEntityLogs(Request request) async {
     try {
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
       final entityType = EntityType.values.firstWhere(
-        (e) => e.toString().split('.').last == request.url.queryParameters['entityType'],
+        (e) =>
+            e.toString().split('.').last ==
+            request.url.queryParameters['entityType'],
         orElse: () => EntityType.other,
       );
-      final entityId = int.tryParse(request.url.queryParameters['entityId'] ?? '');
-      
+      final entityId =
+          int.tryParse(request.url.queryParameters['entityId'] ?? '');
+
       if (entityId == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID сущности', headers: _getCorsHeaders());
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID сущности',
+            headers: _getCorsHeaders());
       }
-      
+
       final logs = await _service.getEntityLogs(entityType, entityId);
       return Response.ok(
         jsonEncode(logs.map((log) => log.toJson()).toList()),
@@ -70,13 +80,16 @@ class ActionLogController {
 
   Future<Response> getActionTypeLogs(Request request) async {
     try {
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
       final actionType = ActionType.values.firstWhere(
-        (e) => e.toString().split('.').last == request.url.queryParameters['actionType'],
+        (e) =>
+            e.toString().split('.').last ==
+            request.url.queryParameters['actionType'],
         orElse: () => ActionType.other,
       );
-      
+
       final logs = await _service.getActionTypeLogs(actionType);
       return Response.ok(
         jsonEncode(logs.map((log) => log.toJson()).toList()),
@@ -89,9 +102,11 @@ class ActionLogController {
 
   Future<Response> getRecentLogs(Request request) async {
     try {
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
-      final limit = int.tryParse(request.url.queryParameters['limit'] ?? '100') ?? 100;
+      final limit =
+          int.tryParse(request.url.queryParameters['limit'] ?? '100') ?? 100;
       final logs = await _service.getRecentLogs(limit: limit);
       return Response.ok(
         jsonEncode(logs.map((log) => log.toJson()).toList()),
@@ -104,21 +119,27 @@ class ActionLogController {
 
   Future<Response> logAction(Request request) async {
     try {
-      final unauthorized = RequestContextUtils.requireUserOr401(request, headers: _getCorsHeaders());
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
-      final data = jsonDecode(await request.readAsString());
-      
-      if (data['userId'] == null || data['actionType'] == null || 
-          data['targetEntity'] == null || data['targetId'] == null ||
-          data['details'] == null || data['ipAddress'] == null) {
-        return ErrorResponseUtils.errorResponseWithMessage('Отсутствуют обязательные поля', headers: _getCorsHeaders());
+      final data = await RequestBodyUtils.readJsonObject(request);
+
+      if (data['userId'] == null ||
+          data['actionType'] == null ||
+          data['targetEntity'] == null ||
+          data['targetId'] == null ||
+          data['details'] == null ||
+          data['ipAddress'] == null) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Отсутствуют обязательные поля',
+            headers: _getCorsHeaders());
       }
 
       final actionType = ActionType.values.firstWhere(
         (e) => e.toString().split('.').last == data['actionType'],
         orElse: () => ActionType.other,
       );
-      
+
       final targetEntity = EntityType.values.firstWhere(
         (e) => e.toString().split('.').last == data['targetEntity'],
         orElse: () => EntityType.other,
@@ -148,4 +169,4 @@ class ActionLogController {
   Map<String, String> _getCorsHeaders() {
     return {'Content-Type': 'application/json'};
   }
-} 
+}

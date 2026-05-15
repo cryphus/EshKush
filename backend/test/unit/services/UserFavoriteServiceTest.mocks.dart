@@ -5,9 +5,11 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
-import 'package:backend/model/entities/UserFavorite.dart' as _i2;
-import 'package:backend/repositories/UserFavoriteRepository.dart' as _i3;
+import 'package:backend/model/entities/UserFavorite.dart' as _i3;
+import 'package:backend/repositories/UserFavoriteRepository.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:postgres/postgres.dart' as _i2;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -22,8 +24,29 @@ import 'package:mockito/mockito.dart' as _i1;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakeUserFavorite_0 extends _i1.SmartFake implements _i2.UserFavorite {
-  _FakeUserFavorite_0(
+class _FakePostgreSQLConnection_0 extends _i1.SmartFake
+    implements _i2.PostgreSQLConnection {
+  _FakePostgreSQLConnection_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeUserFavorite_1 extends _i1.SmartFake implements _i3.UserFavorite {
+  _FakeUserFavorite_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeFuture_2<T1> extends _i1.SmartFake implements _i4.Future<T1> {
+  _FakeFuture_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -36,77 +59,57 @@ class _FakeUserFavorite_0 extends _i1.SmartFake implements _i2.UserFavorite {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockUserFavoriteRepository extends _i1.Mock
-    implements _i3.UserFavoriteRepository {
+    implements _i5.UserFavoriteRepository {
   MockUserFavoriteRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<Map<String, dynamic>?> queryOne(
-    String? query, {
-    Map<String, dynamic>? params,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #queryOne,
-          [query],
-          {#params: params},
+  _i2.PostgreSQLConnection get connection => (super.noSuchMethod(
+        Invocation.getter(#connection),
+        returnValue: _FakePostgreSQLConnection_0(
+          this,
+          Invocation.getter(#connection),
         ),
-        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
-      ) as _i4.Future<Map<String, dynamic>?>);
+      ) as _i2.PostgreSQLConnection);
 
   @override
-  _i4.Future<List<Map<String, dynamic>>> query(
-    String? query, {
-    Map<String, dynamic>? params,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #query,
-          [query],
-          {#params: params},
-        ),
-        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
-            <Map<String, dynamic>>[]),
-      ) as _i4.Future<List<Map<String, dynamic>>>);
-
-  @override
-  _i4.Future<List<_i2.UserFavorite>> findByUserId(int? userId) =>
+  _i4.Future<List<_i3.UserFavorite>> findByUserId(int? userId) =>
       (super.noSuchMethod(
         Invocation.method(
           #findByUserId,
           [userId],
         ),
         returnValue:
-            _i4.Future<List<_i2.UserFavorite>>.value(<_i2.UserFavorite>[]),
-      ) as _i4.Future<List<_i2.UserFavorite>>);
+            _i4.Future<List<_i3.UserFavorite>>.value(<_i3.UserFavorite>[]),
+      ) as _i4.Future<List<_i3.UserFavorite>>);
 
   @override
-  _i4.Future<List<_i2.UserFavorite>> findByPointId(int? pointId) =>
+  _i4.Future<List<_i3.UserFavorite>> findByPointId(int? pointId) =>
       (super.noSuchMethod(
         Invocation.method(
           #findByPointId,
           [pointId],
         ),
         returnValue:
-            _i4.Future<List<_i2.UserFavorite>>.value(<_i2.UserFavorite>[]),
-      ) as _i4.Future<List<_i2.UserFavorite>>);
+            _i4.Future<List<_i3.UserFavorite>>.value(<_i3.UserFavorite>[]),
+      ) as _i4.Future<List<_i3.UserFavorite>>);
 
   @override
-  _i4.Future<_i2.UserFavorite> create(_i2.UserFavorite? favorite) =>
+  _i4.Future<_i3.UserFavorite> create(_i3.UserFavorite? favorite) =>
       (super.noSuchMethod(
         Invocation.method(
           #create,
           [favorite],
         ),
-        returnValue: _i4.Future<_i2.UserFavorite>.value(_FakeUserFavorite_0(
+        returnValue: _i4.Future<_i3.UserFavorite>.value(_FakeUserFavorite_1(
           this,
           Invocation.method(
             #create,
             [favorite],
           ),
         )),
-      ) as _i4.Future<_i2.UserFavorite>);
+      ) as _i4.Future<_i3.UserFavorite>);
 
   @override
   _i4.Future<void> delete(
@@ -140,4 +143,60 @@ class MockUserFavoriteRepository extends _i1.Mock
         ),
         returnValue: _i4.Future<bool>.value(false),
       ) as _i4.Future<bool>);
+
+  @override
+  _i4.Future<List<Map<String, dynamic>>> query(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #query,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i4.Future<List<Map<String, dynamic>>>);
+
+  @override
+  _i4.Future<Map<String, dynamic>?> queryOne(
+    String? sql, {
+    Map<String, dynamic>? params,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #queryOne,
+          [sql],
+          {#params: params},
+        ),
+        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
+      ) as _i4.Future<Map<String, dynamic>?>);
+
+  @override
+  _i4.Future<T> transaction<T>(
+          _i4.Future<T> Function(_i2.PostgreSQLExecutionContext)? callback) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #transaction,
+          [callback],
+        ),
+        returnValue: _i6.ifNotNull(
+              _i6.dummyValueOrNull<T>(
+                this,
+                Invocation.method(
+                  #transaction,
+                  [callback],
+                ),
+              ),
+              (T v) => _i4.Future<T>.value(v),
+            ) ??
+            _FakeFuture_2<T>(
+              this,
+              Invocation.method(
+                #transaction,
+                [callback],
+              ),
+            ),
+      ) as _i4.Future<T>);
 }

@@ -9,6 +9,7 @@ import '../model/dto/responses/UserResponseDto.dart';
 import '../model/dto/requests/UpdateUserDto.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 
 class UserController {
   final UserService _userService;
@@ -48,9 +49,9 @@ class UserController {
 
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, null, requestId: RequestContextUtils.getRequestId(request));
 
-      final body = await request.readAsString();
+      final body = await RequestBodyUtils.readRequiredBody(request);
       await LoggingUtils.logRequest(request.method, request.url.path, request.headers, SafeLoggingUtils.sanitizeString(body), requestId: RequestContextUtils.getRequestId(request));
-      final data = jsonDecode(body);
+      final data = RequestBodyUtils.decodeJsonObject(body);
       SafeLoggingUtils.logData('Данные для обновления профиля', data);
       
       try {

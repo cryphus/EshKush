@@ -1,30 +1,12 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/ErrorLogs.dart';
 import '../model/enums/ErrorSeverity.dart';
 
-class ErrorLogsRepository {
+class ErrorLogsRepository extends BaseRepository {
   final PostgreSQLConnection _connection;
 
-  ErrorLogsRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
+  ErrorLogsRepository(this._connection) : super(_connection);
 
   Future<ErrorLogs> create(ErrorLogs error) async {
     try {
@@ -145,4 +127,4 @@ class ErrorLogsRepository {
       rethrow;
     }
   }
-} 
+}

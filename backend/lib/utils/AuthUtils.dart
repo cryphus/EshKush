@@ -23,7 +23,7 @@ class AuthUtils {
 
   static const int _tokenExpirationInMinutes = 15;
   static const int _refreshTokenExpirationInDays = 7;
-  static const int _defaultClockSkewSeconds = 60;
+  static const int _defaultClockSkewSeconds = 10;
 
   static int get _clockSkewSeconds {
     final raw = Platform.environment['JWT_CLOCK_SKEW_SEC'];

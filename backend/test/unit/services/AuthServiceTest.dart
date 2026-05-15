@@ -9,6 +9,7 @@ import 'package:backend/model/entities/User.dart';
 import 'package:backend/model/entities/UserSessions.dart';
 import 'package:backend/model/enums/UserRole.dart';
 import 'package:backend/model/enums/SessionStatus.dart';
+import 'package:backend/utils/AppException.dart';
 
 import '../../helpers/TestEnv.dart';
 import 'AuthServiceTest.mocks.dart';
@@ -90,6 +91,48 @@ void main() {
         throwsA(isA<Exception>().having((e) => e.toString(), '', contains('Неверный'))),
       );
     });
+
+    test('блокирует логин после 5 неудачных попыток и на 6-й возвращает TooManyRequests', () async {
+      when(userRepo.authenticate('nouser', any)).thenAnswer((_) async => null);
+
+      for (var i = 0; i < 5; i++) {
+        await expectLater(
+          () => sut.login('nouser', 'password'),
+          throwsA(isA<UnauthorizedException>()),
+        );
+      }
+
+      await expectLater(
+        () => sut.login('nouser', 'password'),
+        throwsA(isA<TooManyRequestsException>()),
+      );
+    });
+
+    test('после успешного логина счетчик неудачных попыток сбрасывается', () async {
+      var call = 0;
+      when(userRepo.authenticate('testuser', any)).thenAnswer((_) async {
+        call++;
+        if (call <= 4) return null;
+        if (call == 5) return _user();
+        return null;
+      });
+      when(sessionRepo.create(any)).thenAnswer((_) async => _session());
+
+      for (var i = 0; i < 4; i++) {
+        await expectLater(
+          () => sut.login('testuser', 'password'),
+          throwsA(isA<UnauthorizedException>()),
+        );
+      }
+
+      final loginResult = await sut.login('testuser', 'password');
+      expect(loginResult['access_token'], isNotNull);
+
+      await expectLater(
+        () => sut.login('testuser', 'password'),
+        throwsA(isA<UnauthorizedException>()),
+      );
+    }, skip: jwtEnvReady ? null : kJwtSkipReason);
 
     test('успешный логин возвращает токены', () async {
       when(userRepo.authenticate('testuser', any)).thenAnswer((_) async => _user());
