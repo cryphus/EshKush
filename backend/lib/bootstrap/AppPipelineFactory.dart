@@ -1,4 +1,5 @@
 import 'package:backend/bootstrap/AppRouterFactory.dart';
+import 'package:backend/config/AppConfig.dart';
 import 'package:backend/config/Routes.dart';
 import 'package:backend/middleware/CorsMiddleware.dart';
 import 'package:backend/middleware/LoggingMiddleware.dart';
@@ -16,14 +17,17 @@ class AppPipelineFactory {
     required CorsMiddleware corsMiddleware,
   }) {
     final openPaths = AppRouterFactory.openPaths;
+    final appConfig = AppConfig();
+    final authRateLimitRequests = appConfig.rateLimitRequests;
+    final authRateLimitWindow = appConfig.rateLimitWindow;
 
-    return const Pipeline()
+    return Pipeline()
         .addMiddleware(SecurityMiddleware.securityHeaders())
         .addMiddleware(corsMiddleware.call())
         .addMiddleware(SecurityMiddleware.requestSizeLimit())
         .addMiddleware(SecurityMiddleware.rateLimiter(
-          maxRequests: 20,
-          window: Duration(minutes: 1),
+          maxRequests: authRateLimitRequests,
+          window: authRateLimitWindow,
           pathPrefixes: ['login', 'auth/register', 'auth/refresh'],
         ))
         .addMiddleware(_jsonContentType())
@@ -53,7 +57,10 @@ class AppPipelineFactory {
           if (body.startsWith('{') || body.startsWith('[')) {
             return response.change(
               body: body,
-              headers: {...response.headers, 'content-type': 'application/json'},
+              headers: {
+                ...response.headers,
+                'content-type': 'application/json'
+              },
             );
           }
           return response.change(body: body);

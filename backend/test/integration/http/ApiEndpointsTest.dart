@@ -14,7 +14,11 @@ Future<(int, dynamic)> _get(String path, {String? token}) async {
     final rs = await rq.close();
     final raw = await rs.transform(utf8.decoder).join();
     dynamic body;
-    try { body = jsonDecode(raw); } catch (_) { body = raw; }
+    try {
+      body = jsonDecode(raw);
+    } catch (_) {
+      body = raw;
+    }
     return (rs.statusCode, body);
   } finally {
     client.close();
@@ -38,7 +42,11 @@ Future<(int, dynamic)> _post(
     final rs = await rq.close();
     final raw = await rs.transform(utf8.decoder).join();
     dynamic body;
-    try { body = jsonDecode(raw); } catch (_) { body = raw; }
+    try {
+      body = jsonDecode(raw);
+    } catch (_) {
+      body = raw;
+    }
     return (rs.statusCode, body);
   } finally {
     client.close();
@@ -46,13 +54,14 @@ Future<(int, dynamic)> _post(
 }
 
 Future<bool> _serverAvailable() async {
-  try {
-    final (code, _) = await _get('/health');
-    return code < 500;
-  } catch (_) {
-    return false;
+  final ready = await (_serverReadyFuture ??= waitForIntegrationServer());
+  if (!ready) {
+    throw StateError('Integration server is unavailable: $integrationBase');
   }
+  return true;
 }
+
+Future<bool>? _serverReadyFuture;
 
 Future<String?> _login(String username, String password) async {
   try {
@@ -94,7 +103,10 @@ void main() {
   // ─── /health — формат ответа ───────────────────────────────────────────────
   group('GET /health — формат JSON', () {
     test('статус 200 и поле status', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, body) = await _get('/health');
       expect(code, 200);
       expect(body, isA<Map>());
@@ -105,13 +117,19 @@ void main() {
   // ─── /login — коды ошибок и формат ────────────────────────────────────────
   group('POST /login — коды ошибок', () {
     test('4xx при пустом теле', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await _post('/login', {});
       expect(code, anyOf(400, 401, 422, 429));
     });
 
     test('401 при неверном пароле', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, body) = await _post('/login', {
         'username': kAdminUser,
         'password': 'wrong_password',
@@ -121,8 +139,14 @@ void main() {
     });
 
     test('200 возвращает access_token и refresh_token', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      if (adminToken == null) { markTestSkipped('Нет admin-токена'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      if (adminToken == null) {
+        markTestSkipped('Нет admin-токена');
+        return;
+      }
       final (code, body) = await _post('/login', {
         'username': kAdminUser,
         'password': kAdminPass,
@@ -136,7 +160,10 @@ void main() {
   // ─── /auth/register — валидация ────────────────────────────────────────────
   group('POST /auth/register — валидация', () {
     test('400/422 при невалидном email', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await _post('/auth/register', {
         'username': 'reg_bad_email',
         'email': 'not-an-email',
@@ -148,7 +175,10 @@ void main() {
     });
 
     test('400/409/422 при дублирующемся username', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final name = 'api_dup_$ts';
       await _post('/auth/register', {
         'username': name,
@@ -171,8 +201,14 @@ void main() {
   // ─── /users/profile — формат профиля ──────────────────────────────────────
   group('GET /users/profile — формат ответа', () {
     test('200 содержит username и id', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      if (adminToken == null) { markTestSkipped('Нет admin-токена'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      if (adminToken == null) {
+        markTestSkipped('Нет admin-токена');
+        return;
+      }
       final (code, body) = await _get('/users/profile', token: adminToken);
       expect(code, 200);
       expect(body['username'], kAdminUser);
@@ -180,7 +216,10 @@ void main() {
     });
 
     test('401 без токена', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await _get('/users/profile');
       expect(code, 401);
     });
@@ -189,20 +228,34 @@ void main() {
   // ─── /orders — пагинация ──────────────────────────────────────────────────
   group('GET /orders — пагинация и формат', () {
     test('200 с limit/offset', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      if (adminToken == null) { markTestSkipped('Нет admin-токена'); return; }
-      final (code, body) = await _get('/orders?limit=5&offset=0', token: adminToken);
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      if (adminToken == null) {
+        markTestSkipped('Нет admin-токена');
+        return;
+      }
+      final (code, body) =
+          await _get('/orders?limit=5&offset=0', token: adminToken);
       expect(code, 200);
       // Ответ либо список, либо объект с полем data/items
       if (body is List) {
         expect(body.length, lessThanOrEqualTo(5));
       } else if (body is Map) {
-        expect(body.containsKey('data') || body.containsKey('items') || body.containsKey('orders'), isTrue);
+        expect(
+            body.containsKey('data') ||
+                body.containsKey('items') ||
+                body.containsKey('orders'),
+            isTrue);
       }
     });
 
     test('401 без токена', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await _get('/orders');
       expect(code, 401);
     });
@@ -210,9 +263,16 @@ void main() {
 
   // ─── /points — открытый список ─────────────────────────────────────────────
   group('GET /points — открытый эндпоинт', () {
-    test('возвращает 2xx или 401 (в зависимости от конфигурации auth)', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      if (adminToken == null) { markTestSkipped('Нет admin-токена'); return; }
+    test('возвращает 2xx или 401 (в зависимости от конфигурации auth)',
+        () async {
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      if (adminToken == null) {
+        markTestSkipped('Нет admin-токена');
+        return;
+      }
       final (code, _) = await _get('/points', token: adminToken);
       expect(code, lessThan(400));
     });
@@ -221,7 +281,10 @@ void main() {
   // ─── Несуществующий маршрут ────────────────────────────────────────────────
   group('4xx для несуществующего маршрута', () {
     test('GET /no-such-route → 401 или 404', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await _get('/no-such-route-xyz');
       // JWT проверка выполняется до роутинга, поэтому без токена — 401
       expect(code, anyOf(401, 404));
@@ -231,26 +294,37 @@ void main() {
   // ─── Ошибочные запросы — формат тела ошибки ───────────────────────────────
   group('Формат тела ошибок', () {
     test('401-ответ содержит message или error', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (_, body) = await _get('/users/profile');
       if (body is Map) {
         expect(
           body.containsKey('message') || body.containsKey('error'),
           isTrue,
-          reason: 'Тело ошибки должно содержать "message" или "error", got: $body',
+          reason:
+              'Тело ошибки должно содержать "message" или "error", got: $body',
         );
       }
     });
 
     test('403-ответ содержит message или error', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      if (userToken == null) { markTestSkipped('Нет user-токена'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      if (userToken == null) {
+        markTestSkipped('Нет user-токена');
+        return;
+      }
       final (_, body) = await _get('/action-logs', token: userToken);
       if (body is Map) {
         expect(
           body.containsKey('message') || body.containsKey('error'),
           isTrue,
-          reason: 'Тело ошибки должно содержать "message" или "error", got: $body',
+          reason:
+              'Тело ошибки должно содержать "message" или "error", got: $body',
         );
       }
     });

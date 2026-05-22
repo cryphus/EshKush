@@ -1,6 +1,8 @@
 import 'SafeLoggingUtils.dart';
 import 'SecurityUtils.dart';
+import 'AppException.dart';
 import '../model/enums/UserRole.dart';
+export 'AppException.dart' show ValidationException;
 
 /// Общий слой валидации: контракты полей (типы, длины, форматы, диапазоны).
 /// Используется DTO (CreateUserDto, LoginDto и др.) и контроллерами.
@@ -925,14 +927,6 @@ class ValidationUtils {
 
     return data;
   }
-}
-
-class ValidationException implements Exception {
-  final String message;
-  ValidationException(this.message);
-
-  @override
-  String toString() => message;
 }
 
 /// Централизованная валидация пользовательских данных

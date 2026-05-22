@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
 import '../config/AppConfig.dart';
+import '../utils/AppException.dart';
 
 /// Тонкая обёртка над REST API YooKassa (https://yookassa.ru/developers/api).
 ///
@@ -64,7 +65,8 @@ class YooKassaService {
   /// Получить текущий статус платежа у YooKassa.
   Future<Map<String, dynamic>> getPayment(String providerTransactionId) async {
     _assertConfigured();
-    final uri = Uri.parse('${_config.yookassaApiBaseUrl}/payments/$providerTransactionId');
+    final uri = Uri.parse(
+        '${_config.yookassaApiBaseUrl}/payments/$providerTransactionId');
     http.Response response;
     try {
       response = await _httpClient
@@ -129,8 +131,8 @@ class YooKassaService {
   }
 
   Map<String, String> _authHeaders() {
-    final credentials =
-        base64Encode(utf8.encode('${_config.yookassaShopId}:${_config.yookassaSecretKey}'));
+    final credentials = base64Encode(
+        utf8.encode('${_config.yookassaShopId}:${_config.yookassaSecretKey}'));
     return {'Authorization': 'Basic $credentials'};
   }
 
@@ -161,7 +163,7 @@ class YooKassaService {
 
   void _assertConfigured() {
     if (!_config.isYookassaConfigured) {
-      throw StateError(
+      throw const InternalServerException(
         'YooKassa не сконфигурирована: задайте YOOKASSA_SHOP_ID и YOOKASSA_SECRET_KEY',
       );
     }
@@ -172,18 +174,17 @@ class YooKassaService {
   }
 }
 
-class YooKassaException implements Exception {
+class YooKassaException extends AppException {
   final int statusCode;
-  final String message;
   final String? code;
   final Map<String, dynamic>? rawPayload;
 
   YooKassaException({
     required this.statusCode,
-    required this.message,
+    required String message,
     this.code,
     this.rawPayload,
-  });
+  }) : super(message);
 
   @override
   String toString() =>

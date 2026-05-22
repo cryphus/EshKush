@@ -63,8 +63,8 @@ class EshKush extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authProvider);
-    final initialRoute = auth.accessToken != null ? '/main' : '/auth';
+    final auth = ref.read(authProvider);
+    final isSignedIn = auth.accessToken != null;
 
     return MaterialApp(
       title: 'EshKush',
@@ -93,8 +93,9 @@ class EshKush extends ConsumerWidget {
           ),
         ),
       ),
-      initialRoute: initialRoute,
+      initialRoute: '/',
       routes: {
+        '/': (context) => isSignedIn ? const MainScreen() : const AuthScreen(),
         '/auth': (context) => const AuthScreen(),
         '/main': (context) => const MainScreen(),
         '/register': (context) => const SimpleRegisterScreen(),
@@ -103,6 +104,9 @@ class EshKush extends ConsumerWidget {
                   as Map<String, dynamic>,
             ),
       },
+      onUnknownRoute: (_) => MaterialPageRoute<void>(
+        builder: (context) => isSignedIn ? const MainScreen() : const AuthScreen(),
+      ),
     );
   }
 }

@@ -34,6 +34,11 @@ class BadRequestException extends AppException {
       : super(message);
 }
 
+class ValidationException extends AppException {
+  const ValidationException([String message = 'Ошибка валидации'])
+      : super(message);
+}
+
 class TooManyRequestsException extends AppException {
   const TooManyRequestsException([String message = 'Слишком много запросов'])
       : super(message);

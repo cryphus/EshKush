@@ -33,13 +33,14 @@ Future<(int, Map<String, dynamic>)> http(
 }
 
 Future<bool> _serverAvailable() async {
-  try {
-    final (code, _) = await http('GET', '/');
-    return code == 200;
-  } catch (_) {
-    return false;
+  final ready = await (_serverReadyFuture ??= waitForIntegrationServer());
+  if (!ready) {
+    throw StateError('Integration server is unavailable: $integrationBase');
   }
+  return true;
 }
+
+Future<bool>? _serverReadyFuture;
 
 void main() {
   final ts = DateTime.now().millisecondsSinceEpoch;
@@ -71,12 +72,14 @@ void main() {
         'email': testEmail,
         'number': testPhone,
       });
-      expect(code, anyOf(200, 201),
-          reason: 'тело: ${jsonEncode(body)}');
+      expect(code, anyOf(200, 201), reason: 'тело: ${jsonEncode(body)}');
     });
 
     test('повторная регистрация того же username → 409', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('POST', '/auth/register', body: {
         'username': testUsername,
         'password': testPassword,
@@ -88,7 +91,10 @@ void main() {
     });
 
     test('пароли не совпадают → 4xx', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('POST', '/auth/register', body: {
         'username': 'other_$ts',
         'password': testPassword,
@@ -100,7 +106,10 @@ void main() {
     });
 
     test('некорректный email → 4xx', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('POST', '/auth/register', body: {
         'username': 'badmail_$ts',
         'password': testPassword,
@@ -112,7 +121,10 @@ void main() {
     });
 
     test('слабый пароль → 4xx', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('POST', '/auth/register', body: {
         'username': 'weakpass_$ts',
         'password': 'weak',
@@ -126,8 +138,12 @@ void main() {
 
   // ─── Логин ────────────────────────────────────────────────────────────────
   group('POST /login', () {
-    test('корректные credentials → 200 + access_token + refresh_token', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+    test('корректные credentials → 200 + access_token + refresh_token',
+        () async {
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, body) = await http('POST', '/login', body: {
         'username': testUsername,
         'password': testPassword,
@@ -143,7 +159,10 @@ void main() {
     });
 
     test('неверный пароль → 401', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('POST', '/login', body: {
         'username': testUsername,
         'password': 'WrongPass@1',
@@ -152,7 +171,10 @@ void main() {
     });
 
     test('несуществующий пользователь → 401', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('POST', '/login', body: {
         'username': 'no_such_user_$ts',
         'password': 'AnyPass@1',
@@ -161,14 +183,22 @@ void main() {
     });
 
     test('отсутствует password → 4xx', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      final (code, _) = await http('POST', '/login', body: {'username': testUsername});
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      final (code, _) =
+          await http('POST', '/login', body: {'username': testUsername});
       expect(code, greaterThanOrEqualTo(400));
     });
 
     test('отсутствует username → 4xx', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      final (code, _) = await http('POST', '/login', body: {'password': testPassword});
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      final (code, _) =
+          await http('POST', '/login', body: {'password': testPassword});
       expect(code, greaterThanOrEqualTo(400));
     });
   });
@@ -176,22 +206,36 @@ void main() {
   // ─── Защищённый эндпоинт с токеном ───────────────────────────────────────
   group('Авторизованный доступ', () {
     test('GET /users/profile с валидным токеном → 200', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      if (accessToken.isEmpty) { markTestSkipped('Нет токена (логин не прошёл)'); return; }
-      final (code, body) = await http('GET', '/users/profile', token: accessToken);
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      if (accessToken.isEmpty) {
+        markTestSkipped('Нет токена (логин не прошёл)');
+        return;
+      }
+      final (code, body) =
+          await http('GET', '/users/profile', token: accessToken);
       expect(code, 200, reason: jsonEncode(body));
       expect(body['username'], testUsername);
     });
 
     test('GET /users/profile без токена → 401', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('GET', '/users/profile');
       expect(code, 401);
     });
 
     test('GET /users/profile с мусорным токеном → 401', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      final (code, _) = await http('GET', '/users/profile', token: 'invalid.jwt.token');
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      final (code, _) =
+          await http('GET', '/users/profile', token: 'invalid.jwt.token');
       expect(code, 401);
     });
   });
@@ -199,8 +243,14 @@ void main() {
   // ─── Refresh токена ───────────────────────────────────────────────────────
   group('POST /auth/refresh', () {
     test('валидный refresh_token → 200 + новый access_token', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
-      if (refreshToken.isEmpty) { markTestSkipped('Нет refresh токена'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
+      if (refreshToken.isEmpty) {
+        markTestSkipped('Нет refresh токена');
+        return;
+      }
       final (code, body) = await http('POST', '/auth/refresh', body: {
         'refresh_token': refreshToken,
       });
@@ -216,7 +266,10 @@ void main() {
     });
 
     test('невалидный refresh_token → 4xx', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('POST', '/auth/refresh', body: {
         'refresh_token': 'invalid.refresh.token',
       });
@@ -224,7 +277,10 @@ void main() {
     });
 
     test('отсутствует refresh_token → 4xx', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('POST', '/auth/refresh', body: {});
       expect(code, greaterThanOrEqualTo(400));
     });
@@ -233,7 +289,10 @@ void main() {
   // ─── check_user ───────────────────────────────────────────────────────────
   group('POST /auth/check_user', () {
     test('существующий номер → 200 + exists=true', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, body) = await http('POST', '/auth/check_user', body: {
         'number': testPhone,
       });
@@ -242,7 +301,10 @@ void main() {
     });
 
     test('несуществующий номер → 200 + exists=false', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, body) = await http('POST', '/auth/check_user', body: {
         'number': '+79999999999',
       });
@@ -251,7 +313,10 @@ void main() {
     });
 
     test('отсутствует number → 4xx', () async {
-      if (!await _serverAvailable()) { markTestSkipped('Сервер недоступен'); return; }
+      if (!await _serverAvailable()) {
+        markTestSkipped('Сервер недоступен');
+        return;
+      }
       final (code, _) = await http('POST', '/auth/check_user', body: {});
       expect(code, greaterThanOrEqualTo(400));
     });

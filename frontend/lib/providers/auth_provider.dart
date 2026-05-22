@@ -20,7 +20,7 @@ class AuthState {
   });
 
   bool get isAuthenticated => accessToken != null && user != null;
-  bool get isGuest => user == null || user!.isGuest;
+  bool get isGuest => user?.isGuest ?? true;
 
   AuthState copyWith({
     User? user,

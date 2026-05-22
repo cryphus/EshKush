@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import 'AppException.dart';
-import 'ValidationUtils.dart';
 
 /// Стабильные коды ошибок для клиента (без утечки деталей).
 enum ErrorCode {

@@ -1,4 +1,5 @@
 import 'package:dotenv/dotenv.dart';
+import '../utils/AppException.dart';
 
 class AppConfig {
   static final AppConfig _instance = AppConfig._internal();
@@ -181,35 +182,41 @@ class AppConfig {
 
   void _validateConfig() {
     if (jwtSecret.isEmpty) {
-      throw Exception('JWT_SECRET не установлен в переменных окружения');
+      throw InternalServerException(
+          'JWT_SECRET не установлен в переменных окружения');
     }
     if (jwtSecret.length < 32) {
-      throw Exception('JWT_SECRET должен быть не менее 32 символов');
+      throw InternalServerException(
+          'JWT_SECRET должен быть не менее 32 символов');
     }
     if (jwtRefreshSecret.isEmpty) {
-      throw Exception(
+      throw InternalServerException(
           'JWT_REFRESH_SECRET не установлен в переменных окружения');
     }
     if (jwtRefreshSecret.length < 32) {
-      throw Exception('JWT_REFRESH_SECRET должен быть не менее 32 символов');
+      throw InternalServerException(
+          'JWT_REFRESH_SECRET должен быть не менее 32 символов');
     }
     if (databaseUrl.isEmpty) {
-      throw Exception('DATABASE_URL не установлен в переменных окружения');
+      throw InternalServerException(
+          'DATABASE_URL не установлен в переменных окружения');
     }
     if (port <= 0 || port > 65535) {
-      throw Exception('PORT должен быть от 1 до 65535');
+      throw InternalServerException('PORT должен быть от 1 до 65535');
     }
     if (rateLimitRequests <= 0) {
-      throw Exception('RATE_LIMIT_REQUESTS должен быть > 0');
+      throw InternalServerException('RATE_LIMIT_REQUESTS должен быть > 0');
     }
     if (allowedOrigins.isEmpty) {
-      throw Exception('ALLOWED_ORIGINS не может быть пустым');
+      throw InternalServerException('ALLOWED_ORIGINS не может быть пустым');
     }
     if (isProduction && allowedOrigins.contains('*')) {
-      throw Exception('ALLOWED_ORIGINS не может содержать * в production');
+      throw InternalServerException(
+          'ALLOWED_ORIGINS не может содержать * в production');
     }
     if (isProduction && redisPassword.isEmpty) {
-      throw Exception('REDIS_PASSWORD должен быть задан в production');
+      throw InternalServerException(
+          'REDIS_PASSWORD должен быть задан в production');
     }
   }
 
