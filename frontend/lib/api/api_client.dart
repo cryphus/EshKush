@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_config.dart';
 import '../utils/snackbar.dart';
 
 class ApiClient {
@@ -9,8 +10,7 @@ class ApiClient {
 
   late final Dio dio;
 
-  // Поменяй на адрес бэкенда
-  static const String baseUrl = 'http://localhost:8080';
+  static const String baseUrl = AppConfig.apiBaseUrl;
 
   ApiClient._internal() {
     dio = Dio(BaseOptions(
@@ -40,7 +40,8 @@ class ApiClient {
 /// Добавляет Authorization header к каждому запросу
 class _AuthInterceptor extends Interceptor {
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+      RequestOptions options, RequestInterceptorHandler handler) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access_token');
     if (token != null) {

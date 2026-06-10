@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
 import '../config/AppConfig.dart';
+import '../utils/AppException.dart';
 
 /// Тонкая обёртка над REST API YooKassa (https://yookassa.ru/developers/api).
 ///
@@ -11,6 +13,7 @@ import '../config/AppConfig.dart';
 /// возврат. Маппинг в доменные сущности (PaymentTransactions) лежит в
 /// [PaymentGatewayService].
 class YooKassaService {
+  static const Duration _requestTimeout = Duration(seconds: 15);
   final AppConfig _config;
   final http.Client _httpClient;
   final Uuid _uuid;
@@ -62,8 +65,19 @@ class YooKassaService {
   /// Получить текущий статус платежа у YooKassa.
   Future<Map<String, dynamic>> getPayment(String providerTransactionId) async {
     _assertConfigured();
-    final uri = Uri.parse('${_config.yookassaApiBaseUrl}/payments/$providerTransactionId');
-    final response = await _httpClient.get(uri, headers: _authHeaders());
+    final uri = Uri.parse(
+        '${_config.yookassaApiBaseUrl}/payments/$providerTransactionId');
+    http.Response response;
+    try {
+      response = await _httpClient
+          .get(uri, headers: _authHeaders())
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw YooKassaException(
+        statusCode: 504,
+        message: 'YooKassa timeout while fetching payment status',
+      );
+    }
     return _decode(response);
   }
 
@@ -94,21 +108,31 @@ class YooKassaService {
     required String idempotenceKey,
   }) async {
     final uri = Uri.parse('${_config.yookassaApiBaseUrl}$path');
-    final response = await _httpClient.post(
-      uri,
-      headers: {
-        ..._authHeaders(),
-        'Content-Type': 'application/json',
-        'Idempotence-Key': idempotenceKey,
-      },
-      body: jsonEncode(body),
-    );
+    http.Response response;
+    try {
+      response = await _httpClient
+          .post(
+            uri,
+            headers: {
+              ..._authHeaders(),
+              'Content-Type': 'application/json',
+              'Idempotence-Key': idempotenceKey,
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw YooKassaException(
+        statusCode: 504,
+        message: 'YooKassa timeout while calling $path',
+      );
+    }
     return _decode(response);
   }
 
   Map<String, String> _authHeaders() {
-    final credentials =
-        base64Encode(utf8.encode('${_config.yookassaShopId}:${_config.yookassaSecretKey}'));
+    final credentials = base64Encode(
+        utf8.encode('${_config.yookassaShopId}:${_config.yookassaSecretKey}'));
     return {'Authorization': 'Basic $credentials'};
   }
 
@@ -139,7 +163,7 @@ class YooKassaService {
 
   void _assertConfigured() {
     if (!_config.isYookassaConfigured) {
-      throw StateError(
+      throw const InternalServerException(
         'YooKassa не сконфигурирована: задайте YOOKASSA_SHOP_ID и YOOKASSA_SECRET_KEY',
       );
     }
@@ -150,18 +174,17 @@ class YooKassaService {
   }
 }
 
-class YooKassaException implements Exception {
+class YooKassaException extends AppException {
   final int statusCode;
-  final String message;
   final String? code;
   final Map<String, dynamic>? rawPayload;
 
   YooKassaException({
     required this.statusCode,
-    required this.message,
+    required String message,
     this.code,
     this.rawPayload,
-  });
+  }) : super(message);
 
   @override
   String toString() =>

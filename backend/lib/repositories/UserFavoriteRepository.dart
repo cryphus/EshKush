@@ -1,31 +1,10 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/UserFavorite.dart';
+import '../utils/AppException.dart';
 
-class UserFavoriteRepository {
-  final PostgreSQLConnection _connection;
-
-  UserFavoriteRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class UserFavoriteRepository extends BaseRepository {
+  UserFavoriteRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<List<UserFavorite>> findByUserId(int userId) async {
     try {
@@ -35,7 +14,6 @@ class UserFavoriteRepository {
       );
       return results.map((map) => UserFavorite.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска избранных мест пользователя: $e');
       rethrow;
     }
   }
@@ -48,7 +26,6 @@ class UserFavoriteRepository {
       );
       return results.map((map) => UserFavorite.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска пользователей, добавивших место в избранное: $e');
       rethrow;
     }
   }
@@ -68,11 +45,10 @@ class UserFavoriteRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка добавления места в избранное');
+        throw const InternalServerException();
       }
       return UserFavorite.fromJson(result);
     } catch (e) {
-      print('Ошибка добавления места в избранное: $e');
       rethrow;
     }
   }
@@ -91,10 +67,10 @@ class UserFavoriteRepository {
         },
       );
       if (result == null) {
-        throw Exception('Место не найдено в избранном');
+        throw const NotFoundException(
+            'Р СљР ВµРЎРѓРЎвЂљР С• Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р С• Р Р† Р С‘Р В·Р В±РЎР‚Р В°Р Р…Р Р…Р С•Р С');
       }
     } catch (e) {
-      print('Ошибка удаления места из избранного: $e');
       rethrow;
     }
   }
@@ -115,8 +91,7 @@ class UserFavoriteRepository {
       );
       return result?['exists'] as bool? ?? false;
     } catch (e) {
-      print('Ошибка проверки существования места в избранном: $e');
       rethrow;
     }
   }
-} 
+}

@@ -1,44 +1,10 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/City.dart';
-import '../utils/SafeLoggingUtils.dart';
+import '../utils/AppException.dart';
 
-class CityRepository {
-  final PostgreSQLConnection _connection;
-
-  CityRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      final map = results.first.values.first;
-      // Преобразуем DateTime в строку
-      if (map['created_at'] is DateTime) {
-        map['created_at'] = (map['created_at'] as DateTime).toIso8601String();
-      }
-      return map;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) {
-        final map = row.values.first;
-        // Преобразуем DateTime в строку
-        if (map['created_at'] is DateTime) {
-          map['created_at'] = (map['created_at'] as DateTime).toIso8601String();
-        }
-        return map;
-      }).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class CityRepository extends BaseRepository {
+  CityRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<City?> findById(int id) async {
     try {
@@ -53,17 +19,14 @@ class CityRepository {
         ''',
         params: {'id': id},
       );
-      print('Результат поиска города по ID: $result');
       return result == null ? null : City.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска города по ID: $e');
       rethrow;
     }
   }
 
   Future<List<City>> findAll() async {
     try {
-      print('Получение всех городов');
       final results = await query('''
         SELECT 
           id, 
@@ -72,17 +35,14 @@ class CityRepository {
         FROM cities 
         ORDER BY name
       ''');
-      print('Результаты запроса: $results');
       return results.map((map) => City.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения всех городов: $e');
       rethrow;
     }
   }
 
   Future<City> create(City city) async {
     try {
-      print('Создание города: ${city.name}');
       final result = await queryOne(
         '''
         INSERT INTO cities (name)
@@ -96,17 +56,13 @@ class CityRepository {
           'name': city.name,
         },
       );
-      
+
       if (result == null) {
-        throw Exception('Ошибка создания города: результат запроса пустой');
+        throw const InternalServerException();
       }
-      
-      final safeResult = SafeLoggingUtils.sanitizeData(result);
-      print('Результат создания города: $safeResult');
+
       return City.fromJson(result);
-    } catch (e, stackTrace) {
-      print('Ошибка создания города: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
       rethrow;
     }
   }
@@ -129,11 +85,10 @@ class CityRepository {
         },
       );
       if (result == null) {
-        throw Exception('Город не найден');
+        throw const NotFoundException();
       }
       return City.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления города: $e');
       rethrow;
     }
   }
@@ -145,11 +100,10 @@ class CityRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Город не найден');
+        throw const NotFoundException();
       }
     } catch (e) {
-      print('Ошибка удаления города: $e');
       rethrow;
     }
   }
-} 
+}

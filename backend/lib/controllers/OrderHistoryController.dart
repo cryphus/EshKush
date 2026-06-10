@@ -1,29 +1,50 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/OrderHistoryService.dart';
 import '../model/enums/HistoryStatus.dart';
-import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 
 class OrderHistoryController {
   final OrderHistoryService _orderHistoryService;
+  late final Router _router;
 
-  OrderHistoryController(this._orderHistoryService);
+  OrderHistoryController(this._orderHistoryService) {
+    _router = Router();
+    _router.get('/', _getMyHistory);
+    _router.get('/one', getOrderHistory);
+    _router.get('/user', getUserOrderHistory);
+    _router.get('/point', getPointOrderHistory);
+    _router.post('/', createOrderHistory);
+    _router.post('/complete', completeOrder);
+    _router.post('/cancel', cancelOrder);
+    _router.get('/by-status', getOrdersByStatus);
+    _router.get('/by-dates', getOrdersByDateRange);
+  }
 
-  Router get router {
-    final router = Router();
-    router.get('/one', getOrderHistory);
-    router.get('/user', getUserOrderHistory);
-    router.get('/point', getPointOrderHistory);
-    router.post('/', createOrderHistory);
-    router.post('/complete', completeOrder);
-    router.post('/cancel', cancelOrder);
-    router.get('/by-status', getOrdersByStatus);
-    router.get('/by-dates', getOrdersByDateRange);
-    return router;
+  Router get router => _router;
+
+  Future<Response> _getMyHistory(Request request) async {
+    try {
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
+      final userId = payload['id'] as int;
+      final history = await _orderHistoryService.getUserOrderHistory(userId);
+      return Response.ok(
+        jsonEncode(history.map((o) => o.toJson()).toList()),
+        headers: _getCorsHeaders(),
+      );
+    } catch (e) {
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
+    }
   }
 
   Future<Response> getOrderHistory(Request request) async {
@@ -36,19 +57,23 @@ class OrderHistoryController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final requestUserId = RequestContextUtils.getUserId(request);
       final id = int.tryParse(request.url.queryParameters['id'] ?? '');
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРІРµСЂРЅС‹Р№ ID РёСЃС‚РѕСЂРёРё Р·Р°РєР°Р·Р°');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Неверный ID истории заказа',
+            headers: _getCorsHeaders());
       }
 
       final orderHistory = await _orderHistoryService.getOrderHistoryById(id);
-      
+      if (!_isElevated(request) &&
+          (requestUserId == null || orderHistory.userId != requestUserId)) {
+        return _forbidden();
+      }
+
       final responseBody = jsonEncode(orderHistory.toJson());
       final response = Response.ok(
         responseBody,
@@ -64,8 +89,11 @@ class OrderHistoryController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка получения истории заказа', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -79,20 +107,26 @@ class OrderHistoryController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final requestUserId = RequestContextUtils.getUserId(request);
       final userId = int.tryParse(request.url.queryParameters['userId'] ?? '');
       if (userId == null) {
-        return _createErrorResponse(400, 'РќРµРІРµСЂРЅС‹Р№ ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Неверный ID пользователя',
+            headers: _getCorsHeaders());
       }
 
-      final orderHistory = await _orderHistoryService.getUserOrderHistory(userId);
-      
-      final responseBody = jsonEncode(orderHistory.map((o) => o.toJson()).toList());
+      if (!_isElevated(request) && requestUserId != userId) {
+        return _forbidden();
+      }
+
+      final orderHistory =
+          await _orderHistoryService.getUserOrderHistory(userId);
+
+      final responseBody =
+          jsonEncode(orderHistory.map((o) => o.toJson()).toList());
       final response = Response.ok(
         responseBody,
         headers: _getCorsHeaders(),
@@ -107,8 +141,12 @@ class OrderHistoryController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё Р·Р°РєР°Р·РѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError(
+          'Ошибка получения истории заказов пользователя', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -122,21 +160,24 @@ class OrderHistoryController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!_isElevated(request)) {
+        return _forbidden();
       }
-
-      AuthUtils.verifyToken(token);
-
-      final pointId = int.tryParse(request.url.queryParameters['pointId'] ?? '');
+      final pointId =
+          int.tryParse(request.url.queryParameters['pointId'] ?? '');
       if (pointId == null) {
-        return _createErrorResponse(400, 'РќРµРІРµСЂРЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage('Неверный ID точки',
+            headers: _getCorsHeaders());
       }
 
-      final orderHistory = await _orderHistoryService.getPointOrderHistory(pointId);
-      
-      final responseBody = jsonEncode(orderHistory.map((o) => o.toJson()).toList());
+      final orderHistory =
+          await _orderHistoryService.getPointOrderHistory(pointId);
+
+      final responseBody =
+          jsonEncode(orderHistory.map((o) => o.toJson()).toList());
       final response = Response.ok(
         responseBody,
         headers: _getCorsHeaders(),
@@ -151,14 +192,17 @@ class OrderHistoryController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё Р·Р°РєР°Р·РѕРІ С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка получения истории заказов точки', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> createOrderHistory(Request request) async {
     try {
-      final body = await request.readAsString();
+      final body = await RequestBodyUtils.readRequiredBody(request);
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
@@ -167,35 +211,38 @@ class OrderHistoryController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
+            code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
+      final data = RequestBodyUtils.decodeJsonObject(body);
 
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
-      }
-      final data = jsonDecode(body);
-      
       try {
-        final sanitizedData = ValidationUtils.validateAndSanitizeOrderData(data);
+        final sanitizedData =
+            ValidationUtils.validateAndSanitizeOrderData(data);
         final orderHistory = await _orderHistoryService.createOrderHistory(
           orderId: sanitizedData['orderId'],
           pointId: sanitizedData['pointId'],
           userId: sanitizedData['userId'],
           orderDate: DateTime.parse(sanitizedData['orderDate']),
           totalSum: (sanitizedData['totalSum'] as num?)?.toDouble() ?? 0,
-          status: sanitizedData['status'] != null 
+          status: sanitizedData['status'] != null
               ? HistoryStatus.values.firstWhere(
-                  (e) => e.toString() == 'HistoryStatus.${sanitizedData['status']}',
+                  (e) =>
+                      e.toString() ==
+                      'HistoryStatus.${sanitizedData['status']}',
                   orElse: () => HistoryStatus.pending,
                 )
               : HistoryStatus.pending,
         );
 
-        await LoggingUtils.logOrderOperation('create', orderHistory.id, sanitizedData, requestId: RequestContextUtils.getRequestId(request));
-        
+        await LoggingUtils.logOrderOperation(
+            'create', orderHistory.id, sanitizedData,
+            requestId: RequestContextUtils.getRequestId(request));
+
         final responseBody = jsonEncode(orderHistory.toJson());
         final response = Response.ok(
           responseBody,
@@ -211,17 +258,22 @@ class OrderHistoryController {
 
         return response;
       } on ValidationException catch (e) {
-        return _createErrorResponse(400, e.toString());
+        return ErrorResponseUtils.errorResponse(e,
+            requestId: RequestContextUtils.getRequestId(request),
+            headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РёСЃС‚РѕСЂРёРё Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка создания истории заказа', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> completeOrder(Request request) async {
     try {
-      final body = await request.readAsString();
+      final body = await RequestBodyUtils.readRequiredBody(request);
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
@@ -230,32 +282,44 @@ class OrderHistoryController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final requestUserId = RequestContextUtils.getUserId(request);
+      final data = RequestBodyUtils.decodeJsonObject(body);
+
+      if (data['id'] == null ||
+          data['totalSum'] == null ||
+          data['co2Saved'] == null) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Не указаны обязательные параметры',
+            headers: _getCorsHeaders());
       }
 
-      AuthUtils.verifyToken(token);
-      final data = jsonDecode(body);
-      
-      if (data['id'] == null || data['totalSum'] == null || data['co2Saved'] == null) {
-        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅС‹ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹');
+      final orderHistoryId = data['id'] as int;
+      if (!_isElevated(request)) {
+        final orderHistory =
+            await _orderHistoryService.getOrderHistoryById(orderHistoryId);
+        if (requestUserId == null || orderHistory.userId != requestUserId) {
+          return _forbidden();
+        }
       }
 
       final orderHistory = await _orderHistoryService.completeOrder(
-        data['id'],
+        orderHistoryId,
         totalSum: (data['totalSum'] as num).toDouble(),
         co2Saved: data['co2Saved'],
         receiptLink: data['receiptLink'],
-        discountApplied: data['discountApplied'] != null 
-            ? (data['discountApplied'] as num).toDouble() 
+        discountApplied: data['discountApplied'] != null
+            ? (data['discountApplied'] as num).toDouble()
             : null,
         promoCodeUsed: data['promoCodeUsed'],
         notes: data['notes'],
       );
 
-      await LoggingUtils.logOrderOperation('complete', orderHistory.id, data, requestId: RequestContextUtils.getRequestId(request));
-      
+      await LoggingUtils.logOrderOperation('complete', orderHistory.id, data,
+          requestId: RequestContextUtils.getRequestId(request));
+
       final response = Response.ok(
         jsonEncode(orderHistory.toJson()),
         headers: _getCorsHeaders(),
@@ -270,14 +334,17 @@ class OrderHistoryController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка завершения заказа', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> cancelOrder(Request request) async {
     try {
-      final body = await request.readAsString();
+      final body = await RequestBodyUtils.readRequiredBody(request);
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
@@ -286,25 +353,35 @@ class OrderHistoryController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final requestUserId = RequestContextUtils.getUserId(request);
+      final data = RequestBodyUtils.decodeJsonObject(body);
+
+      if (data['id'] == null || data['reason'] == null) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Не указаны обязательные параметры',
+            headers: _getCorsHeaders());
       }
 
-      AuthUtils.verifyToken(token);
-      final data = jsonDecode(body);
-      
-      if (data['id'] == null || data['reason'] == null) {
-        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅС‹ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹');
+      final orderHistoryId = data['id'] as int;
+      if (!_isElevated(request)) {
+        final orderHistory =
+            await _orderHistoryService.getOrderHistoryById(orderHistoryId);
+        if (requestUserId == null || orderHistory.userId != requestUserId) {
+          return _forbidden();
+        }
       }
 
       final orderHistory = await _orderHistoryService.cancelOrder(
-        data['id'],
+        orderHistoryId,
         data['reason'],
       );
 
-      await LoggingUtils.logOrderOperation('cancel', orderHistory.id, data, requestId: RequestContextUtils.getRequestId(request));
-      
+      await LoggingUtils.logOrderOperation('cancel', orderHistory.id, data,
+          requestId: RequestContextUtils.getRequestId(request));
+
       final response = Response.ok(
         jsonEncode(orderHistory.toJson()),
         headers: _getCorsHeaders(),
@@ -319,8 +396,11 @@ class OrderHistoryController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕС‚РјРµРЅС‹ Р·Р°РєР°Р·Р°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка отмены заказа', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -334,19 +414,18 @@ class OrderHistoryController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
+            code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final status = request.url.queryParameters['status'];
       if (status == null) {
-        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅ СЃС‚Р°С‚СѓСЃ');
+        return ErrorResponseUtils.errorResponseWithMessage('Не указан статус',
+            headers: _getCorsHeaders());
       }
 
       final orderHistory = await _orderHistoryService.getOrdersByStatus(
@@ -355,7 +434,7 @@ class OrderHistoryController {
           orElse: () => HistoryStatus.pending,
         ),
       );
-      
+
       final response = Response.ok(
         jsonEncode(orderHistory.map((o) => o.toJson()).toList()),
         headers: _getCorsHeaders(),
@@ -370,8 +449,11 @@ class OrderHistoryController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°РєР°Р·РѕРІ РїРѕ СЃС‚Р°С‚СѓСЃСѓ', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка получения заказов по статусу', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -385,31 +467,34 @@ class OrderHistoryController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
+            code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final startDate = request.url.queryParameters['startDate'];
       final endDate = request.url.queryParameters['endDate'];
       if (startDate == null || endDate == null) {
-        return _createErrorResponse(400, 'РќРµ СѓРєР°Р·Р°РЅ РґРёР°РїР°Р·РѕРЅ РґР°С‚');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Не указан диапазон дат',
+            headers: _getCorsHeaders());
       }
 
-      if (!ValidationUtils.isValidDate(startDate) || !ValidationUtils.isValidDate(endDate)) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ С„РѕСЂРјР°С‚ РґР°С‚С‹');
+      if (!ValidationUtils.isValidDate(startDate) ||
+          !ValidationUtils.isValidDate(endDate)) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный формат даты',
+            headers: _getCorsHeaders());
       }
 
       final orderHistory = await _orderHistoryService.getOrdersByDateRange(
         DateTime.parse(startDate),
         DateTime.parse(endDate),
       );
-      
+
       final response = Response.ok(
         jsonEncode(orderHistory.map((o) => o.toJson()).toList()),
         headers: _getCorsHeaders(),
@@ -424,29 +509,27 @@ class OrderHistoryController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°РєР°Р·РѕРІ РїРѕ РґРёР°РїР°Р·РѕРЅСѓ РґР°С‚', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError(
+          'Ошибка получения заказов по диапазону дат', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
-  bool _isAdmin(Map<String, dynamic> payload) {
-    return payload['role'] == 'admin';
-  }
-
-  Response _createErrorResponse(int statusCode, String message) {
-    return Response(
-      statusCode,
-      body: jsonEncode({'error': message}),
-      headers: _getCorsHeaders(),
-    );
-  }
-
   Map<String, String> _getCorsHeaders() {
-    return {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-    };
+    return {'Content-Type': 'application/json'};
   }
-} 
+
+  bool _isElevated(Request request) {
+    final role = RequestContextUtils.getRole(request);
+    return role == 'admin' || role == 'support';
+  }
+
+  Response _forbidden() => ErrorResponseUtils.errorResponseWithMessage(
+        'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰С‘РЅ',
+        code: ErrorCode.forbidden,
+        headers: _getCorsHeaders(),
+      );
+}

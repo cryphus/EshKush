@@ -3,33 +3,11 @@ import '../model/entities/Order.dart';
 import '../model/enums/OrderStatus.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../model/enums/ActionType.dart';
+import 'BaseRepository.dart';
+import '../utils/AppException.dart';
 
-class OrderRepository {
-  final PostgreSQLConnection _connection;
-  PostgreSQLConnection? _transactionConnection;
-
-  OrderRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class OrderRepository extends BaseRepository {
+  OrderRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<Order?> findById(int id) async {
     try {
@@ -55,33 +33,33 @@ class OrderRepository {
       );
       return result == null ? null : Order.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска заказа по ID: $e');
       rethrow;
     }
   }
 
-  Future<Order> createOrder(Map<String, dynamic> data) async {
-    try {
-      SafeLoggingUtils.logData('Создание заказа с данными', data);
-      
-      // Преобразуем числовые значения
-      final userId = data['user_id'] is String ? int.parse(data['user_id']) : (data['user_id'] as num).toInt();
-      final pointId = data['point_id'] is String ? int.parse(data['point_id']) : (data['point_id'] as num).toInt();
-      final totalPrice = data['total_price'] is String ? double.parse(data['total_price']) : (data['total_price'] as num).toDouble();
-      
-      // Преобразуем массив products_id
-      final productsId = (data['products_id'] as List).map((e) {
-        if (e is String) return int.parse(e);
-        return e as int;
-      }).toList();
-      
-      print('Преобразованные значения:');
-      print('userId: $userId');
-      print('pointId: $pointId');
-      print('totalPrice: $totalPrice');
-      print('productsId: $productsId');
-      
-      final result = await _connection.mappedResultsQuery(
+  /// Р РЋР С•Р В·Р Т‘Р В°РЎвЂРЎвЂљ Р В·Р В°Р С”Р В°Р В· Р С‘ РЎРѓР Р†РЎРЏР В·Р В°Р Р…Р Р…РЎС“РЎР‹ Р В·Р В°Р С—Р С‘РЎРѓРЎРЉ Р С• Р С—Р В»Р В°РЎвЂљР ВµР В¶Р Вµ Р В°РЎвЂљР С•Р СР В°РЎР‚Р Р…Р С• Р Р† Р С•Р Т‘Р Р…Р С•Р в„– DB-РЎвЂљРЎР‚Р В°Р Р…Р В·Р В°Р С”РЎвЂ Р С‘Р С‘.
+  Future<Order> createWithPayment(Map<String, dynamic> data) async {
+    SafeLoggingUtils.logData(
+        'Р РЋР С•Р В·Р Т‘Р В°Р Р…Р С‘Р Вµ Р В·Р В°Р С”Р В°Р В·Р В° РЎРѓ Р Т‘Р В°Р Р…Р Р…РЎвЂ№Р СР С‘',
+        data);
+
+    final userId = data['user_id'] is String
+        ? int.parse(data['user_id'])
+        : (data['user_id'] as num).toInt();
+    final pointId = data['point_id'] is String
+        ? int.parse(data['point_id'])
+        : (data['point_id'] as num).toInt();
+    final totalPrice = data['total_price'] is String
+        ? double.parse(data['total_price'])
+        : (data['total_price'] as num).toDouble();
+    final productsId = (data['products_id'] as List).map((e) {
+      if (e is String) return int.parse(e);
+      return e as int;
+    }).toList();
+
+    late Order order;
+    await transaction((txn) async {
+      final orderResult = await txn.mappedResultsQuery(
         '''
         WITH inserted_order AS (
           INSERT INTO orders (
@@ -90,7 +68,7 @@ class OrderRepository {
             @user_id, @point_id, @products_id, @date, @total_price, 'pending', CURRENT_TIMESTAMP
           ) RETURNING *
         )
-        SELECT 
+        SELECT
           id,
           products_id,
           user_id,
@@ -99,7 +77,7 @@ class OrderRepository {
           status,
           total_price,
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          CASE 
+          CASE
             WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
             ELSE NULL
           END as updated_at
@@ -113,17 +91,28 @@ class OrderRepository {
           'total_price': totalPrice,
         },
       );
-      
-      if (result.isEmpty) {
-        throw Exception('Ошибка создания заказа');
-      }
-      
-      print('Результат из БД: ${result.first.values.first}');
-      return Order.fromJson(result.first.values.first);
-    } catch (e) {
-      print('Ошибка создания заказа: $e');
-      rethrow;
-    }
+
+      if (orderResult.isEmpty) throw const InternalServerException();
+      order = Order.fromJson(orderResult.first.values.first);
+
+      // Р РЋР С•Р В·Р Т‘Р В°РЎвЂР С Р В·Р В°Р С—Р С‘РЎРѓРЎРЉ Р С• Р С—Р В»Р В°РЎвЂљР ВµР В¶Р Вµ Р В°РЎвЂљР С•Р СР В°РЎР‚Р Р…Р С• Р Р†Р СР ВµРЎРѓРЎвЂљР Вµ РЎРѓ Р В·Р В°Р С”Р В°Р В·Р С•Р С.
+      // provider_transaction_id = order.id Р С”Р В°Р С” placeholder Р Т‘Р С• Р С—Р С•Р В»РЎС“РЎвЂЎР ВµР Р…Р С‘РЎРЏ Р С•РЎвЂљР Р†Р ВµРЎвЂљР В° Р С•РЎвЂљ Р С—Р В»Р В°РЎвЂљРЎвЂР В¶Р Р…Р С•Р С–Р С• Р С—РЎР‚Р С•Р Р†Р В°Р в„–Р Т‘Р ВµРЎР‚Р В°.
+      await txn.mappedResultsQuery(
+        '''
+        INSERT INTO payment_transactions (
+          order_id, provider_transaction_id, order_price, payment_method, status, transaction_date, is_active
+        ) VALUES (
+          @orderId, @orderId, @orderPrice, 'other', 'pending', CURRENT_TIMESTAMP, true
+        )
+        ''',
+        substitutionValues: {
+          'orderId': order.id,
+          'orderPrice': totalPrice,
+        },
+      );
+    });
+
+    return order;
   }
 
   Future<Order?> updateStatus(int id, OrderStatus status) async {
@@ -151,7 +140,6 @@ class OrderRepository {
       );
       return result == null ? null : Order.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления статуса заказа: $e');
       rethrow;
     }
   }
@@ -177,21 +165,8 @@ class OrderRepository {
       );
       return result == null ? null : Order.fromJson(result);
     } catch (e) {
-      print('Ошибка удаления заказа: $e');
       rethrow;
     }
-  }
-
-  Future<void> beginTransaction() async {
-    await _connection.execute('BEGIN');
-  }
-
-  Future<void> commitTransaction() async {
-    await _connection.execute('COMMIT');
-  }
-
-  Future<void> rollbackTransaction() async {
-    await _connection.execute('ROLLBACK');
   }
 
   Future<void> createOrderHistory({
@@ -202,7 +177,6 @@ class OrderRepository {
     required double totalSum,
     required OrderStatus status,
   }) async {
-    final connection = _transactionConnection ?? _connection;
     await connection.execute(
       '''
       INSERT INTO order_history (
@@ -228,7 +202,6 @@ class OrderRepository {
     required String actionDescription,
     required ActionType actionType,
   }) async {
-    final connection = _transactionConnection ?? _connection;
     await connection.execute(
       '''
       INSERT INTO order_actions (
@@ -246,52 +219,42 @@ class OrderRepository {
     );
   }
 
-  Future<List<Order>> getAllOrders({OrderStatus? status}) async {
+  Future<List<Order>> getAllOrders({
+    OrderStatus? status,
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
-      final query = status != null 
-          ? '''
-            SELECT 
-              id,
-              user_id,
-              point_id,
-              products_id,
-              to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as date,
-              status,
-              total_price,
-              to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-              CASE 
-                WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-                ELSE NULL
-              END as updated_at
-            FROM orders 
-            WHERE status = @status::order_status
-          '''
-          : '''
-            SELECT 
-              id,
-              user_id,
-              point_id,
-              products_id,
-              to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as date,
-              status,
-              total_price,
-              to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-              CASE 
-                WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-                ELSE NULL
-              END as updated_at
-            FROM orders
-          ''';
-      
-      final Map<String, dynamic> params = status != null 
-          ? {'status': status.name.toLowerCase()} 
-          : {};
-      
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
+      final where =
+          status != null ? 'WHERE status = @status::order_status' : '';
+      final query = '''
+        SELECT
+          id,
+          user_id,
+          point_id,
+          products_id,
+          to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as date,
+          status,
+          total_price,
+          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+          CASE
+            WHEN updated_at IS NOT NULL THEN to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            ELSE NULL
+          END as updated_at
+        FROM orders
+        $where
+        ORDER BY created_at DESC
+        LIMIT @limit OFFSET @offset
+      ''';
+
+      final params = <String, dynamic>{'limit': limit, 'offset': offset};
+      if (status != null) params['status'] = status.name.toLowerCase();
+
+      final results = await connection.mappedResultsQuery(query,
+          substitutionValues: params);
       return results.map((row) => Order.fromJson(row.values.first)).toList();
     } catch (e) {
-      print('Ошибка получения списка заказов: $e');
       rethrow;
     }
   }
-} 
+}

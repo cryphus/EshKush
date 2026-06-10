@@ -1,5 +1,6 @@
 import '../repositories/UserSessionRepository.dart';
 import '../model/entities/UserSessions.dart';
+import '../utils/AppException.dart';
 
 class UserSessionService {
   final UserSessionRepository _sessionRepository;
@@ -10,11 +11,10 @@ class UserSessionService {
     try {
       final session = await _sessionRepository.findById(id);
       if (session == null) {
-        throw Exception('Сессия не найдена');
+        throw const NotFoundException('Сессия не найдена');
       }
       return session;
     } catch (e) {
-      print('Ошибка получения сессии: $e');
       rethrow;
     }
   }
@@ -23,7 +23,6 @@ class UserSessionService {
     try {
       return await _sessionRepository.findByUserId(userId);
     } catch (e) {
-      print('Ошибка получения сессий пользователя: $e');
       rethrow;
     }
   }
@@ -35,7 +34,6 @@ class UserSessionService {
       sessions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return sessions.first;
     } catch (e) {
-      print('Ошибка получения текущей сессии пользователя: $e');
       rethrow;
     }
   }
@@ -67,7 +65,6 @@ class UserSessionService {
       );
       return await _sessionRepository.create(session);
     } catch (e) {
-      print('Ошибка создания сессии: $e');
       rethrow;
     }
   }
@@ -77,7 +74,6 @@ class UserSessionService {
       session.updateLastActive();
       return await _sessionRepository.update(session);
     } catch (e) {
-      print('Ошибка обновления сессии: $e');
       rethrow;
     }
   }
@@ -86,7 +82,6 @@ class UserSessionService {
     try {
       await _sessionRepository.delete(id);
     } catch (e) {
-      print('Ошибка удаления сессии: $e');
       rethrow;
     }
   }
@@ -95,7 +90,6 @@ class UserSessionService {
     try {
       return await _sessionRepository.getActiveSessions();
     } catch (e) {
-      print('Ошибка получения активных сессий: $e');
       rethrow;
     }
   }
@@ -104,7 +98,6 @@ class UserSessionService {
     try {
       await _sessionRepository.terminateAllUserSessions(userId);
     } catch (e) {
-      print('Ошибка завершения всех сессий пользователя: $e');
       rethrow;
     }
   }
@@ -114,7 +107,6 @@ class UserSessionService {
       session.extendSession(duration);
       await _sessionRepository.update(session);
     } catch (e) {
-      print('Ошибка продления сессии: $e');
       rethrow;
     }
   }
@@ -129,8 +121,7 @@ class UserSessionService {
         DateTime.now().add(const Duration(days: 8)),
       );
     } catch (e) {
-      print('Ошибка завершения сессии: $e');
       rethrow;
     }
   }
-} 
+}

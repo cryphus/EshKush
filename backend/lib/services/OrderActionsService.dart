@@ -1,6 +1,7 @@
 import '../repositories/OrderActionsRepository.dart';
 import '../model/entities/OrderActions.dart';
 import '../model/enums/ActionType.dart';
+import '../utils/AppException.dart';
 
 class OrderActionsService {
   final OrderActionsRepository _orderActionsRepository;
@@ -11,11 +12,10 @@ class OrderActionsService {
     try {
       final action = await _orderActionsRepository.findById(id);
       if (action == null) {
-        throw Exception('Действие не найдено');
+        throw const NotFoundException('Действие не найдено');
       }
       return action;
     } catch (e) {
-      print('Ошибка получения действия: $e');
       rethrow;
     }
   }
@@ -24,7 +24,6 @@ class OrderActionsService {
     try {
       return await _orderActionsRepository.findByOrderId(orderId);
     } catch (e) {
-      print('Ошибка получения действий заказа: $e');
       rethrow;
     }
   }
@@ -33,7 +32,6 @@ class OrderActionsService {
     try {
       return await _orderActionsRepository.findByPartnerId(partnerId);
     } catch (e) {
-      print('Ошибка получения действий партнера: $e');
       rethrow;
     }
   }
@@ -54,7 +52,6 @@ class OrderActionsService {
       );
       return await _orderActionsRepository.create(action);
     } catch (e) {
-      print('Ошибка создания действия: $e');
       rethrow;
     }
   }
@@ -63,7 +60,6 @@ class OrderActionsService {
     try {
       return await _orderActionsRepository.update(action);
     } catch (e) {
-      print('Ошибка обновления действия: $e');
       rethrow;
     }
   }
@@ -74,18 +70,17 @@ class OrderActionsService {
       action.updateActionType(newType);
       return await _orderActionsRepository.update(action);
     } catch (e) {
-      print('Ошибка обновления типа действия: $e');
       rethrow;
     }
   }
 
-  Future<OrderActions> updateActionDescription(int id, String newDescription) async {
+  Future<OrderActions> updateActionDescription(
+      int id, String newDescription) async {
     try {
       final action = await getActionById(id);
       action.updateDescription(newDescription);
       return await _orderActionsRepository.update(action);
     } catch (e) {
-      print('Ошибка обновления описания действия: $e');
       rethrow;
     }
   }
@@ -97,7 +92,6 @@ class OrderActionsService {
       action.updateActionType(ActionType.delete);
       return await _orderActionsRepository.update(action);
     } catch (e) {
-      print('Ошибка деактивации действия: $e');
       rethrow;
     }
   }
@@ -109,7 +103,6 @@ class OrderActionsService {
       action.updateActionType(ActionType.create);
       return await _orderActionsRepository.update(action);
     } catch (e) {
-      print('Ошибка активации действия: $e');
       rethrow;
     }
   }
@@ -118,7 +111,6 @@ class OrderActionsService {
     try {
       return await _orderActionsRepository.getByActionType(actionType);
     } catch (e) {
-      print('Ошибка получения действий по типу: $e');
       rethrow;
     }
   }
@@ -127,8 +119,7 @@ class OrderActionsService {
     try {
       return await _orderActionsRepository.getActiveActions();
     } catch (e) {
-      print('Ошибка получения активных действий: $e');
       rethrow;
     }
   }
-} 
+}

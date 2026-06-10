@@ -317,6 +317,7 @@ class _ProductPageState extends ConsumerState<ProductPage> {
       ),
     );
   }
+
 }
 
 class _ProductRow extends StatelessWidget {
@@ -392,6 +393,161 @@ class _ProductRow extends StatelessWidget {
             child: const Text('+'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  final Map<String, dynamic> product;
+  final void Function(Map<String, dynamic>) onAddToCart;
+  final bool isGuest;
+
+  const _ProductCard({
+    required this.product,
+    required this.onAddToCart,
+    required this.isGuest,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isAvailable = (product['is_available'] as bool? ?? true) &&
+        (product['is_active'] as bool? ?? true);
+
+    return Opacity(
+      opacity: isAvailable ? 1.0 : 0.5,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Иконка
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: isAvailable
+                    ? const Color(0xFFE8FADC)
+                    : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.fastfood_outlined,
+                color: isAvailable ? AppColors.darkGreen : Colors.grey,
+                size: 30,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Описание
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product['name'] ?? 'Товар',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    product['description'] ?? '',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (product['weight'] != null) ...[
+                        Text(
+                          product['weight'],
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey[500]),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      if (!isAvailable)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Недоступен',
+                            style:
+                                TextStyle(color: Colors.red, fontSize: 11),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Цена и кнопка
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  product['price']?.toString() ?? '0 ₽',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.darkGreen,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                isAvailable
+                    ? GestureDetector(
+                        onTap: () => onAddToCart(product),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.darkGreen,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'В корзину',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'Недоступен',
+                          style: TextStyle(
+                              color: Colors.grey, fontSize: 12),
+                        ),
+                      ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

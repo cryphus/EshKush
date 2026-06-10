@@ -5,10 +5,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../screens/RegistrationScreen.dart';
 import 'dart:convert' show utf8, base64;
+import '../config/app_config.dart';
 
 class TelegramAuthService {
-  static const String _botUsername = 'eshkush_bot';
-  static const String _baseUrl = 'http://localhost:5000/api';
+  static const String _botUsername = AppConfig.botUsername;
+  static const String _baseUrl = AppConfig.telegramApiUrl;
 
   static final TelegramAuthService _instance = TelegramAuthService._internal();
   factory TelegramAuthService() => _instance;
@@ -46,7 +47,7 @@ class TelegramAuthService {
   Future<Map<String, dynamic>> checkUser(String token) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/auth/telegram/check_user'),
+        Uri.parse('$_baseUrl/auth/telegram/check_user'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -80,7 +81,7 @@ class TelegramAuthService {
 
         if (exists) {
           if (context.mounted) {
-            Navigator.of(context).pushReplacementNamed('/home');
+            Navigator.of(context).pushReplacementNamed('/main');
           }
         } else {
           if (context.mounted) {

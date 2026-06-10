@@ -1,32 +1,10 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/Partner.dart';
-import '../utils/SafeLoggingUtils.dart';
+import '../utils/AppException.dart';
 
-class PartnerRepository {
-  final PostgreSQLConnection _connection;
-
-  PartnerRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class PartnerRepository extends BaseRepository {
+  PartnerRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<Partner?> findById(int id) async {
     try {
@@ -49,23 +27,12 @@ class PartnerRepository {
       );
       return result == null ? null : Partner.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска партнера по ID: $e');
       rethrow;
     }
   }
 
   Future<Partner> create(Partner partner) async {
     try {
-      print('Создаем партнера в базе данных:');
-      print('user_id: ${partner.userId}');
-      print('name: ${partner.name}');
-      print('contact_person: ${partner.contactPerson}');
-      print('contact_email: ${partner.contactEmail}');
-      print('contact_phone: ${partner.contactPhone}');
-      print('contact_document: ${partner.contactDocument}');
-      print('max_discount: ${partner.maxDiscount}');
-      print('created_at: ${partner.createdAt}');
-
       final result = await queryOne(
         '''
         WITH inserted AS (
@@ -102,29 +69,25 @@ class PartnerRepository {
           'created_at': partner.createdAt.toIso8601String(),
         },
       );
-      
-      if (result == null) {
-        throw Exception('Ошибка создания партнера');
-      }
-      
-      final safeResult = SafeLoggingUtils.sanitizeData(result);
-      print('Результат запроса: $safeResult');
 
-      // Добавляем created_at, если его нет в результате
+      if (result == null) {
+        throw const InternalServerException();
+      }
+
+      // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С created_at, Р ВµРЎРѓР В»Р С‘ Р ВµР С–Р С• Р Р…Р ВµРЎвЂљ Р Р† РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљР Вµ
       if (!result.containsKey('created_at')) {
         result['created_at'] = partner.createdAt.toIso8601String();
       }
-      
+
       return Partner.fromJson(result);
     } catch (e) {
-      print('Ошибка создания партнера: $e');
       rethrow;
     }
   }
 
   Future<Partner> update(int id, Map<String, dynamic> data) async {
     try {
-      // Строим динамический SQL-запрос
+      // Р РЋРЎвЂљРЎР‚Р С•Р С‘Р С Р Т‘Р С‘Р Р…Р В°Р СР С‘РЎвЂЎР ВµРЎРѓР С”Р С‘Р в„– SQL-Р В·Р В°Р С—РЎР‚Р С•РЎРѓ
       final updateFields = <String>[];
       final params = <String, dynamic>{'id': id};
 
@@ -154,7 +117,8 @@ class PartnerRepository {
       }
 
       if (updateFields.isEmpty) {
-        throw Exception('Нет полей для обновления');
+        throw const BadRequestException(
+            'Р СњР ВµРЎвЂљ Р С—Р С•Р В»Р ВµР в„– Р Т‘Р В»РЎРЏ Р С•Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘РЎРЏ');
       }
 
       final updateQuery = '''
@@ -173,19 +137,15 @@ class PartnerRepository {
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
       ''';
 
-      print('SQL запрос: $updateQuery');
-      print('Параметры: $params');
-
       final result = await queryOne(updateQuery, params: params);
 
       if (result == null) {
-        throw Exception('Партнер не найден');
+        throw const NotFoundException(
+            'Р СџР В°РЎР‚РЎвЂљР Р…Р ВµРЎР‚ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…');
       }
 
-      print('Результат обновления: $result');
       return Partner.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления партнера: $e');
       rethrow;
     }
   }
@@ -197,18 +157,17 @@ class PartnerRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Партнер не найден');
+        throw const NotFoundException(
+            'Р СџР В°РЎР‚РЎвЂљР Р…Р ВµРЎР‚ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…');
       }
     } catch (e) {
-      print('Ошибка удаления партнера: $e');
       rethrow;
     }
   }
 
   Future<List<Partner>> findAll() async {
     try {
-      final results = await query(
-        '''
+      final results = await query('''
         SELECT 
           id,
           user_id,
@@ -220,12 +179,10 @@ class PartnerRepository {
           max_discount,
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
         FROM partners
-        '''
-      );
+        ''');
       return results.map((map) => Partner.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения списка партнеров: $e');
       rethrow;
     }
   }
-} 
+}

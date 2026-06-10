@@ -1,32 +1,11 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/ErrorLogs.dart';
 import '../model/enums/ErrorSeverity.dart';
+import '../utils/AppException.dart';
 
-class ErrorLogsRepository {
-  final PostgreSQLConnection _connection;
-
-  ErrorLogsRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class ErrorLogsRepository extends BaseRepository {
+  ErrorLogsRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<ErrorLogs> create(ErrorLogs error) async {
     try {
@@ -60,12 +39,11 @@ class ErrorLogsRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания лога ошибки');
+        throw const InternalServerException();
       }
 
       return ErrorLogs.fromJson(result);
     } catch (e) {
-      print('Ошибка создания лога ошибки: $e');
       rethrow;
     }
   }
@@ -78,7 +56,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по уровню серьезности: $e');
       rethrow;
     }
   }
@@ -91,7 +68,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по модулю: $e');
       rethrow;
     }
   }
@@ -104,7 +80,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по ID пользователя: $e');
       rethrow;
     }
   }
@@ -116,7 +91,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска нерешенных логов: $e');
       rethrow;
     }
   }
@@ -129,7 +103,6 @@ class ErrorLogsRepository {
       );
       return results.map((map) => ErrorLogs.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения последних логов: $e');
       rethrow;
     }
   }
@@ -150,8 +123,7 @@ class ErrorLogsRepository {
         },
       );
     } catch (e) {
-      print('Ошибка отметки лога как решенного: $e');
       rethrow;
     }
   }
-} 
+}

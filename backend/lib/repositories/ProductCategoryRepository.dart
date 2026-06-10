@@ -1,31 +1,11 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/ProductCategory.dart';
+import '../utils/AppException.dart';
 
-class ProductCategoryRepository {
-  final PostgreSQLConnection _connection;
-
-  ProductCategoryRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class ProductCategoryRepository extends BaseRepository {
+  ProductCategoryRepository(PostgreSQLConnection connection)
+      : super(connection);
 
   Future<ProductCategory?> findById(int id) async {
     try {
@@ -35,7 +15,6 @@ class ProductCategoryRepository {
       );
       return result == null ? null : ProductCategory.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска категории по ID: $e');
       rethrow;
     }
   }
@@ -45,7 +24,6 @@ class ProductCategoryRepository {
       final results = await query('SELECT * FROM product_categories');
       return results.map((map) => ProductCategory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения всех категорий: $e');
       rethrow;
     }
   }
@@ -65,11 +43,10 @@ class ProductCategoryRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания категории');
+        throw const InternalServerException();
       }
       return ProductCategory.fromJson(result);
     } catch (e) {
-      print('Ошибка создания категории: $e');
       rethrow;
     }
   }
@@ -90,11 +67,11 @@ class ProductCategoryRepository {
         },
       );
       if (result == null) {
-        throw Exception('Категория не найдена');
+        throw const NotFoundException(
+            'Р С™Р В°РЎвЂљР ВµР С–Р С•РЎР‚Р С‘РЎРЏ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
       return ProductCategory.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления категории: $e');
       rethrow;
     }
   }
@@ -106,11 +83,11 @@ class ProductCategoryRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Категория не найдена');
+        throw const NotFoundException(
+            'Р С™Р В°РЎвЂљР ВµР С–Р С•РЎР‚Р С‘РЎРЏ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
     } catch (e) {
-      print('Ошибка удаления категории: $e');
       rethrow;
     }
   }
-} 
+}

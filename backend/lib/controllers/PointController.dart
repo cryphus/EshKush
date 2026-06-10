@@ -1,13 +1,15 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:convert';
 import '../services/PointService.dart';
-import '../utils/AuthUtils.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 import '../model/dto/responses/PointResponseDto.dart';
 import '../model/dto/requests/CreatePointDto.dart';
+import '../utils/PaginationUtils.dart';
 
 class PointController {
   final PointService _pointService;
@@ -43,8 +45,13 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final points = await _pointService.getAllPoints();
-      final pointsJson = jsonEncode(points.map((p) => PointResponseDto.fromEntity(p).toJson()).toList());
+      final pagination = PaginationUtils.parse(request);
+      final points = await _pointService.getAllPoints(
+          limit: pagination.limit, offset: pagination.offset);
+      final pointsJson = jsonEncode(PaginationUtils.wrap(
+        points.map((p) => PointResponseDto.fromEntity(p).toJson()).toList(),
+        pagination,
+      ));
 
       final response = Response.ok(
         pointsJson,
@@ -60,8 +67,11 @@ class PointController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃРїРёСЃРєР° С‚РѕС‡РµРє', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка получения списка точек', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -77,7 +87,9 @@ class PointController {
 
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID точки',
+            headers: _getCorsHeaders());
       }
 
       final point = await _pointService.getPointById(id);
@@ -98,8 +110,10 @@ class PointController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(404, 'РўРѕС‡РєР° РЅРµ РЅР°Р№РґРµРЅР°');
+      await LoggingUtils.logError('Ошибка получения точки', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponseWithMessage('Точка не найдена',
+          code: ErrorCode.notFound, headers: _getCorsHeaders());
     }
   }
 
@@ -177,11 +191,18 @@ class PointController {
 
       final categoryId = int.tryParse(request.params['categoryId']!);
       if (categoryId == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РєР°С‚РµРіРѕСЂРёРё');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID категории',
+            headers: _getCorsHeaders());
       }
 
-      final points = await _pointService.getPointsByCategory(categoryId);
-      final pointsJson = jsonEncode(points.map((p) => PointResponseDto.fromEntity(p).toJson()).toList());
+      final pagination = PaginationUtils.parse(request);
+      final points = await _pointService.getPointsByCategory(categoryId,
+          limit: pagination.limit, offset: pagination.offset);
+      final pointsJson = jsonEncode(PaginationUtils.wrap(
+        points.map((p) => PointResponseDto.fromEntity(p).toJson()).toList(),
+        pagination,
+      ));
 
       final response = Response.ok(
         pointsJson,
@@ -197,8 +218,11 @@ class PointController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚РѕС‡РµРє РїРѕ РєР°С‚РµРіРѕСЂРёРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка получения точек по категории', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -214,11 +238,14 @@ class PointController {
 
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID точки',
+            headers: _getCorsHeaders());
       }
 
       final categories = await _pointService.getPointCategories(id);
-      final categoriesJson = jsonEncode(categories.map((c) => c.toJson()).toList());
+      final categoriesJson =
+          jsonEncode(categories.map((c) => c.toJson()).toList());
 
       final response = Response.ok(
         categoriesJson,
@@ -234,16 +261,18 @@ class PointController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёР№ С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка получения категорий точки', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _createPoint(Request request) async {
     try {
-      final body = await request.readAsString();
-      final data = jsonDecode(body);
-      
+      final body = await RequestBodyUtils.readRequiredBody(request);
+
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
@@ -252,22 +281,21 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
+            code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
+      final data = RequestBodyUtils.decodeJsonObject(body);
 
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
-      }
-      
-             try {
-         final createDto = CreatePointDto.fromJson(data);
-         final point = await _pointService.createPoint(createDto.toEntityData());
+      try {
+        final createDto = CreatePointDto.fromJson(data);
+        final point = await _pointService.createPoint(createDto.toEntityData());
 
         await LoggingUtils.logInfo(
-          'РЎРѕР·РґР°РЅР° РЅРѕРІР°СЏ С‚РѕС‡РєР°',
+          'Точка создана',
           context: {
             'pointId': point.id,
             'name': point.name,
@@ -277,7 +305,7 @@ class PointController {
 
         final pointDto = PointResponseDto.fromEntity(point);
         final pointJson = jsonEncode(pointDto.toJson());
-        
+
         final response = Response.ok(
           pointJson,
           headers: _getCorsHeaders(),
@@ -292,19 +320,23 @@ class PointController {
 
         return response;
       } on ValidationException catch (e) {
-        return _createErrorResponse(400, e.toString());
+        return ErrorResponseUtils.errorResponse(e,
+            requestId: RequestContextUtils.getRequestId(request),
+            headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка создания точки', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _updatePoint(Request request) async {
     try {
-      final body = await request.readAsString();
-      final data = jsonDecode(body);
-      
+      final body = await RequestBodyUtils.readRequiredBody(request);
+
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
@@ -313,30 +345,33 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
+            code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID точки',
+            headers: _getCorsHeaders());
       }
-      
+
+      final data = RequestBodyUtils.decodeJsonObject(body);
+
       try {
         final createDto = CreatePointDto.fromJson(data);
-        final point = await _pointService.updatePoint(id, createDto.toEntityData());
-        
+        final point =
+            await _pointService.updatePoint(id, createDto.toEntityData());
+
         final pointDto = PointResponseDto.fromEntity(point);
         final pointJson = jsonEncode(pointDto.toJson());
 
         await LoggingUtils.logInfo(
-          'РћР±РЅРѕРІР»РµРЅР° С‚РѕС‡РєР°',
+          'Точка обновлена',
           context: {
             'pointId': point.id,
             'name': point.name,
@@ -358,11 +393,16 @@ class PointController {
 
         return response;
       } on ValidationException catch (e) {
-        return _createErrorResponse(400, e.toString());
+        return ErrorResponseUtils.errorResponse(e,
+            requestId: RequestContextUtils.getRequestId(request),
+            headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка обновления точки', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -376,30 +416,30 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
-      if (!_isAdmin(payload)) {
-        return _createErrorResponse(403, 'РќРµС‚ РїСЂР°РІ РґРѕСЃС‚СѓРїР°');
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      if (!RequestContextUtils.isAdmin(request)) {
+        return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
+            code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
 
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID точки',
+            headers: _getCorsHeaders());
       }
 
       await _pointService.deletePoint(id);
 
       await LoggingUtils.logInfo(
-        'РЈРґР°Р»РµРЅР° С‚РѕС‡РєР°',
+        'Точка успешно удалена',
         context: {'pointId': id},
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final responseJson = jsonEncode({'message': 'РўРѕС‡РєР° СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅР°'});
+      final responseJson = jsonEncode({'message': 'Точка успешно удалена'});
       final response = Response.ok(
         responseJson,
         headers: _getCorsHeaders(),
@@ -414,16 +454,18 @@ class PointController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка удаления точки', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _updateRating(Request request) async {
     try {
-      final body = await request.readAsString();
-      final data = jsonDecode(body);
-      
+      final body = await RequestBodyUtils.readRequiredBody(request);
+
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
@@ -432,25 +474,27 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final data = RequestBodyUtils.decodeJsonObject(body);
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID точки',
+            headers: _getCorsHeaders());
       }
-
-      if (data['rating'] == null || !ValidationUtils.isValidNumber(data['rating'], min: 0, max: 5)) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ СЂРµР№С‚РёРЅРі');
+      if (data['rating'] == null ||
+          !ValidationUtils.isValidNumber(data['rating'], min: 0, max: 5)) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный формат данных',
+            headers: _getCorsHeaders());
       }
 
       await _pointService.updateRating(id, (data['rating'] as num).toDouble());
 
       await LoggingUtils.logInfo(
-        'РћР±РЅРѕРІР»РµРЅ СЂРµР№С‚РёРЅРі С‚РѕС‡РєРё',
+        'Обновлён рейтинг точки',
         context: {
           'pointId': id,
           'rating': data['rating'],
@@ -458,7 +502,7 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final responseJson = jsonEncode({'message': 'Р РµР№С‚РёРЅРі СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅ'});
+      final responseJson = jsonEncode({'message': 'Рейтинг точки обновлён'});
       final response = Response.ok(
         responseJson,
         headers: _getCorsHeaders(),
@@ -473,16 +517,18 @@ class PointController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ СЂРµР№С‚РёРЅРіР°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка обновления рейтинга', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _updatePointCategories(Request request) async {
     try {
-      final body = await request.readAsString();
-      final data = jsonDecode(body);
-      
+      final body = await RequestBodyUtils.readRequiredBody(request);
+
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
@@ -491,27 +537,29 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      AuthUtils.verifyToken(token);
-
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final data = RequestBodyUtils.decodeJsonObject(body);
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID точки',
+            headers: _getCorsHeaders());
       }
-
       if (data['categoryIds'] == null || !(data['categoryIds'] is List)) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ С„РѕСЂРјР°С‚ РґР°РЅРЅС‹С…');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Необходимо передать список categoryIds',
+            code: ErrorCode.badRequest,
+            headers: _getCorsHeaders());
       }
 
-      final categoryIds = (data['categoryIds'] as List).map((id) => id as int).toList();
+      final categoryIds =
+          (data['categoryIds'] as List).map((id) => id as int).toList();
       await _pointService.updatePointCategories(id, categoryIds);
 
       await LoggingUtils.logInfo(
-        'РћР±РЅРѕРІР»РµРЅС‹ РєР°С‚РµРіРѕСЂРёРё С‚РѕС‡РєРё',
+        'Обновлены категории точки',
         context: {
           'pointId': id,
           'categoryIds': categoryIds,
@@ -519,7 +567,8 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final responseJson = jsonEncode({'message': 'РљР°С‚РµРіРѕСЂРёРё СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅС‹'});
+      final responseJson =
+          jsonEncode({'message': 'Категории успешно обновлены'});
       final response = Response.ok(
         responseJson,
         headers: _getCorsHeaders(),
@@ -534,8 +583,11 @@ class PointController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РєР°С‚РµРіРѕСЂРёР№ С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка обновления категорий точки', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
@@ -551,7 +603,9 @@ class PointController {
 
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID точки',
+            headers: _getCorsHeaders());
       }
 
       final reviews = await _pointService.getPointReviews(id);
@@ -571,14 +625,17 @@ class PointController {
 
       return response;
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕС‚Р·С‹РІРѕРІ С‚РѕС‡РєРё', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(500, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка получения отзывов точки', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _createPointReview(Request request) async {
     try {
-      final body = await request.readAsString();
+      final body = await RequestBodyUtils.readRequiredBody(request);
       await LoggingUtils.logRequest(
         request.method,
         request.url.path,
@@ -587,30 +644,31 @@ class PointController {
         requestId: RequestContextUtils.getRequestId(request),
       );
 
-      final token = request.headers['authorization']?.replaceAll('Bearer ', '');
-      if (token == null) {
-        return _createErrorResponse(401, 'РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ');
-      }
-
-      final payload = AuthUtils.verifyToken(token);
+      final unauthorized = RequestContextUtils.requireUserOr401(request,
+          headers: _getCorsHeaders());
+      if (unauthorized != null) return unauthorized;
+      final payload = RequestContextUtils.getUser(request)!;
       final userId = payload['id'] as int;
-      
+
       final id = int.tryParse(request.params['id']!);
       if (id == null) {
-        return _createErrorResponse(400, 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID С‚РѕС‡РєРё');
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный ID точки',
+            headers: _getCorsHeaders());
       }
 
-      final data = jsonDecode(body);
+      final data = RequestBodyUtils.decodeJsonObject(body);
       data['point_id'] = id;
       data['user_id'] = userId;
-      
+
       try {
-        final sanitizedData = ValidationUtils.validateAndSanitizeReviewData(data);
+        final sanitizedData =
+            ValidationUtils.validateAndSanitizeReviewData(data);
         final review = await _pointService.createPointReview(sanitizedData);
         final reviewJson = jsonEncode(review.toJson());
 
         await LoggingUtils.logInfo(
-          'РЎРѕР·РґР°РЅ РЅРѕРІС‹Р№ РѕС‚Р·С‹РІ',
+          'Отзыв создан',
           context: {
             'reviewId': review.id,
             'pointId': review.pointId,
@@ -633,16 +691,17 @@ class PointController {
 
         return response;
       } on ValidationException catch (e) {
-        return _createErrorResponse(400, e.toString());
+        return ErrorResponseUtils.errorResponse(e,
+            requestId: RequestContextUtils.getRequestId(request),
+            headers: _getCorsHeaders());
       }
     } catch (e) {
-      await LoggingUtils.logError('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РѕС‚Р·С‹РІР°', e, requestId: RequestContextUtils.getRequestId(request));
-      return _createErrorResponse(400, 'РћС€РёР±РєР°: $e');
+      await LoggingUtils.logError('Ошибка создания отзыва', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
     }
-  }
-
-  bool _isAdmin(Map<String, dynamic> payload) {
-    return payload['role'] == 'admin';
   }
 
   Response _createErrorResponse(int statusCode, String message) {
@@ -654,11 +713,6 @@ class PointController {
   }
 
   Map<String, String> _getCorsHeaders() {
-    return {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-    };
+    return {'Content-Type': 'application/json'};
   }
-} 
+}

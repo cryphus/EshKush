@@ -2,10 +2,11 @@ import 'package:postgres/postgres.dart';
 
 abstract class BaseRepository {
   final PostgreSQLConnection connection;
-  
+
   BaseRepository(this.connection);
-  
-  Future<List<Map<String, dynamic>>> query(String sql, {Map<String, dynamic>? params}) async {
+
+  Future<List<Map<String, dynamic>>> query(String sql,
+      {Map<String, dynamic>? params}) async {
     try {
       final results = await connection.mappedResultsQuery(
         sql,
@@ -19,14 +20,15 @@ abstract class BaseRepository {
         return merged;
       }).toList();
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
-  
-  Future<Map<String, dynamic>?> queryOne(String sql, {Map<String, dynamic>? params}) async {
+
+  Future<Map<String, dynamic>?> queryOne(String sql,
+      {Map<String, dynamic>? params}) async {
     try {
-      final results = await connection.mappedResultsQuery(sql, substitutionValues: params);
+      final results =
+          await connection.mappedResultsQuery(sql, substitutionValues: params);
       if (results.isEmpty) return null;
       final row = results.first;
       final merged = <String, dynamic>{};
@@ -35,15 +37,18 @@ abstract class BaseRepository {
       }
       return merged;
     } catch (e) {
-      print('Ошибка выполнения запроса: $e');
       rethrow;
     }
   }
 
-  Future<T> transaction<T>(Future<T> Function(PostgreSQLExecutionContext) callback) async {
+  /// Выполняет [callback] в одной транзакции. Результат колбека возвращается;
+  /// колбек вызывается только один раз — внутри транзакции (не на основном connection).
+  Future<T> transaction<T>(
+      Future<T> Function(PostgreSQLExecutionContext) callback) async {
+    dynamic result;
     await connection.transaction((txn) async {
-      await callback(txn);
+      result = await callback(txn);
     });
-    return callback(connection);
+    return result as T;
   }
-} 
+}

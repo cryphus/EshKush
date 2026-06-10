@@ -1,32 +1,10 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/PromoCodes.dart';
-import '../model/enums/DiscountType.dart';
+import '../utils/AppException.dart';
 
-class PromoCodesRepository {
-  final PostgreSQLConnection _connection;
-
-  PromoCodesRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class PromoCodesRepository extends BaseRepository {
+  PromoCodesRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<PromoCodes?> findById(int id) async {
     try {
@@ -54,7 +32,6 @@ class PromoCodesRepository {
       );
       return result == null ? null : PromoCodes.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска промокода по ID: $e');
       rethrow;
     }
   }
@@ -85,7 +62,6 @@ class PromoCodesRepository {
       );
       return result == null ? null : PromoCodes.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска промокода по коду: $e');
       rethrow;
     }
   }
@@ -117,14 +93,13 @@ class PromoCodesRepository {
       );
       return results.map((map) => PromoCodes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения активных промокодов: $e');
       rethrow;
     }
   }
 
   Future<PromoCodes> create(PromoCodes promoCode) async {
     try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
+      await connection.execute('SET client_encoding TO \'UTF8\'');
       final result = await queryOne(
         '''
         INSERT INTO promo_codes (
@@ -171,11 +146,10 @@ class PromoCodesRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания промокода');
+        throw const InternalServerException();
       }
       return PromoCodes.fromJson(result);
     } catch (e) {
-      print('Ошибка создания промокода: $e');
       rethrow;
     }
   }
@@ -228,11 +202,11 @@ class PromoCodesRepository {
         },
       );
       if (result == null) {
-        throw Exception('Промокод не найден');
+        throw const NotFoundException(
+            'Р СџРЎР‚Р С•Р СР С•Р С”Р С•Р Т‘ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…');
       }
       return PromoCodes.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления промокода: $e');
       rethrow;
     }
   }
@@ -244,10 +218,10 @@ class PromoCodesRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Промокод не найден');
+        throw const NotFoundException(
+            'Р СџРЎР‚Р С•Р СР С•Р С”Р С•Р Т‘ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…');
       }
     } catch (e) {
-      print('Ошибка удаления промокода: $e');
       rethrow;
     }
   }
@@ -263,8 +237,7 @@ class PromoCodesRepository {
         params: {'id': id},
       );
     } catch (e) {
-      print('Ошибка увеличения счетчика использования: $e');
       rethrow;
     }
   }
-} 
+}

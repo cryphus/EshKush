@@ -5,7 +5,7 @@ info:
   description: API для работы с продуктами и заказами
 
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:3000
     description: Локальный сервер разработки
 
 components:

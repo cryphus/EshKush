@@ -24,8 +24,8 @@ class PartnerResponseDto {
       id: partner.id,
       userId: partner.userId,
       name: partner.name,
-      contactEmail: partner.contactEmail,
-      contactPhone: partner.contactPhone,
+      contactEmail: partner.contactEmail ?? '',
+      contactPhone: partner.contactPhone ?? '',
       maxDiscount: partner.maxDiscount,
       createdAt: partner.createdAt,
     );
@@ -48,10 +48,10 @@ class PartnerAdminDto {
   final int id;
   final int userId;
   final String name;
-  final int contactPerson;
-  final String contactEmail;
-  final String contactPhone;
-  final String contactDocument;
+  final int? contactPerson;
+  final String? contactEmail;
+  final String? contactPhone;
+  final String? contactDocument;
   final double maxDiscount;
   final DateTime createdAt;
 
@@ -59,10 +59,10 @@ class PartnerAdminDto {
     required this.id,
     required this.userId,
     required this.name,
-    required this.contactPerson,
-    required this.contactEmail,
-    required this.contactPhone,
-    required this.contactDocument,
+    this.contactPerson,
+    this.contactEmail,
+    this.contactPhone,
+    this.contactDocument,
     required this.maxDiscount,
     required this.createdAt,
   });
@@ -86,10 +86,10 @@ class PartnerAdminDto {
       'id': id,
       'user_id': userId,
       'name': name,
-      'contact_person': contactPerson,
-      'contact_email': contactEmail,
-      'contact_phone': contactPhone,
-      'contact_document': contactDocument,
+      if (contactPerson != null) 'contact_person': contactPerson,
+      if (contactEmail != null) 'contact_email': contactEmail,
+      if (contactPhone != null) 'contact_phone': contactPhone,
+      if (contactDocument != null) 'contact_document': contactDocument,
       'max_discount': maxDiscount,
       'created_at': createdAt.toIso8601String(),
     };

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shelf/shelf.dart';
-import 'ValidationUtils.dart';
+import 'AppException.dart';
 
 /// Стабильные коды ошибок для клиента (без утечки деталей).
 enum ErrorCode {
@@ -9,6 +9,7 @@ enum ErrorCode {
   forbidden('FORBIDDEN'),
   notFound('NOT_FOUND'),
   conflict('CONFLICT'),
+  tooManyRequests('TOO_MANY_REQUESTS'),
   badRequest('BAD_REQUEST'),
   internalError('INTERNAL_ERROR');
 
@@ -24,18 +25,29 @@ class ErrorResponseUtils {
   static String clientSafeErrorMessage(dynamic e, {String? fallback}) {
     if (e == null) return fallback ?? defaultClientMessage;
     if (e is ValidationException) return e.message;
+    if (e is AppException) return e.message;
+    if (e is FormatException) {
+      return 'Некорректный JSON в теле запроса';
+    }
     return fallback ?? defaultClientMessage;
   }
 
-  /// Определяет код ошибки и HTTP-статус по исключению.
+  /// Определяет код ошибки строго по типу исключения.
   static ErrorCode errorCodeFromException(dynamic e) {
     if (e == null) return ErrorCode.internalError;
     if (e is ValidationException) return ErrorCode.validationError;
-    final msg = e.toString().toLowerCase();
-    if (msg.contains('unauthorized') || msg.contains('токен') || msg.contains('авториз')) return ErrorCode.unauthorized;
-    if (msg.contains('forbidden') || msg.contains('доступ')) return ErrorCode.forbidden;
-    if (msg.contains('not found') || msg.contains('не найден')) return ErrorCode.notFound;
-    if (msg.contains('conflict') || msg.contains('уже существует')) return ErrorCode.conflict;
+    if (e is NotFoundException) return ErrorCode.notFound;
+    if (e is ForbiddenException) return ErrorCode.forbidden;
+    if (e is UnauthorizedException) return ErrorCode.unauthorized;
+    if (e is ConflictException) return ErrorCode.conflict;
+    if (e is TooManyRequestsException) return ErrorCode.tooManyRequests;
+    if (e is InternalServerException) return ErrorCode.internalError;
+    if (e is BadRequestException ||
+        e is FormatException ||
+        e is ArgumentError) {
+      return ErrorCode.badRequest;
+    }
+    if (e is AppException) return ErrorCode.badRequest;
     return ErrorCode.internalError;
   }
 
@@ -52,6 +64,8 @@ class ErrorResponseUtils {
         return 404;
       case ErrorCode.conflict:
         return 409;
+      case ErrorCode.tooManyRequests:
+        return 429;
       case ErrorCode.internalError:
         return 500;
     }
@@ -67,7 +81,7 @@ class ErrorResponseUtils {
     };
   }
 
-  /// Единый ответ об ошибке: статус, стабильный код, безопасное сообщение.
+  /// Единый ответ об ошибке по исключению: статус, стабильный код, безопасное сообщение.
   static Response errorResponse(
     dynamic e, {
     String? requestId,
@@ -77,6 +91,21 @@ class ErrorResponseUtils {
     final code = forceCode ?? errorCodeFromException(e);
     final status = statusFromCode(code);
     final message = clientSafeErrorMessage(e);
+    final body = buildBody(code, message);
+    if (requestId != null) body['requestId'] = requestId;
+    final h = Map<String, String>.from(headers ?? {});
+    h['Content-Type'] = 'application/json';
+    return Response(status, body: jsonEncode(body), headers: h);
+  }
+
+  /// Ответ об ошибке по явному сообщению и коду (без исключения).
+  static Response errorResponseWithMessage(
+    String message, {
+    ErrorCode code = ErrorCode.badRequest,
+    String? requestId,
+    Map<String, String>? headers,
+  }) {
+    final status = statusFromCode(code);
     final body = buildBody(code, message);
     if (requestId != null) body['requestId'] = requestId;
     final h = Map<String, String>.from(headers ?? {});

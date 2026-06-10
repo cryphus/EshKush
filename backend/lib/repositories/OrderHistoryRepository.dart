@@ -1,32 +1,11 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/OrderHistory.dart';
 import '../model/enums/HistoryStatus.dart';
+import '../utils/AppException.dart';
 
-class OrderHistoryRepository {
-  final PostgreSQLConnection _connection;
-
-  OrderHistoryRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class OrderHistoryRepository extends BaseRepository {
+  OrderHistoryRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<OrderHistory?> findById(int id) async {
     try {
@@ -36,7 +15,6 @@ class OrderHistoryRepository {
       );
       return result == null ? null : OrderHistory.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска истории заказа по ID: $e');
       rethrow;
     }
   }
@@ -49,7 +27,6 @@ class OrderHistoryRepository {
       );
       return results.map((map) => OrderHistory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска истории заказов пользователя: $e');
       rethrow;
     }
   }
@@ -62,7 +39,6 @@ class OrderHistoryRepository {
       );
       return results.map((map) => OrderHistory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска истории заказов точки: $e');
       rethrow;
     }
   }
@@ -101,11 +77,10 @@ class OrderHistoryRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания истории заказа');
+        throw const InternalServerException();
       }
       return OrderHistory.fromJson(result);
     } catch (e) {
-      print('Ошибка создания истории заказа: $e');
       rethrow;
     }
   }
@@ -142,11 +117,11 @@ class OrderHistoryRepository {
         },
       );
       if (result == null) {
-        throw Exception('История заказа не найдена');
+        throw const NotFoundException(
+            'Р ВРЎРѓРЎвЂљР С•РЎР‚Р С‘РЎРЏ Р В·Р В°Р С”Р В°Р В·Р В° Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
       return OrderHistory.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления истории заказа: $e');
       rethrow;
     }
   }
@@ -159,12 +134,12 @@ class OrderHistoryRepository {
       );
       return results.map((map) => OrderHistory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения истории заказов по статусу: $e');
       rethrow;
     }
   }
 
-  Future<List<OrderHistory>> getByDateRange(DateTime startDate, DateTime endDate) async {
+  Future<List<OrderHistory>> getByDateRange(
+      DateTime startDate, DateTime endDate) async {
     try {
       final results = await query(
         '''
@@ -178,8 +153,7 @@ class OrderHistoryRepository {
       );
       return results.map((map) => OrderHistory.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения истории заказов по диапазону дат: $e');
       rethrow;
     }
   }
-} 
+}

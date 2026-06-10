@@ -1,31 +1,18 @@
-import 'package:postgres/postgres.dart' as pg;
+import 'package:postgres/postgres.dart' hide Notification;
+import 'BaseRepository.dart';
 import '../model/entities/Notification.dart';
 import '../model/enums/NotificationType.dart';
+import '../utils/AppException.dart';
 
-class NotificationRepository {
-  final pg.PostgreSQLConnection _connection;
+class NotificationRepository extends BaseRepository {
+  NotificationRepository(PostgreSQLConnection connection) : super(connection);
 
-  NotificationRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
+  Future<Notification?> findById(int notificationId) async {
+    final result = await queryOne(
+      'SELECT * FROM notifications WHERE id = @id',
+      params: {'id': notificationId},
+    );
+    return result == null ? null : Notification.fromJson(result);
   }
 
   Future<Notification> create(Notification notification) async {
@@ -55,12 +42,11 @@ class NotificationRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания уведомления');
+        throw const InternalServerException();
       }
 
       return Notification.fromJson(result);
     } catch (e) {
-      print('Ошибка создания уведомления: $e');
       rethrow;
     }
   }
@@ -73,7 +59,6 @@ class NotificationRepository {
       );
       return results.map((map) => Notification.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска уведомлений по ID пользователя: $e');
       rethrow;
     }
   }
@@ -86,9 +71,27 @@ class NotificationRepository {
       );
       return results.map((map) => Notification.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска уведомлений по типу: $e');
       rethrow;
     }
+  }
+
+  Future<List<Notification>> findByUserIdAndType(
+    int userId,
+    NotificationType type,
+  ) async {
+    final results = await query(
+      '''
+      SELECT *
+      FROM notifications
+      WHERE user_id = @userId AND type = @type::notification_type
+      ORDER BY created_at DESC
+      ''',
+      params: {
+        'userId': userId,
+        'type': type.toString().split('.').last,
+      },
+    );
+    return results.map((map) => Notification.fromJson(map)).toList();
   }
 
   Future<List<Notification>> findUnread(int userId) async {
@@ -99,9 +102,27 @@ class NotificationRepository {
       );
       return results.map((map) => Notification.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска непрочитанных уведомлений: $e');
       rethrow;
     }
+  }
+
+  Future<bool> existsByIdAndUserId({
+    required int notificationId,
+    required int userId,
+  }) async {
+    final result = await queryOne(
+      '''
+      SELECT 1
+      FROM notifications
+      WHERE id = @notificationId AND user_id = @userId
+      LIMIT 1
+      ''',
+      params: {
+        'notificationId': notificationId,
+        'userId': userId,
+      },
+    );
+    return result != null;
   }
 
   Future<List<Notification>> findRecent({int limit = 100}) async {
@@ -112,7 +133,6 @@ class NotificationRepository {
       );
       return results.map((map) => Notification.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения последних уведомлений: $e');
       rethrow;
     }
   }
@@ -129,7 +149,6 @@ class NotificationRepository {
         params: {'notificationId': notificationId},
       );
     } catch (e) {
-      print('Ошибка отметки уведомления как прочитанного: $e');
       rethrow;
     }
   }
@@ -145,8 +164,7 @@ class NotificationRepository {
         params: {'notificationId': notificationId},
       );
     } catch (e) {
-      print('Ошибка отметки уведомления как отправленного: $e');
       rethrow;
     }
   }
-} 
+}

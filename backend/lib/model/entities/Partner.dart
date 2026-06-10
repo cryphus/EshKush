@@ -1,13 +1,12 @@
-import '../../utils/SafeLoggingUtils.dart';
 
 class Partner {
   final int id;
   final int userId;
   final String name;
-  final int contactPerson;
-  final String contactEmail;
-  final String contactPhone;
-  final String contactDocument;
+  final int? contactPerson;
+  final String? contactEmail;
+  final String? contactPhone;
+  final String? contactDocument;
   final double maxDiscount;
   final DateTime createdAt;
 
@@ -15,10 +14,10 @@ class Partner {
     required this.id,
     required this.userId,
     required this.name,
-    required this.contactPerson,
-    required this.contactEmail,
-    required this.contactPhone,
-    required this.contactDocument,
+    this.contactPerson,
+    this.contactEmail,
+    this.contactPhone,
+    this.contactDocument,
     this.maxDiscount = 0.0,
     required this.createdAt,
   }) {
@@ -35,19 +34,15 @@ class Partner {
   }
 
   factory Partner.fromJson(Map<String, dynamic> json) {
-    print('Преобразование JSON в Partner:');
-    final safeJson = SafeLoggingUtils.sanitizeData(json);
-    print('JSON данные: $safeJson');
-    
     try {
       final partner = Partner(
         id: json['id'] as int,
         userId: json['user_id'] as int,
         name: json['name'] as String,
-        contactPerson: json['contact_person'] as int,
-        contactEmail: json['contact_email'] as String,
-        contactPhone: json['contact_phone'] as String,
-        contactDocument: json['contact_document'] as String,
+        contactPerson: json['contact_person'] as int?,
+        contactEmail: json['contact_email'] as String?,
+        contactPhone: json['contact_phone'] as String?,
+        contactDocument: json['contact_document'] as String?,
         maxDiscount: (json['max_discount'] is String) 
             ? double.parse(json['max_discount'] as String)
             : (json['max_discount'] as num).toDouble(),
@@ -57,11 +52,8 @@ class Partner {
                 : DateTime.parse(json['created_at'] as String))
             : DateTime.now(),
       );
-      print('Partner успешно создан');
       return partner;
-    } catch (e, stackTrace) {
-      print('Ошибка при создании Partner: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
       rethrow;
     }
   }
@@ -71,10 +63,10 @@ class Partner {
       'id': id,
       'user_id': userId,
       'name': name,
-      'contact_person': contactPerson,
-      'contact_email': contactEmail,
-      'contact_phone': contactPhone,
-      'contact_document': contactDocument,
+      if (contactPerson != null) 'contact_person': contactPerson,
+      if (contactEmail != null) 'contact_email': contactEmail,
+      if (contactPhone != null) 'contact_phone': contactPhone,
+      if (contactDocument != null) 'contact_document': contactDocument,
       'max_discount': maxDiscount,
       'created_at': createdAt.toIso8601String(),
     };

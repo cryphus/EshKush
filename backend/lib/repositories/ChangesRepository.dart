@@ -1,33 +1,12 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/Changes.dart';
 import '../model/enums/EntityType.dart';
 import '../model/enums/ChangeType.dart';
+import '../utils/AppException.dart';
 
-class ChangesRepository {
-  final PostgreSQLConnection _connection;
-
-  ChangesRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class ChangesRepository extends BaseRepository {
+  ChangesRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<Changes> create(Changes change) async {
     try {
@@ -62,17 +41,17 @@ class ChangesRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания записи об изменении');
+        throw const InternalServerException();
       }
 
       return Changes.fromJson(result);
     } catch (e) {
-      print('Ошибка создания записи об изменении: $e');
       rethrow;
     }
   }
 
-  Future<List<Changes>> findByEntity(EntityType entityType, int entityId) async {
+  Future<List<Changes>> findByEntity(
+      EntityType entityType, int entityId) async {
     try {
       final results = await query(
         '''
@@ -88,7 +67,6 @@ class ChangesRepository {
       );
       return results.map((map) => Changes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска изменений по сущности: $e');
       rethrow;
     }
   }
@@ -115,7 +93,6 @@ class ChangesRepository {
       );
       return results.map((map) => Changes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска изменений по пользователю: $e');
       rethrow;
     }
   }
@@ -128,7 +105,6 @@ class ChangesRepository {
       );
       return results.map((map) => Changes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска изменений по типу: $e');
       rethrow;
     }
   }
@@ -141,12 +117,12 @@ class ChangesRepository {
       );
       return results.map((map) => Changes.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения последних изменений: $e');
       rethrow;
     }
   }
 
-  Future<void> revertChange(int changeId, int revertedBy, {String? comment}) async {
+  Future<void> revertChange(int changeId, int revertedBy,
+      {String? comment}) async {
     try {
       await query(
         '''
@@ -164,8 +140,7 @@ class ChangesRepository {
         },
       );
     } catch (e) {
-      print('Ошибка отмены изменения: $e');
       rethrow;
     }
   }
-} 
+}

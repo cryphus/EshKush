@@ -7,7 +7,20 @@ class ProfileService {
   ProfileService(this._repository);
 
   Future<Profile?> getProfile(int userId) async {
-    return await _repository.findByUserId(userId);
+    final existing = await _repository.findByUserId(userId);
+    if (existing != null) return existing;
+    final now = DateTime.now();
+    return await _repository.create(Profile(
+      id: 0,
+      userId: userId,
+      firstName: '',
+      lastName: '',
+      sumCO2: 0,
+      savedMoney: 0.0,
+      countBuy: 0,
+      createdAt: now,
+      updatedAt: now,
+    ));
   }
 
   Future<Profile?> getProfileById(int id) async {

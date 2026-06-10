@@ -1,16 +1,21 @@
 import '../repositories/UserRepository.dart';
 import '../model/entities/User.dart';
 import '../model/enums/UserRole.dart';
+import '../utils/AppException.dart';
 import '../utils/AuthUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
 import '../utils/ValidationUtils.dart';
 import 'CacheService.dart';
+import '../repositories/UserSessionRepository.dart';
 
 class UserService {
   final UserRepository _userRepository;
   final CacheService _cacheService;
+  final UserSessionRepository? _sessionRepository;
 
-  UserService(this._userRepository, this._cacheService);
+  UserService(this._userRepository, this._cacheService,
+      {UserSessionRepository? sessionRepository})
+      : _sessionRepository = sessionRepository;
 
   Future<User> getUserById(int id) async {
     try {
@@ -27,17 +32,16 @@ class UserService {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Пользователь не найден');
+        throw NotFoundException('Пользователь не найден');
       }
-      
+
       final user = User.fromJson(result);
-      
+
       // Сохраняем в кеш
       await _cacheService.set(cacheKey, user, ttl: CacheTTL.user);
-      
+
       return user;
     } catch (e) {
-      print('Ошибка получения пользователя: $e');
       rethrow;
     }
   }
@@ -45,68 +49,93 @@ class UserService {
   Future<List<User>> getAllUsers({UserRole? role}) async {
     try {
       // Определяем ключ кеша
-      final cacheKey = role != null 
+      final cacheKey = role != null
           ? CacheKeys.usersByRole(role.name.toLowerCase())
           : CacheKeys.allUsers();
-      
+
       // Пытаемся получить из кеша
       final cachedData = await _cacheService.get<List>(cacheKey);
       if (cachedData != null) {
         // Конвертируем JSON обратно в List<User>
-        return cachedData.map((json) => User.fromJson(json as Map<String, dynamic>)).toList();
+        return cachedData
+            .map((json) => User.fromJson(json as Map<String, dynamic>))
+            .toList();
       }
 
       // Если нет в кеше, получаем из БД
-      final query = role != null 
+      final query = role != null
           ? 'SELECT * FROM users WHERE role = @role::user_role'
           : 'SELECT * FROM users';
-      final Map<String, dynamic> params = role != null 
-          ? {'role': role.name.toLowerCase()} 
-          : {};
-      
+      final Map<String, dynamic> params =
+          role != null ? {'role': role.name.toLowerCase()} : {};
+
       final results = await _userRepository.query(query, params: params);
       final users = results.map((map) => User.fromJson(map)).toList();
-      
+
       // Сохраняем в кеш
       await _cacheService.set(cacheKey, users, ttl: CacheTTL.user);
-      
+
       return users;
     } catch (e) {
-      print('Ошибка получения списка пользователей: $e');
       rethrow;
     }
   }
 
   Future<User> updateUser(int id, Map<String, dynamic> data) async {
     try {
-      print('Обновление пользователя с ID: $id');
       SafeLoggingUtils.logData('Данные для обновления', data);
-      
+
       // Валидация данных обновления
       final validationErrors = UserValidationUtils.validateUserUpdateData(data);
       if (validationErrors.isNotEmpty) {
         final errorMessages = validationErrors.values.join(', ');
-        throw Exception('Ошибки валидации: $errorMessages');
-      }
-      
-      if (data['password'] != null) {
-        data['password'] = AuthUtils.hashPassword(data['password']);
+        throw ValidationException('Ошибки валидации: $errorMessages');
       }
 
-      print('Вызов метода update в UserRepository');
+      if (data.containsKey('password')) {
+        final newPassword = data['password'] as String;
+        final oldPassword = data.remove('old_password') as String?;
+        if (oldPassword == null || oldPassword.isEmpty) {
+          throw ValidationException(
+              'Для смены пароля необходим текущий пароль (old_password)');
+        }
+        final currentUser = await _userRepository.findById(id);
+        if (currentUser == null)
+          throw NotFoundException('Пользователь не найден');
+        if (currentUser.passwordHash == null ||
+            !AuthUtils.verifyPassword(oldPassword, currentUser.passwordHash!)) {
+          throw ValidationException('Неверный текущий пароль');
+        }
+        data['password'] = AuthUtils.hashPassword(newPassword);
+      } else {
+        data.remove('old_password');
+      }
+
+      if (data['username'] != null) {
+        final existing =
+            await _userRepository.findByUsername(data['username'] as String);
+        if (existing != null && existing.id != id) {
+          throw ValidationException('Имя пользователя уже занято');
+        }
+      }
+      if (data['email'] != null) {
+        final existing =
+            await _userRepository.findByEmail(data['email'] as String);
+        if (existing != null && existing.id != id) {
+          throw ValidationException('Email уже используется');
+        }
+      }
+
       final result = await _userRepository.update(id, data);
-      print('Результат обновления: $result');
-
-      if (result == null) {
-        throw Exception('Пользователь не найден');
+      if (data.containsKey('password')) {
+        await _sessionRepository?.terminateAllUserSessions(id);
       }
-      
+
       // Инвалидируем кеш
       await _invalidateUserCache(id);
-      
+
       return result;
     } catch (e) {
-      print('Ошибка обновления пользователя: $e');
       rethrow;
     }
   }
@@ -118,13 +147,12 @@ class UserService {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Пользователь не найден');
+        throw NotFoundException('Пользователь не найден');
       }
-      
+
       // Инвалидируем кеш
       await _invalidateUserCache(id);
     } catch (e) {
-      print('Ошибка удаления пользователя: $e');
       rethrow;
     }
   }
@@ -132,7 +160,7 @@ class UserService {
   Future<void> updateBalance(int userId, int amount) async {
     try {
       if (amount.abs() > 1000000) {
-        throw Exception('Слишком большая сумма');
+        throw const BadRequestException('Слишком большая сумма');
       }
       final result = await _userRepository.queryOne(
         '''
@@ -147,10 +175,10 @@ class UserService {
         },
       );
       if (result == null) {
-        throw Exception('Пользователь не найден');
+        throw NotFoundException('Пользователь не найден');
       }
+      await _invalidateUserCache(userId);
     } catch (e) {
-      print('Ошибка обновления баланса: $e');
       rethrow;
     }
   }
@@ -158,7 +186,7 @@ class UserService {
   Future<void> addToFavorites(int userId, int pointId) async {
     try {
       if (pointId <= 0) {
-        throw Exception('Некорректный идентификатор точки');
+        throw const BadRequestException('Некорректный идентификатор точки');
       }
       await _userRepository.queryOne(
         '''
@@ -171,8 +199,8 @@ class UserService {
           'pointId': pointId,
         },
       );
+      await _invalidateUserCache(userId);
     } catch (e) {
-      print('Ошибка добавления в избранное: $e');
       rethrow;
     }
   }
@@ -180,7 +208,7 @@ class UserService {
   Future<void> removeFromFavorites(int userId, int pointId) async {
     try {
       if (pointId <= 0) {
-        throw Exception('Некорректный идентификатор точки');
+        throw const BadRequestException('Некорректный идентификатор точки');
       }
       await _userRepository.queryOne(
         '''
@@ -193,30 +221,9 @@ class UserService {
           'pointId': pointId,
         },
       );
+      await _invalidateUserCache(userId);
     } catch (e) {
-      print('Ошибка удаления из избранного: $e');
       rethrow;
-    }
-  }
-
-  void _validateUserData(Map<String, dynamic> data) {
-    if (data['username'] != null && (data['username'] as String).isEmpty) {
-      throw Exception('Имя пользователя не может быть пустым');
-    }
-    if (data['email'] != null && (data['email'] as String).isEmpty) {
-      throw Exception('Email не может быть пустым');
-    }
-    if (data['number'] != null && (data['number'] as String).isEmpty) {
-      throw Exception('Номер телефона не может быть пустым');
-    }
-    if (data['role'] != null) {
-      try {
-        UserRole.values.firstWhere(
-          (role) => role.name.toLowerCase() == (data['role'] as String).toLowerCase(),
-        );
-      } catch (e) {
-        throw Exception('Некорректная роль пользователя');
-      }
     }
   }
 
@@ -225,12 +232,11 @@ class UserService {
     try {
       // Удаляем конкретного пользователя
       await _cacheService.delete(CacheKeys.user(userId));
-      
+
       // Удаляем списки пользователей (они могут измениться)
       await _cacheService.delete(CacheKeys.allUsers());
       await _cacheService.deleteByPattern('users:role:*');
     } catch (e) {
-      print('Ошибка инвалидации кеша пользователя: $e');
       // Не пробрасываем ошибку, так как это не критично
     }
   }

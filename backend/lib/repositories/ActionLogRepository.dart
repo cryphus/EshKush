@@ -1,33 +1,12 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/ActionLog.dart';
 import '../model/enums/ActionType.dart';
 import '../model/enums/EntityType.dart';
+import '../utils/AppException.dart';
 
-class ActionLogRepository {
-  final PostgreSQLConnection _connection;
-
-  ActionLogRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class ActionLogRepository extends BaseRepository {
+  ActionLogRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<ActionLog> create(ActionLog log) async {
     try {
@@ -62,12 +41,11 @@ class ActionLogRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания лога действия');
+        throw const InternalServerException();
       }
 
       return ActionLog.fromJson(result);
     } catch (e) {
-      print('Ошибка создания лога действия: $e');
       rethrow;
     }
   }
@@ -80,12 +58,12 @@ class ActionLogRepository {
       );
       return results.map((map) => ActionLog.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по ID пользователя: $e');
       rethrow;
     }
   }
 
-  Future<List<ActionLog>> findByEntity(EntityType entityType, int entityId) async {
+  Future<List<ActionLog>> findByEntity(
+      EntityType entityType, int entityId) async {
     try {
       final results = await query(
         '''
@@ -101,7 +79,6 @@ class ActionLogRepository {
       );
       return results.map((map) => ActionLog.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по сущности: $e');
       rethrow;
     }
   }
@@ -114,7 +91,6 @@ class ActionLogRepository {
       );
       return results.map((map) => ActionLog.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска логов по типу действия: $e');
       rethrow;
     }
   }
@@ -127,8 +103,7 @@ class ActionLogRepository {
       );
       return results.map((map) => ActionLog.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения последних логов: $e');
       rethrow;
     }
   }
-} 
+}

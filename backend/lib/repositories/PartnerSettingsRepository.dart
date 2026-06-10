@@ -1,31 +1,11 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/PartnerSettings.dart';
+import '../utils/AppException.dart';
 
-class PartnerSettingsRepository {
-  final PostgreSQLConnection _connection;
-
-  PartnerSettingsRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class PartnerSettingsRepository extends BaseRepository {
+  PartnerSettingsRepository(PostgreSQLConnection connection)
+      : super(connection);
 
   Future<PartnerSettings?> findById(int id) async {
     try {
@@ -44,7 +24,6 @@ class PartnerSettingsRepository {
       );
       return result == null ? null : PartnerSettings.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска настроек партнера: $e');
       rethrow;
     }
   }
@@ -66,7 +45,6 @@ class PartnerSettingsRepository {
       );
       return result == null ? null : PartnerSettings.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска настроек по ID партнера: $e');
       rethrow;
     }
   }
@@ -93,12 +71,11 @@ class PartnerSettingsRepository {
       );
 
       if (result == null) {
-        throw Exception('Ошибка создания настроек партнера');
+        throw const InternalServerException();
       }
 
       return PartnerSettings.fromJson(result);
     } catch (e) {
-      print('Ошибка создания настроек партнера: $e');
       rethrow;
     }
   }
@@ -130,11 +107,11 @@ class PartnerSettingsRepository {
       );
 
       if (result == null) {
-        throw Exception('Настройки партнера не найдены');
+        throw const NotFoundException(
+            'Р СњР В°РЎРѓРЎвЂљРЎР‚Р С•Р в„–Р С”Р С‘ Р С—Р В°РЎР‚РЎвЂљР Р…Р ВµРЎР‚Р В° Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…РЎвЂ№');
       }
       return PartnerSettings.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления настроек партнера: $e');
       rethrow;
     }
   }
@@ -146,18 +123,17 @@ class PartnerSettingsRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Настройки партнера не найдены');
+        throw const NotFoundException(
+            'Р СњР В°РЎРѓРЎвЂљРЎР‚Р С•Р в„–Р С”Р С‘ Р С—Р В°РЎР‚РЎвЂљР Р…Р ВµРЎР‚Р В° Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…РЎвЂ№');
       }
     } catch (e) {
-      print('Ошибка удаления настроек партнера: $e');
       rethrow;
     }
   }
 
   Future<List<PartnerSettings>> findAll() async {
     try {
-      final results = await query(
-        '''
+      final results = await query('''
         SELECT 
           id,
           partner_id,
@@ -165,12 +141,10 @@ class PartnerSettingsRepository {
           to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
           to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
         FROM partner_settings
-        '''
-      );
+        ''');
       return results.map((map) => PartnerSettings.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения списка настроек: $e');
       rethrow;
     }
   }
-} 
+}

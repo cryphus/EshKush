@@ -1,31 +1,10 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/UserSessions.dart';
+import '../utils/AppException.dart';
 
-class UserSessionRepository {
-  final PostgreSQLConnection _connection;
-
-  UserSessionRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class UserSessionRepository extends BaseRepository {
+  UserSessionRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<UserSessions?> findById(int id) async {
     try {
@@ -35,7 +14,6 @@ class UserSessionRepository {
       );
       return result == null ? null : UserSessions.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска сессии по ID: $e');
       rethrow;
     }
   }
@@ -48,7 +26,6 @@ class UserSessionRepository {
       );
       return results.map((map) => UserSessions.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска сессий пользователя: $e');
       rethrow;
     }
   }
@@ -69,21 +46,20 @@ class UserSessionRepository {
           'userId': session.userId,
           'createdAt': session.createdAt,
           'expiresAt': session.expiresAt,
-          'deviceInfo': session.userAgent.isNotEmpty ? session.userAgent : (session.deviceId ?? ''),
+          'deviceInfo': session.userAgent.isNotEmpty
+              ? session.userAgent
+              : (session.deviceId ?? ''),
           'ipAddress': session.ipAddress,
           'status': session.status.toString().split('.').last,
-          'token': (session.token != null && session.token!.length > 255)
-              ? session.token!.substring(0, 255)
-              : session.token,
+          'token': session.token,
           'refreshJtiHash': session.refreshJtiHash,
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания сессии');
+        throw const InternalServerException();
       }
       return UserSessions.fromJson(result);
     } catch (e) {
-      print('Ошибка создания сессии: $e');
       rethrow;
     }
   }
@@ -112,11 +88,11 @@ class UserSessionRepository {
         },
       );
       if (result == null) {
-        throw Exception('Сессия не найдена');
+        throw const NotFoundException(
+            'Р РЋР ВµРЎРѓРЎРѓР С‘РЎРЏ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
       return UserSessions.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления сессии: $e');
       rethrow;
     }
   }
@@ -128,15 +104,15 @@ class UserSessionRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Сессия не найдена');
+        throw const NotFoundException(
+            'Р РЋР ВµРЎРѓРЎРѓР С‘РЎРЏ Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
     } catch (e) {
-      print('Ошибка удаления сессии: $e');
       rethrow;
     }
   }
 
-  /// Проверка, что jti в blacklist (отозван при logout/terminate).
+  /// Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚Р С”Р В°, РЎвЂЎРЎвЂљР С• jti Р Р† blacklist (Р С•РЎвЂљР С•Р В·Р Р†Р В°Р Р… Р С—РЎР‚Р С‘ logout/terminate).
   Future<bool> isBlacklisted(String jtiHash) async {
     try {
       final result = await queryOne(
@@ -149,7 +125,6 @@ class UserSessionRepository {
       );
       return result != null;
     } catch (e) {
-      print('Ошибка проверки blacklist: $e');
       return true;
     }
   }
@@ -165,12 +140,30 @@ class UserSessionRepository {
         ''',
         params: {'jtiHash': jtiHash, 'expiresAt': expiresAt},
       );
-    } catch (e) {
-      print('Ошибка добавления в blacklist: $e');
+    } catch (_) {
+      // Best-effort blacklist update: auth flow should not fail on cache/DB hiccups.
     }
   }
 
-  Future<UserSessions?> findActiveByRefreshJtiHash(String refreshJtiHash) async {
+  Future<void> addManyToBlacklist(
+      List<String> jtiHashes, DateTime expiresAt) async {
+    try {
+      await queryOne(
+        '''
+        INSERT INTO token_blacklist (jti_hash, expires_at)
+        SELECT UNNEST(@hashes::text[]), @expiresAt
+        ON CONFLICT (jti_hash) DO UPDATE SET expires_at = EXCLUDED.expires_at
+        RETURNING jti_hash
+        ''',
+        params: {'hashes': jtiHashes, 'expiresAt': expiresAt},
+      );
+    } catch (_) {
+      // Best-effort blacklist bulk update.
+    }
+  }
+
+  Future<UserSessions?> findActiveByRefreshJtiHash(
+      String refreshJtiHash) async {
     try {
       if (await isBlacklisted(refreshJtiHash)) return null;
       final result = await queryOne(
@@ -187,7 +180,6 @@ class UserSessionRepository {
       );
       return result == null ? null : UserSessions.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска сессии по refresh_jti_hash: $e');
       rethrow;
     }
   }
@@ -206,7 +198,6 @@ class UserSessionRepository {
       final blacklistExpires = DateTime.now().add(const Duration(days: 8));
       await addToBlacklist(refreshJtiHash, blacklistExpires);
     } catch (e) {
-      print('Ошибка ревокации сессии: $e');
       rethrow;
     }
   }
@@ -218,7 +209,6 @@ class UserSessionRepository {
       );
       return results.map((map) => UserSessions.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка получения активных сессий: $e');
       rethrow;
     }
   }
@@ -233,9 +223,13 @@ class UserSessionRepository {
         params: {'userId': userId},
       );
       final blacklistExpires = DateTime.now().add(const Duration(days: 8));
-      for (final row in sessions) {
-        final hash = row['refresh_jti_hash']?.toString();
-        if (hash != null && hash.isNotEmpty) await addToBlacklist(hash, blacklistExpires);
+      final hashes = sessions
+          .map((r) => r['refresh_jti_hash']?.toString())
+          .where((h) => h != null && h.isNotEmpty)
+          .cast<String>()
+          .toList();
+      if (hashes.isNotEmpty) {
+        await addManyToBlacklist(hashes, blacklistExpires);
       }
       await queryOne(
         '''
@@ -247,7 +241,6 @@ class UserSessionRepository {
         params: {'userId': userId},
       );
     } catch (e) {
-      print('Ошибка завершения всех сессий пользователя: $e');
       rethrow;
     }
   }
@@ -261,31 +254,30 @@ class UserSessionRepository {
         ''',
         params: {'id': sessionId},
       );
-    } catch (e) {
-      print('Ошибка обновления last_active: $e');
+    } catch (_) {
+      // Non-critical heartbeat update.
     }
   }
 
-  /// Удаление истёкших сессий (TTL/auto-expire cleanup).
+  /// Р Р€Р Т‘Р В°Р В»Р ВµР Р…Р С‘Р Вµ Р С‘РЎРѓРЎвЂљРЎвЂР С”РЎв‚¬Р С‘РЎвЂ¦ РЎРѓР ВµРЎРѓРЎРѓР С‘Р в„– (TTL/auto-expire cleanup).
   Future<int> cleanupExpiredSessions() async {
     try {
-      return await _connection.execute(
+      return await connection.execute(
         'DELETE FROM user_sessions WHERE expires_at < NOW()',
       );
     } catch (e) {
-      print('Ошибка очистки истёкших сессий: $e');
       return 0;
     }
   }
 
-  /// Удаление записей из blacklist с истёкшим expires_at.
+  /// Р Р€Р Т‘Р В°Р В»Р ВµР Р…Р С‘Р Вµ Р В·Р В°Р С—Р С‘РЎРѓР ВµР в„– Р С‘Р В· blacklist РЎРѓ Р С‘РЎРѓРЎвЂљРЎвЂР С”РЎв‚¬Р С‘Р С expires_at.
   Future<void> cleanupExpiredBlacklist() async {
     try {
-      await _connection.execute(
+      await connection.execute(
         'DELETE FROM token_blacklist WHERE expires_at < NOW()',
       );
-    } catch (e) {
-      print('Ошибка очистки blacklist: $e');
+    } catch (_) {
+      // Cleanup is best-effort.
     }
   }
-} 
+}

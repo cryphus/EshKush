@@ -1,31 +1,11 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/PartnerStatistics.dart';
+import '../utils/AppException.dart';
 
-class PartnerStatisticsRepository {
-  final PostgreSQLConnection _connection;
-
-  PartnerStatisticsRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class PartnerStatisticsRepository extends BaseRepository {
+  PartnerStatisticsRepository(PostgreSQLConnection connection)
+      : super(connection);
 
   Future<PartnerStatistics?> findById(int id) async {
     try {
@@ -35,7 +15,6 @@ class PartnerStatisticsRepository {
       );
       return result == null ? null : PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска статистики по ID: $e');
       rethrow;
     }
   }
@@ -48,7 +27,6 @@ class PartnerStatisticsRepository {
       );
       return result == null ? null : PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска статистики по ID партнера: $e');
       rethrow;
     }
   }
@@ -61,7 +39,6 @@ class PartnerStatisticsRepository {
       );
       return result == null ? null : PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска статистики по ID точки: $e');
       rethrow;
     }
   }
@@ -92,11 +69,10 @@ class PartnerStatisticsRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания статистики');
+        throw const InternalServerException();
       }
       return PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка создания статистики: $e');
       rethrow;
     }
   }
@@ -126,11 +102,11 @@ class PartnerStatisticsRepository {
         },
       );
       if (result == null) {
-        throw Exception('Статистика не найдена');
+        throw const NotFoundException(
+            'Р РЋРЎвЂљР В°РЎвЂљР С‘РЎРѓРЎвЂљР С‘Р С”Р В° Р Р…Р Вµ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°');
       }
       return PartnerStatistics.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления статистики: $e');
       rethrow;
     }
   }
@@ -146,7 +122,6 @@ class PartnerStatisticsRepository {
         params: {'id': id},
       );
     } catch (e) {
-      print('Ошибка деактивации статистики: $e');
       rethrow;
     }
   }
@@ -162,8 +137,7 @@ class PartnerStatisticsRepository {
         params: {'id': id},
       );
     } catch (e) {
-      print('Ошибка активации статистики: $e');
       rethrow;
     }
   }
-} 
+}

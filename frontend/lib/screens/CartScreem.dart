@@ -221,6 +221,9 @@ class _CheckoutButton extends ConsumerWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.darkGreen,
             padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
           onPressed: isLoading ? null : () => _checkout(context, ref),
           child: isLoading

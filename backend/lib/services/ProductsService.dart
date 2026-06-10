@@ -1,6 +1,7 @@
 import '../model/entities/Product.dart';
 import '../model/entities/ProductCategory.dart';
 import '../repositories/ProductsRepository.dart';
+import '../utils/AppException.dart';
 import 'CacheService.dart';
 
 class ProductsService {
@@ -20,60 +21,58 @@ class ProductsService {
 
       // Если нет в кеше, получаем из БД
       final product = await _productsRepository.findById(id);
-      if (product == null) throw Exception('Продукт не найден');
-      
+      if (product == null) throw const NotFoundException('Продукт не найден');
+
       // Сохраняем в кеш
       await _cacheService.set(cacheKey, product, ttl: CacheTTL.product);
-      
+
       return product;
     } catch (e) {
-      print('Ошибка получения продукта: $e');
       rethrow;
     }
   }
 
-  Future<List<Product>> getAllProducts() async {
+  Future<List<Product>> getAllProducts({int limit = 20, int offset = 0}) async {
     try {
-      // Пытаемся получить из кеша
-      final cacheKey = CacheKeys.allProducts();
-      final cachedData = await _cacheService.get<List>(cacheKey);
-      if (cachedData != null) {
-        // Конвертируем JSON обратно в List<Product>
-        return cachedData.map((json) => Product.fromJson(json as Map<String, dynamic>)).toList();
+      // Кеш только для первой страницы с дефолтными параметрами
+      if (limit == 20 && offset == 0) {
+        final cacheKey = CacheKeys.allProducts();
+        final cachedData = await _cacheService.get<List>(cacheKey);
+        if (cachedData != null) {
+          return cachedData
+              .map((json) => Product.fromJson(json as Map<String, dynamic>))
+              .toList();
+        }
+        final products =
+            await _productsRepository.findAll(limit: limit, offset: offset);
+        await _cacheService.set(cacheKey, products, ttl: CacheTTL.product);
+        return products;
       }
-
-      // Если нет в кеше, получаем из БД
-      final products = await _productsRepository.findAll();
-      
-      // Сохраняем в кеш
-      await _cacheService.set(cacheKey, products, ttl: CacheTTL.product);
-      
-      return products;
+      return await _productsRepository.findAll(limit: limit, offset: offset);
     } catch (e) {
-      print('Ошибка получения списка продуктов: $e');
       rethrow;
     }
   }
 
-  Future<List<Product>> getProductsByCategory(int categoryId) async {
+  Future<List<Product>> getProductsByCategory(int categoryId,
+      {int limit = 20, int offset = 0}) async {
     try {
-      // Пытаемся получить из кеша
-      final cacheKey = CacheKeys.productsByCategory(categoryId);
-      final cachedData = await _cacheService.get<List>(cacheKey);
-      if (cachedData != null) {
-        // Конвертируем JSON обратно в List<Product>
-        return cachedData.map((json) => Product.fromJson(json as Map<String, dynamic>)).toList();
+      if (limit == 20 && offset == 0) {
+        final cacheKey = CacheKeys.productsByCategory(categoryId);
+        final cachedData = await _cacheService.get<List>(cacheKey);
+        if (cachedData != null) {
+          return cachedData
+              .map((json) => Product.fromJson(json as Map<String, dynamic>))
+              .toList();
+        }
+        final products = await _productsRepository.findByCategory(categoryId,
+            limit: limit, offset: offset);
+        await _cacheService.set(cacheKey, products, ttl: CacheTTL.product);
+        return products;
       }
-
-      // Если нет в кеше, получаем из БД
-      final products = await _productsRepository.findByCategory(categoryId);
-      
-      // Сохраняем в кеш
-      await _cacheService.set(cacheKey, products, ttl: CacheTTL.product);
-      
-      return products;
+      return await _productsRepository.findByCategory(categoryId,
+          limit: limit, offset: offset);
     } catch (e) {
-      print('Ошибка получения продуктов по категории: $e');
       rethrow;
     }
   }
@@ -82,7 +81,6 @@ class ProductsService {
     try {
       return await _productsRepository.getCategoriesForProduct(productId);
     } catch (e) {
-      print('Ошибка получения категорий продукта: $e');
       rethrow;
     }
   }
@@ -91,13 +89,12 @@ class ProductsService {
     try {
       _validateProductData(data);
       final product = await _productsRepository.create(data);
-      
+
       // Инвалидируем кеш
       await _invalidateProductCache();
-      
+
       return product;
     } catch (e) {
-      print('Ошибка создания продукта: $e');
       rethrow;
     }
   }
@@ -106,8 +103,9 @@ class ProductsService {
     try {
       _validateProductData(data);
       final existingProduct = await _productsRepository.findById(id);
-      if (existingProduct == null) throw Exception('Продукт не найден');
-      
+      if (existingProduct == null)
+        throw const NotFoundException('Продукт не найден');
+
       final updatedProduct = Product(
         id: existingProduct.id,
         name: data['name'] ?? existingProduct.name,
@@ -122,15 +120,14 @@ class ProductsService {
         updatedAt: DateTime.now(),
         isActive: data['is_active'] ?? existingProduct.isActive,
       );
-      
+
       final result = await _productsRepository.update(updatedProduct);
-      
+
       // Инвалидируем кеш
       await _invalidateProductCache(id);
-      
+
       return result;
     } catch (e) {
-      print('Ошибка обновления продукта: $e');
       rethrow;
     }
   }
@@ -138,52 +135,57 @@ class ProductsService {
   Future<void> deleteProduct(int id) async {
     try {
       await _productsRepository.delete(id);
-      
+
       // Инвалидируем кеш
       await _invalidateProductCache(id);
     } catch (e) {
-      print('Ошибка удаления продукта: $e');
       rethrow;
     }
   }
 
-  Future<List<ProductCategory>> updateProductCategories(int productId, List<int> categoryIds) async {
+  Future<List<ProductCategory>> updateProductCategories(
+      int productId, List<int> categoryIds) async {
     try {
       // Проверяем существование продукта
       final product = await _productsRepository.findById(productId);
       if (product == null) {
-        throw Exception('Продукт не найден');
+        throw const NotFoundException('Продукт не найден');
       }
 
       // Проверяем существование всех категорий
       for (final categoryId in categoryIds) {
         final category = await _productsRepository.findCategoryById(categoryId);
         if (category == null) {
-          throw Exception('Категория с ID $categoryId не найдена');
+          throw NotFoundException('Категория с ID $categoryId не найдена');
         }
       }
 
       await _productsRepository.updateProductCategories(productId, categoryIds);
-      return await _productsRepository.getCategoriesForProduct(productId);
+      final categories =
+          await _productsRepository.getCategoriesForProduct(productId);
+      await _invalidateProductCache(productId);
+      return categories;
     } catch (e) {
-      print('Ошибка обновления категорий продукта: $e');
       rethrow;
     }
   }
 
-  Future<List<Product>> getProductsByPointId(int pointId) async {
-    return await _productsRepository.findByPointId(pointId);
+  Future<List<Product>> getProductsByPointId(int pointId,
+      {int limit = 20, int offset = 0}) async {
+    return await _productsRepository.findByPointId(pointId,
+        limit: limit, offset: offset);
   }
 
   void _validateProductData(Map<String, dynamic> data) {
     if (data['price'] != null && (data['price'] as num) < 0) {
-      throw Exception('Цена не может быть отрицательной');
+      throw const BadRequestException('Цена не может быть отрицательной');
     }
     if (data['weight'] != null && (data['weight'] as num) < 0) {
-      throw Exception('Вес не может быть отрицательным');
+      throw const BadRequestException('Вес не может быть отрицательным');
     }
     if (data['is_active'] != null && data['is_active'] is! bool) {
-      throw Exception('Поле is_active должно быть булевым значением');
+      throw const BadRequestException(
+          'Поле is_active должно быть булевым значением');
     }
   }
 
@@ -194,14 +196,13 @@ class ProductsService {
         // Удаляем конкретный продукт
         await _cacheService.delete(CacheKeys.product(productId));
       }
-      
+
       // Удаляем списки продуктов (они могут измениться)
       await _cacheService.delete(CacheKeys.allProducts());
       await _cacheService.deleteByPattern('products:category:*');
       await _cacheService.deleteByPattern('products:point:*');
       await _cacheService.deleteByPattern('products:partner:*');
     } catch (e) {
-      print('Ошибка инвалидации кеша продуктов: $e');
       // Не пробрасываем ошибку, так как это не критично
     }
   }

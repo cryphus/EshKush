@@ -1,6 +1,7 @@
 import '../repositories/OrderHistoryRepository.dart';
 import '../model/entities/OrderHistory.dart';
 import '../model/enums/HistoryStatus.dart';
+import '../utils/AppException.dart';
 
 class OrderHistoryService {
   final OrderHistoryRepository _orderHistoryRepository;
@@ -11,11 +12,10 @@ class OrderHistoryService {
     try {
       final orderHistory = await _orderHistoryRepository.findById(id);
       if (orderHistory == null) {
-        throw Exception('История заказа не найдена');
+        throw const NotFoundException('История заказа не найдена');
       }
       return orderHistory;
     } catch (e) {
-      print('Ошибка получения истории заказа: $e');
       rethrow;
     }
   }
@@ -24,7 +24,6 @@ class OrderHistoryService {
     try {
       return await _orderHistoryRepository.findByUserId(userId);
     } catch (e) {
-      print('Ошибка получения истории заказов пользователя: $e');
       rethrow;
     }
   }
@@ -33,7 +32,6 @@ class OrderHistoryService {
     try {
       return await _orderHistoryRepository.findByPointId(pointId);
     } catch (e) {
-      print('Ошибка получения истории заказов точки: $e');
       rethrow;
     }
   }
@@ -58,7 +56,6 @@ class OrderHistoryService {
       );
       return await _orderHistoryRepository.create(orderHistory);
     } catch (e) {
-      print('Ошибка создания истории заказа: $e');
       rethrow;
     }
   }
@@ -84,7 +81,6 @@ class OrderHistoryService {
       );
       return await _orderHistoryRepository.update(orderHistory);
     } catch (e) {
-      print('Ошибка завершения заказа: $e');
       rethrow;
     }
   }
@@ -95,7 +91,6 @@ class OrderHistoryService {
       orderHistory.cancelOrder(reason);
       return await _orderHistoryRepository.update(orderHistory);
     } catch (e) {
-      print('Ошибка отмены заказа: $e');
       rethrow;
     }
   }
@@ -104,17 +99,16 @@ class OrderHistoryService {
     try {
       return await _orderHistoryRepository.getByStatus(status);
     } catch (e) {
-      print('Ошибка получения заказов по статусу: $e');
       rethrow;
     }
   }
 
-  Future<List<OrderHistory>> getOrdersByDateRange(DateTime startDate, DateTime endDate) async {
+  Future<List<OrderHistory>> getOrdersByDateRange(
+      DateTime startDate, DateTime endDate) async {
     try {
       return await _orderHistoryRepository.getByDateRange(startDate, endDate);
     } catch (e) {
-      print('Ошибка получения заказов по диапазону дат: $e');
       rethrow;
     }
   }
-} 
+}

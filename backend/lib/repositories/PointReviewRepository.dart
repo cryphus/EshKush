@@ -1,33 +1,10 @@
 import 'package:postgres/postgres.dart';
+import 'BaseRepository.dart';
 import '../model/entities/PointReview.dart';
+import '../utils/AppException.dart';
 
-class PointReviewRepository {
-  final PostgreSQLConnection _connection;
-
-  PointReviewRepository(this._connection);
-
-  Future<Map<String, dynamic>?> queryOne(String query, {Map<String, dynamic>? params}) async {
-    try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      if (results.isEmpty) return null;
-      return results.first.values.first;
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> query(String query, {Map<String, dynamic>? params}) async {
-    try {
-      await _connection.execute('SET client_encoding TO \'UTF8\'');
-      final results = await _connection.mappedResultsQuery(query, substitutionValues: params);
-      return results.map((row) => row.values.first).toList();
-    } catch (e) {
-      print('Ошибка выполнения запроса: $e');
-      rethrow;
-    }
-  }
+class PointReviewRepository extends BaseRepository {
+  PointReviewRepository(PostgreSQLConnection connection) : super(connection);
 
   Future<PointReview?> findById(int id) async {
     try {
@@ -47,7 +24,6 @@ class PointReviewRepository {
       );
       return result == null ? null : PointReview.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска отзыва по ID: $e');
       rethrow;
     }
   }
@@ -70,7 +46,6 @@ class PointReviewRepository {
       );
       return results.map((map) => PointReview.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска отзывов по ID точки: $e');
       rethrow;
     }
   }
@@ -93,7 +68,6 @@ class PointReviewRepository {
       );
       return results.map((map) => PointReview.fromJson(map)).toList();
     } catch (e) {
-      print('Ошибка поиска отзывов по ID пользователя: $e');
       rethrow;
     }
   }
@@ -120,11 +94,10 @@ class PointReviewRepository {
         },
       );
       if (result == null) {
-        throw Exception('Ошибка создания отзыва');
+        throw const InternalServerException();
       }
       return PointReview.fromJson(result);
     } catch (e) {
-      print('Ошибка создания отзыва: $e');
       rethrow;
     }
   }
@@ -153,11 +126,10 @@ class PointReviewRepository {
         },
       );
       if (result == null) {
-        throw Exception('Отзыв не найден');
+        throw const NotFoundException();
       }
       return PointReview.fromJson(result);
     } catch (e) {
-      print('Ошибка обновления отзыва: $e');
       rethrow;
     }
   }
@@ -169,11 +141,10 @@ class PointReviewRepository {
         params: {'id': id},
       );
       if (result == null) {
-        throw Exception('Отзыв не найден');
+        throw const NotFoundException();
       }
     } catch (e) {
-      print('Ошибка удаления отзыва: $e');
       rethrow;
     }
   }
-} 
+}

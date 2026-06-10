@@ -41,6 +41,7 @@ app.*.map.json
 .env
 .env.*
 !.env.example
+!telegramAuth/.env.example
 config.local.*
 secrets.*
 
@@ -151,7 +152,6 @@ swagger/
 
 # Telegram bot
 telegramAuth/__pycache__/
-telegramAuth/.env
 telegramAuth/venv/
 telegramAuth/*.log
 

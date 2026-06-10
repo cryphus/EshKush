@@ -1,7 +1,4 @@
 FROM postgres:latest
-
-ENV POSTGRES_DB=flutter_auth
-ENV POSTGRES_USER=postgres
-ENV POSTGRES_PASSWORD=TQr132123
-
-COPY init.sql /docker-entrypoint-initdb.d/ 
+# Credentials are provided at runtime via environment variables or docker-compose env_file.
+# Do NOT set POSTGRES_PASSWORD here — it would be visible in image layers.
+COPY init.sql /docker-entrypoint-initdb.d/

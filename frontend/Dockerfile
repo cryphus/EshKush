@@ -1,6 +1,10 @@
 # Этап 1: Сборка
 FROM ghcr.io/cirruslabs/flutter:stable AS build-env
 
+ARG API_BASE_URL=http://localhost:3000
+ARG TELEGRAM_API_URL=http://localhost:5000/api
+ARG GOOGLE_CLIENT_ID=
+
 # Установка рабочей директории
 WORKDIR /app
 
@@ -14,7 +18,10 @@ COPY frontend/ .
 RUN flutter config --enable-web
 RUN flutter clean
 RUN flutter pub get
-RUN flutter build web --release
+RUN flutter build web --release \
+    --dart-define=API_BASE_URL=${API_BASE_URL} \
+    --dart-define=TELEGRAM_API_URL=${TELEGRAM_API_URL} \
+    --dart-define=GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 
 # Этап 2: Настройка Nginx
 FROM nginx:stable-alpine

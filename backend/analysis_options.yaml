@@ -1,1 +1,9 @@
-include: package:flutter_lints/flutter.yaml
+include: package:lints/recommended.yaml
+
+analyzer:
+  errors:
+    file_names: ignore
+    no_leading_underscores_for_local_identifiers: ignore
+    library_prefixes: ignore
+    curly_braces_in_flow_control_structures: ignore
+    prefer_is_not_operator: ignore

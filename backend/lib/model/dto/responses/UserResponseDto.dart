@@ -3,8 +3,8 @@
 class UserResponseDto {
   final int id;
   final String username;
-  final String email;
-  final String phoneNumber;
+  final String? email;
+  final String? phoneNumber;
   final String role;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -12,8 +12,8 @@ class UserResponseDto {
   UserResponseDto({
     required this.id,
     required this.username,
-    required this.email,
-    required this.phoneNumber,
+    this.email,
+    this.phoneNumber,
     required this.role,
     required this.createdAt,
     this.updatedAt,

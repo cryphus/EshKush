@@ -1,5 +1,4 @@
 import '../model/entities/Profile.dart';
-import '../utils/SafeLoggingUtils.dart';
 import 'BaseRepository.dart';
 
 class ProfileRepository extends BaseRepository {
@@ -23,19 +22,17 @@ class ProfileRepository extends BaseRepository {
           to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at
         FROM profiles
         WHERE id = @id
-        ''' ,
+        ''',
         params: {'id': id},
       );
       return result == null ? null : Profile.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска профиля по ID: $e');
       rethrow;
     }
   }
 
   Future<Profile?> findByUserId(int userId) async {
     try {
-      print('Поиск профиля для пользователя: $userId');
       final result = await queryOne(
         '''
         SELECT 
@@ -58,29 +55,17 @@ class ProfileRepository extends BaseRepository {
         params: {'userId': userId},
       );
       if (result == null) {
-        print('Профиль не найден');
         return null;
       }
-      
-      final safeResult = SafeLoggingUtils.sanitizeData(result);
-      print('Результат запроса профиля: $safeResult');
-      print('Создание Profile из результата...');
+
       return Profile.fromJson(result);
     } catch (e) {
-      print('Ошибка поиска профиля по ID пользователя: $e');
       rethrow;
     }
   }
 
   Future<Profile> create(Profile profile) async {
     try {
-      print('Создание профиля в репозитории:');
-      print('userId: ${profile.userId}');
-      print('firstName: ${profile.firstName}');
-      print('lastName: ${profile.lastName}');
-      print('avatarUrl: ${profile.avatarUrl}');
-      print('bio: ${profile.bio}');
-      
       if (profile.userId <= 0) {
         throw ArgumentError('Некорректный ID пользователя');
       }
@@ -107,7 +92,6 @@ class ProfileRepository extends BaseRepository {
       );
       return Profile.fromJson(result!);
     } catch (e) {
-      print('Ошибка создания профиля: $e');
       rethrow;
     }
   }
@@ -142,7 +126,6 @@ class ProfileRepository extends BaseRepository {
       );
       return Profile.fromJson(result!);
     } catch (e) {
-      print('Ошибка обновления профиля: $e');
       rethrow;
     }
   }
@@ -154,7 +137,6 @@ class ProfileRepository extends BaseRepository {
         params: {'userId': id},
       );
     } catch (e) {
-      print('Ошибка удаления профиля: $e');
       rethrow;
     }
   }

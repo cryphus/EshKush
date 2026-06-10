@@ -1,14 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../config/app_config.dart';
 
 class FrontendAuthService {
   final Dio _dio = Dio();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: '672295969525-4rih26k55qehk1h9jj35rki5l4o8t8an.apps.googleusercontent.com',
+    clientId: AppConfig.googleClientId,
     scopes: ['email', 'profile'],
   );
-  static const String _baseUrl = 'http://localhost:8080';
+  static const String _baseUrl = AppConfig.apiBaseUrl;
 
   Future<Map<String, dynamic>?> signInWithGoogle() async {
     try {

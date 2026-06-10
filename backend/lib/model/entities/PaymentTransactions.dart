@@ -77,8 +77,12 @@ class PaymentTransactions {
       orderId: json['order_id'] as int,
       providerTransactionId: json['provider_transaction_id'].toString(),
       confirmationUrl: json['confirmation_url'] as String?,
-      orderPrice: (json['order_price'] as num).toDouble(),
-      transactionDate: DateTime.parse(json['transaction_date'] as String),
+      orderPrice: json['order_price'] is String
+          ? double.parse(json['order_price'] as String)
+          : (json['order_price'] as num).toDouble(),
+      transactionDate: json['transaction_date'] is DateTime
+          ? json['transaction_date'] as DateTime
+          : DateTime.parse(json['transaction_date'] as String),
       paymentMethod: PaymentMethod.values.firstWhere(
         (e) => e.toString() == 'PaymentMethod.${json['payment_method']}',
         orElse: () => PaymentMethod.other,
@@ -88,7 +92,9 @@ class PaymentTransactions {
         orElse: () => PaymentTransactionStatus.pending,
       ),
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+          ? (json['updated_at'] is DateTime
+              ? json['updated_at'] as DateTime
+              : DateTime.parse(json['updated_at'] as String))
           : null,
       errorMessage: json['error_message'] as String?,
       isActive: json['is_active'] as bool? ?? true,

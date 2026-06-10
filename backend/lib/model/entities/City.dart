@@ -10,7 +10,6 @@ class City {
   });
 
   factory City.fromJson(Map<String, dynamic> json) {
-    print('City.fromJson получил: $json');
     
     DateTime? parseDateTime(dynamic value) {
       if (value == null) return null;

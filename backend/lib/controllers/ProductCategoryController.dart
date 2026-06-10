@@ -5,6 +5,7 @@ import '../services/ProductCategoryService.dart';
 import '../model/entities/ProductCategory.dart';
 import '../utils/ValidationUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestBodyUtils.dart';
 
 class ProductCategoryController {
   final ProductCategoryService _service;
@@ -22,23 +23,24 @@ class ProductCategoryController {
 
   Future<Response> _getById(Request request, String id) async {
     try {
-      final categoryId = int.parse(id);
+      final categoryId = int.tryParse(id);
+      if (categoryId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       final category = await _service.getById(categoryId);
       if (category == null) {
-        return Response.notFound(
-          jsonEncode({'error': 'РљР°С‚РµРіРѕСЂРёСЏ РЅРµ РЅР°Р№РґРµРЅР°'}),
-          headers: _getCorsHeaders(),
-        );
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Категория не найдена',
+            code: ErrorCode.notFound,
+            headers: _getCorsHeaders());
       }
       return Response.ok(
         jsonEncode(category.toJson()),
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
@@ -50,16 +52,13 @@ class ProductCategoryController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _create(Request request) async {
     try {
-      final data = jsonDecode(await request.readAsString());
+      final data = await RequestBodyUtils.readJsonObject(request);
       final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
 
       final category = ProductCategory(
@@ -75,19 +74,20 @@ class ProductCategoryController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _update(Request request, String id) async {
     try {
-      final categoryId = int.parse(id);
-      final data = jsonDecode(await request.readAsString());
+      final categoryId = int.tryParse(id);
+      if (categoryId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
+      final data = await RequestBodyUtils.readJsonObject(request);
       final sanitized = ValidationUtils.validateAndSanitizeCategoryData(data);
-      
+
       final category = ProductCategory(
         id: categoryId,
         name: sanitized['name'] as String,
@@ -101,35 +101,28 @@ class ProductCategoryController {
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Future<Response> _delete(Request request, String id) async {
     try {
-      final categoryId = int.parse(id);
+      final categoryId = int.tryParse(id);
+      if (categoryId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage('Некорректный ID',
+            code: ErrorCode.badRequest, headers: _getCorsHeaders());
+      }
       await _service.delete(categoryId);
       return Response.ok(
-        jsonEncode({'message': 'РљР°С‚РµРіРѕСЂРёСЏ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅР°'}),
+        jsonEncode({'message': 'Категория успешно удалена'}),
         headers: _getCorsHeaders(),
       );
     } catch (e) {
-      return Response(400,
-        body: jsonEncode({'error': ErrorResponseUtils.clientSafeErrorMessage(e)}),
-        headers: _getCorsHeaders(),
-      );
+      return ErrorResponseUtils.errorResponse(e, headers: _getCorsHeaders());
     }
   }
 
   Map<String, String> _getCorsHeaders() {
-    return {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-    };
+    return {'Content-Type': 'application/json'};
   }
-} 
+}

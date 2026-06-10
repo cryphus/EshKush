@@ -1,8 +1,10 @@
-﻿import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:path/path.dart' as path;
+import '../utils/ErrorResponseUtils.dart';
+import '../utils/RequestContextUtils.dart';
 
 class SwaggerController {
   final Router _router = Router();
@@ -45,39 +47,34 @@ class SwaggerController {
         final spec = await swaggerFile.readAsString();
         return Response.ok(
           spec,
-          headers: {
-            'content-type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Origin, Content-Type',
-          },
+          headers: {'content-type': 'application/json'},
         );
       } else {
-        // Р•СЃР»Рё С„Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ, РІРѕР·РІСЂР°С‰Р°РµРј Р±Р°Р·РѕРІСѓСЋ СЃРїРµС†РёС„РёРєР°С†РёСЋ
+        // Если файл не найден, возвращаем базовую спецификацию
         final swaggerJson = {
           'openapi': '3.0.0',
           'info': {
             'title': 'EshKush API',
             'version': '1.0.0',
-            'description': 'API РґРѕРєСѓРјРµРЅС‚Р°С†РёСЏ РґР»СЏ EshKush'
+            'description': 'API документация для EshKush'
           },
           'paths': {
             '/auth/google': {
               'post': {
-                'summary': 'РђСѓС‚РµРЅС‚РёС„РёРєР°С†РёСЏ С‡РµСЂРµР· Google',
+                'summary': 'Аутентификация через Google',
                 'responses': {
                   '200': {
-                    'description': 'РЈСЃРїРµС€РЅР°СЏ Р°СѓС‚РµРЅС‚РёС„РёРєР°С†РёСЏ'
+                    'description': 'Успешная аутентификация'
                   }
                 }
               }
             },
             '/auth/register': {
               'post': {
-                'summary': 'Р РµРіРёСЃС‚СЂР°С†РёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ',
+                'summary': 'Регистрация пользователя',
                 'responses': {
                   '200': {
-                    'description': 'РЈСЃРїРµС€РЅР°СЏ СЂРµРіРёСЃС‚СЂР°С†РёСЏ'
+                    'description': 'Пользователь зарегистрирован'
                   }
                 }
               }
@@ -87,25 +84,19 @@ class SwaggerController {
 
         return Response.ok(
           jsonEncode(swaggerJson),
-          headers: {
-            'content-type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Origin, Content-Type',
-          },
+          headers: {'content-type': 'application/json'},
         );
       }
     } catch (e) {
-      print('РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё swagger.json: $e');
-      return Response.internalServerError(
-        body: jsonEncode({'error': 'РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё РґРѕРєСѓРјРµРЅС‚Р°С†РёРё API'}),
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: RequestContextUtils.getRequestId(request),
+        headers: {'content-type': 'application/json'},
       );
     }
   }
 
   Future<Response> _getSwaggerUI(Request request) async {
-    print('=== РћС‚РїСЂР°РІР»СЏРµРј Swagger UI ===');
-    
     const swaggerUI = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -120,7 +111,7 @@ class SwaggerController {
     <div id="swagger-ui"></div>
     <script>
         window.onload = function() {
-            console.log('Swagger UI Р·Р°РіСЂСѓР¶Р°РµС‚СЃСЏ...');
+            console.log('Swagger UI загружается...');
             fetch("/swagger/swagger.json")
                 .then(response => response.json())
                 .then(spec => {
@@ -159,12 +150,7 @@ class SwaggerController {
 
     return Response.ok(
       swaggerUI,
-      headers: {
-        'Content-Type': 'text/html',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, Content-Type',
-      },
+      headers: {'Content-Type': 'text/html'},
     );
   }
 

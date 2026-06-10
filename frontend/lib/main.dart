@@ -1,31 +1,71 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:eshkush/screens/MainScreen.dart';
 import 'package:eshkush/screens/ProductPage.dart';
-import 'package:eshkush/screens/PhoneLoginScreen.dart';
 import 'package:eshkush/theme/colors.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
+import 'providers/auth_provider.dart';
 import 'screens/AuthScreen.dart';
+import 'screens/SimpleRegisterScreen.dart';
+import 'state/app_state.dart';
 import 'utils/snackbar.dart';
+import 'utils/web_url_cleanup.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Yandex MapKit: сам API-ключ задаётся в нативных файлах
-  // (AndroidManifest.xml meta-data com.yandex.maps.MAPKIT_API_KEY и
-  // iOS Info.plist YandexMapkitApiKey). Здесь мы только отключаем
-  // отрисовку через Android View Surface (по рекомендации плагина).
-  // См. memory: project/map_provider_yandex (yandex_mapkit, free tier).
-  AndroidYandexMap.useAndroidViewSurface = false;
+  // Обрабатываем OAuth callback: бэкенд редиректит на /?access_token=...&refresh_token=...
+  if (kIsWeb) {
+    final uri = Uri.base;
+    var fragmentParams = <String, String>{};
+    if (uri.fragment.isNotEmpty) {
+      try {
+        fragmentParams = Uri.splitQueryString(uri.fragment);
+      } catch (_) {
+        fragmentParams = <String, String>{};
+      }
+    }
+    final oauthToken =
+        uri.queryParameters['access_token'] ?? fragmentParams['access_token'];
+    final oauthRefresh =
+        uri.queryParameters['refresh_token'] ?? fragmentParams['refresh_token'];
+    final oauthError =
+        uri.queryParameters['oauth_error'] ?? fragmentParams['oauth_error'];
+    if (oauthToken != null && oauthToken.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('access_token', oauthToken);
+      if (oauthRefresh != null && oauthRefresh.isNotEmpty) {
+        await prefs.setString('refresh_token', oauthRefresh);
+      }
+    }
+    if (oauthToken != null || oauthRefresh != null || oauthError != null) {
+      cleanupOAuthParamsFromUrl();
+    }
+  }
 
-  runApp(const ProviderScope(child: EshKush()));
+  await AppState().initialize();
+
+  if (!kIsWeb) {
+    AndroidYandexMap.useAndroidViewSurface = false;
+  }
+
+  final container = ProviderContainer();
+  await container.read(authProvider.notifier).loadSavedAuth();
+
+  runApp(
+      UncontrolledProviderScope(container: container, child: const EshKush()));
 }
 
-class EshKush extends StatelessWidget {
+class EshKush extends ConsumerWidget {
   const EshKush({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.read(authProvider);
+    final isSignedIn = auth.accessToken != null;
+
     return MaterialApp(
       title: 'EshKush',
       scaffoldMessengerKey: rootScaffoldMessengerKey,
@@ -53,25 +93,20 @@ class EshKush extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: '/auth',
+      initialRoute: '/',
       routes: {
+        '/': (context) => isSignedIn ? const MainScreen() : const AuthScreen(),
         '/auth': (context) => const AuthScreen(),
         '/main': (context) => const MainScreen(),
-        '/phone-login': (context) => const PhoneLoginScreen(),
+        '/register': (context) => const SimpleRegisterScreen(),
         '/product': (context) => ProductPage(
               data: ModalRoute.of(context)?.settings.arguments
                   as Map<String, dynamic>,
             ),
       },
-      onGenerateRoute: (settings) {
-        if (settings.name?.startsWith('tg://eshkush/auth/telegram') ?? false) {
-          return MaterialPageRoute(
-            builder: (context) => const AuthScreen(),
-            settings: settings,
-          );
-        }
-        return null;
-      },
+      onUnknownRoute: (_) => MaterialPageRoute<void>(
+        builder: (context) => isSignedIn ? const MainScreen() : const AuthScreen(),
+      ),
     );
   }
 }

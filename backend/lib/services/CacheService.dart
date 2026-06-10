@@ -1,6 +1,19 @@
 import '../config/AppConfig.dart';
 import '../utils/LoggingUtils.dart';
 
+/// Кеш-сервис на основе **Dart in-memory Map**.
+///
+/// ⚠️  ОГРАНИЧЕНИЯ:
+///   - Работает только в рамках одного процесса (одного инстанса).
+///   - При рестарте сервера весь кеш сбрасывается.
+///   - При горизонтальном масштабировании (несколько инстансов) кеши
+///     будут рассинхронизированы — каждый инстанс хранит свои данные.
+///
+/// Для production с несколькими инстансами замените на Redis:
+///   1. Добавьте `resp_client` в pubspec.yaml
+///   2. Реализуйте `CacheService` поверх `resp_client` с тем же интерфейсом
+///   3. Аналогично замените `InMemoryRateLimiterStore` на `RedisRateLimiterStore`
+///      (заготовка уже есть в lib/utils/RateLimiterStore.dart)
 class CacheService {
   static final CacheService _instance = CacheService._internal();
   factory CacheService() => _instance;
@@ -13,10 +26,10 @@ class CacheService {
     try {
       final config = AppConfig();
       _isConnected = true;
-      await LoggingUtils.logInfo('In-memory кеш инициализирован', context: {
-        'host': config.redisHost,
-        'port': config.redisPort,
-        'db': config.redisDb,
+      await LoggingUtils.logInfo('In-memory кеш инициализирован (один инстанс)', context: {
+        'type': 'in-memory',
+        'note': 'при нескольких инстансах замените на Redis',
+        'redis_host_configured': config.redisHost,
       });
     } catch (e) {
       _isConnected = false;
