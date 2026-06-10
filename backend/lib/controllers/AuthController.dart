@@ -14,7 +14,6 @@ import '../utils/AuthUtils.dart';
 import '../model/entities/UserSessions.dart';
 import '../model/dto/requests/CreateUserDto.dart';
 import '../model/dto/requests/LoginDto.dart';
-import '../utils/ValidationUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
 import '../utils/AppException.dart';
 import '../middleware/SecurityMiddleware.dart';

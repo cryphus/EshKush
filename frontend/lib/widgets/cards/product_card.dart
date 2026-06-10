@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../theme/colors.dart';
 
 class ProductCard extends StatelessWidget {
   final Map<String, dynamic> data;

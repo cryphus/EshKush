@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:test/test.dart';
 import 'package:backend/utils/AppException.dart';
 import 'package:backend/utils/ErrorResponseUtils.dart';
-import 'package:backend/utils/ValidationUtils.dart';
 
 void main() {
   // ─── ErrorCode.code строки ───────────────────────────────────────────────────

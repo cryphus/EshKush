@@ -16,7 +16,6 @@ import '../utils/PaginationUtils.dart';
 import '../utils/RequestBodyUtils.dart';
 import '../utils/RequestContextUtils.dart';
 import '../utils/SafeLoggingUtils.dart';
-import '../utils/ValidationUtils.dart';
 
 class OrderController {
   final OrderService _orderService;
@@ -98,19 +97,19 @@ class OrderController {
         requestId: requestId,
       );
       return resp;
-    } on AppException catch (e) {
-      await LoggingUtils.logError('Отказ в возврате', e, requestId: requestId);
-      return ErrorResponseUtils.errorResponse(
-        e,
-        requestId: requestId,
-        headers: _getCorsHeaders(),
-      );
     } on YooKassaException catch (e) {
       await LoggingUtils.logError('YooKassa отклонила возврат', e,
           requestId: requestId);
       return Response(
         502,
         body: jsonEncode({'error': e.message}),
+        headers: _getCorsHeaders(),
+      );
+    } on AppException catch (e) {
+      await LoggingUtils.logError('Отказ в возврате', e, requestId: requestId);
+      return ErrorResponseUtils.errorResponse(
+        e,
+        requestId: requestId,
         headers: _getCorsHeaders(),
       );
     } catch (e) {

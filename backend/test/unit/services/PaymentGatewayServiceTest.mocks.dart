@@ -476,10 +476,9 @@ class MockOrderRepository extends _i1.Mock implements _i9.OrderRepository {
 
   @override
   _i4.Future<void> createOrderAction({
-    required int? orderId,
-    required int? partnerId,
-    required String? actionDescription,
-    required _i11.ActionType? actionType,
+    required int orderId,
+    required String description,
+    required _i11.ActionType actionType,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -487,8 +486,7 @@ class MockOrderRepository extends _i1.Mock implements _i9.OrderRepository {
           [],
           {
             #orderId: orderId,
-            #partnerId: partnerId,
-            #actionDescription: actionDescription,
+            #description: description,
             #actionType: actionType,
           },
         ),

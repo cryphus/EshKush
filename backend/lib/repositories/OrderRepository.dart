@@ -37,10 +37,10 @@ class OrderRepository extends BaseRepository {
     }
   }
 
-  /// Р РЋР С•Р В·Р Т‘Р В°РЎвЂРЎвЂљ Р В·Р В°Р С”Р В°Р В· Р С‘ РЎРѓР Р†РЎРЏР В·Р В°Р Р…Р Р…РЎС“РЎР‹ Р В·Р В°Р С—Р С‘РЎРѓРЎРЉ Р С• Р С—Р В»Р В°РЎвЂљР ВµР В¶Р Вµ Р В°РЎвЂљР С•Р СР В°РЎР‚Р Р…Р С• Р Р† Р С•Р Т‘Р Р…Р С•Р в„– DB-РЎвЂљРЎР‚Р В°Р Р…Р В·Р В°Р С”РЎвЂ Р С‘Р С‘.
+  /// Создаёт заказ и связанную запись о платеже атомарно в одной DB-транзакции.
   Future<Order> createWithPayment(Map<String, dynamic> data) async {
     SafeLoggingUtils.logData(
-        'Р РЋР С•Р В·Р Т‘Р В°Р Р…Р С‘Р Вµ Р В·Р В°Р С”Р В°Р В·Р В° РЎРѓ Р Т‘Р В°Р Р…Р Р…РЎвЂ№Р СР С‘',
+        'Создание заказа с данными',
         data);
 
     final userId = data['user_id'] is String
@@ -95,8 +95,8 @@ class OrderRepository extends BaseRepository {
       if (orderResult.isEmpty) throw const InternalServerException();
       order = Order.fromJson(orderResult.first.values.first);
 
-      // Р РЋР С•Р В·Р Т‘Р В°РЎвЂР С Р В·Р В°Р С—Р С‘РЎРѓРЎРЉ Р С• Р С—Р В»Р В°РЎвЂљР ВµР В¶Р Вµ Р В°РЎвЂљР С•Р СР В°РЎР‚Р Р…Р С• Р Р†Р СР ВµРЎРѓРЎвЂљР Вµ РЎРѓ Р В·Р В°Р С”Р В°Р В·Р С•Р С.
-      // provider_transaction_id = order.id Р С”Р В°Р С” placeholder Р Т‘Р С• Р С—Р С•Р В»РЎС“РЎвЂЎР ВµР Р…Р С‘РЎРЏ Р С•РЎвЂљР Р†Р ВµРЎвЂљР В° Р С•РЎвЂљ Р С—Р В»Р В°РЎвЂљРЎвЂР В¶Р Р…Р С•Р С–Р С• Р С—РЎР‚Р С•Р Р†Р В°Р в„–Р Т‘Р ВµРЎР‚Р В°.
+      // Создаём запись о платеже атомарно вместе с заказом.
+      // provider_transaction_id = order.id как placeholder до получения ответа от платёжного провайдера.
       await txn.mappedResultsQuery(
         '''
         INSERT INTO payment_transactions (
@@ -198,23 +198,21 @@ class OrderRepository extends BaseRepository {
 
   Future<void> createOrderAction({
     required int orderId,
-    required int partnerId,
-    required String actionDescription,
+    required String description,
     required ActionType actionType,
   }) async {
     await connection.execute(
       '''
       INSERT INTO order_actions (
-        order_id, partner_id, action_description, action_type
+        order_id, action_type, description
       ) VALUES (
-        @orderId, @partnerId, @actionDescription, @actionType::action_type
+        @orderId, @actionType::action_type, @description
       )
       ''',
       substitutionValues: {
         'orderId': orderId,
-        'partnerId': partnerId,
-        'actionDescription': actionDescription,
         'actionType': actionType.name.toLowerCase(),
+        'description': description,
       },
     );
   }

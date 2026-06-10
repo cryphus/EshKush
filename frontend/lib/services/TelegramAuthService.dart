@@ -1,7 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../screens/RegistrationScreen.dart';
 import 'dart:convert' show utf8, base64;

@@ -84,11 +84,11 @@ class PaymentTransactions {
           ? json['transaction_date'] as DateTime
           : DateTime.parse(json['transaction_date'] as String),
       paymentMethod: PaymentMethod.values.firstWhere(
-        (e) => e.toString() == 'PaymentMethod.${json['payment_method']}',
+        (e) => e.name == json['payment_method'],
         orElse: () => PaymentMethod.other,
       ),
       status: PaymentTransactionStatus.values.firstWhere(
-        (e) => e.toString() == 'PaymentTransactionStatus.${json['status']}',
+        (e) => e.name == json['status'],
         orElse: () => PaymentTransactionStatus.pending,
       ),
       updatedAt: json['updated_at'] != null
@@ -109,8 +109,8 @@ class PaymentTransactions {
       'confirmation_url': confirmationUrl,
       'order_price': orderPrice,
       'transaction_date': transactionDate.toIso8601String(),
-      'payment_method': paymentMethod.toString().split('.').last,
-      'status': status.toString().split('.').last,
+      'payment_method': paymentMethod.name,
+      'status': status.name,
       'updated_at': updatedAt?.toIso8601String(),
       'error_message': errorMessage,
       'is_active': isActive,

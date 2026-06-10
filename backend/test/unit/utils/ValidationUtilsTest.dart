@@ -1,5 +1,4 @@
 import 'package:test/test.dart';
-import 'package:backend/utils/AppException.dart';
 import 'package:backend/utils/ValidationUtils.dart';
 
 void main() {
