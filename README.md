@@ -19,23 +19,26 @@
 
 ```
 .env.example            ← шаблон (в git)
-.env.test               ← разработка / CI (gitignored, создай локально)
+.env                    ← основной файл, его читает docker-compose (gitignored)
 .env.production         ← продакшн (gitignored, создай на сервере)
 
 telegramAuth/.env.example   ← шаблон бота (в git)
-telegramAuth/.env.test      ← разработка (gitignored)
+telegramAuth/.env           ← разработка (gitignored)
 telegramAuth/.env.production ← продакшн (gitignored)
 ```
+
+> `docker-compose.yml` ссылается на `env_file: - .env`, поэтому именно
+> файл `.env` обязателен для запуска через Docker. В репозитории уже создан
+> готовый `.env` с рабочими значениями для локальной разработки.
 
 ### Первый запуск
 
 ```bash
-# Backend + Docker
-cp .env.example .env.test
-# Отредактируй .env.test — все значения уже заполнены для локальной работы
+# Backend + Docker — .env уже создан с локальными значениями.
+# Если его нет: cp .env.example .env  и заполни секреты.
 
 # TelegramAuth
-cp telegramAuth/.env.example telegramAuth/.env.test
+cp telegramAuth/.env.example telegramAuth/.env
 # Вставь TELEGRAM_BOT_TOKEN от @BotFather
 ```
 
@@ -62,8 +65,8 @@ cp telegramAuth/.env.example telegramAuth/.env.test
 Требования: Docker, Docker Compose.
 
 ```bash
-# Разработка
-docker-compose --env-file .env.test up -d --build
+# Разработка (docker-compose автоматически читает .env из корня)
+docker-compose up -d --build
 
 # Продакшн
 docker-compose --env-file .env.production up -d --build
@@ -137,6 +140,43 @@ bash scripts/build_prod.sh
 # Готово: frontend/build/web/
 ```
 
+### Сборка мобильного приложения (Android)
+
+```bash
+cd frontend
+flutter pub get
+
+# Debug APK (для тестирования на устройстве)
+flutter build apk --debug
+# Готово: build/app/outputs/flutter-apk/app-debug.apk
+
+# Release APK (для раздачи) — передай реальные конфиги через --dart-define:
+flutter build apk --release \
+  --dart-define=API_BASE_URL=https://api.eshkush.app \
+  --dart-define=IMAGE_BASE_URL=https://media.eshkush.app \
+  --dart-define=GOOGLE_CLIENT_ID=ВАШ_CLIENT_ID \
+  --dart-define=BOT_USERNAME=eshkush_bot
+```
+
+**Особенности Android-сборки:**
+
+| Что | Значение | Где |
+|---|---|---|
+| Application ID | `com.eshkush.app` | `android/app/build.gradle.kts` |
+| `minSdkVersion` | **26** (требование `yandex_mapkit`) | `android/app/build.gradle.kts` |
+| Cleartext HTTP | разрешён (backend/медиа по `http://`) | `android/app/src/main/res/xml/network_security_config.xml` |
+| Yandex MapKit key | `REPLACE_WITH_YANDEX_MAPKIT_API_KEY` — **заменить перед релизом** | `android/app/src/main/AndroidManifest.xml` |
+
+> **Подключение к backend с устройства.** На реальном устройстве/эмуляторе
+> `localhost` указывает на сам телефон, а не на твой ПК. Для **эмулятора**
+> используй `10.0.2.2` вместо `localhost` (скрипт `run_test.sh` подменяет
+> автоматически при `-d android`/`emulator`). Для **реального устройства**
+> укажи IP компьютера в локальной сети, напр. `--dart-define=API_BASE_URL=http://192.168.1.10:3000`.
+
+> **HTTPS в production.** Cleartext-трафик разрешён для разработки. Перед
+> публикацией переведи API и медиа на HTTPS и ужесточи
+> `network_security_config.xml` (запретить cleartext).
+
 ### Как работают конфиги в Flutter
 
 Flutter **не умеет читать .env в runtime**. Все конфиги вшиваются на этапе компиляции через `--dart-define` и доступны в коде через `AppConfig`:
@@ -198,6 +238,9 @@ python -m app.bot
 | Postgres не стартует | `docker-compose down -v`, затем снова `up --build` (сбросит тома) |
 | `assets/assets/...` 404 | В коде путь `icons/xxx.svg`, в `pubspec.yaml` — `assets/icons/` |
 | Gradle version check (Android) | `./gradlew wrapper --gradle-version 8.11.1` |
+| `yandex_mapkit requires a higher Android SDK` | Уже исправлено: `minSdk = 26` в `android/app/build.gradle.kts` |
+| `Could not close incremental caches` (Kotlin, Windows) | Уже отключено: `kotlin.incremental=false` в `android/gradle.properties`. Если всплыло снова — `flutter clean` |
+| Android: данные/картинки не грузятся (cleartext) | Уже разрешено через `network_security_config.xml`; проверь, что API доступен с устройства (см. раздел Android) |
 | Flutter конфиг не применяется | Убедись что передаёшь `--dart-define` при `flutter run` / `flutter build` |
 
 ---

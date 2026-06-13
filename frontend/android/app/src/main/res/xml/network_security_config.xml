@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Разрешает HTTP (cleartext) трафик. Нужно, пока backend и сервер изображений
+  работают по http:// (локальная разработка и текущий боевой IP-сервер).
+  После перевода API/медиа на HTTPS — заменить base-config на запрет cleartext
+  и оставить домены-исключения только при необходимости.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
