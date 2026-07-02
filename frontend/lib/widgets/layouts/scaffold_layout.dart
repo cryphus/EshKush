@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../providers/connectivity_provider.dart';
 import '../../theme/colors.dart';
-import '../../screens/CartScreem.dart';
+import '../../screens/cart_screen.dart';
 
 class ScaffoldLayout extends StatefulWidget {
   final String pageTitle;
@@ -156,7 +156,7 @@ class _ScaffoldLayoutState extends State<ScaffoldLayout> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => CartPage()),
+                  MaterialPageRoute(builder: (context) => const CartPage()),
                 );
               },
               child: SvgPicture.asset(

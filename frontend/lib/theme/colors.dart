@@ -9,4 +9,15 @@ class AppColors {
   static const Color veryLightGray = Color(0xFFE6F9D9);
   static const Color white = Colors.white;
   static const Color colorBackground = Color(0xFFFBF8F1);
+
+  // Палитра новых экранов (Оплата / QR-код заказа)
+  static const Color brandGreen = Color(0xFF5A8A35);
+  static const Color brandGreenPale = Color(0xFFF4FBF0);
+  static const Color brandGreenTint = Color(0xFFE8F6DA);
+  static const Color footerBeige = Color(0xFFEEEADE);
+  static const Color borderBeige = Color(0xFFDDD6CC);
+  static const Color labelBeige = Color(0xFFA09880);
+  static const Color statusYellow = Color(0xFFF5C518);
+  static const Color statusYellowDark = Color(0xFFB89010);
+  static const Color statusYellowBg = Color(0xFFFFFAE8);
 }

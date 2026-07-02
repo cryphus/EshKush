@@ -1,4 +1,4 @@
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 Map<String, String> _parseFragmentParams(String fragment) {
   if (fragment.isEmpty) return <String, String>{};
@@ -31,5 +31,5 @@ void cleanupOAuthParamsFromUrl() {
     queryParameters: updatedQuery.isEmpty ? null : updatedQuery,
     fragment: fragmentParams.isEmpty ? null : Uri(queryParameters: fragmentParams).query,
   );
-  html.window.history.replaceState(null, '', cleaned.toString());
+  web.window.history.replaceState(null, '', cleaned.toString());
 }

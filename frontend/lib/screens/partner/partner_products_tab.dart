@@ -246,7 +246,7 @@ class _ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05), blurRadius: 6),
+              color: Colors.black.withValues(alpha: 0.05), blurRadius: 6),
         ],
       ),
       child: Column(
@@ -369,7 +369,7 @@ class _SwitchRow extends StatelessWidget {
           child: Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.darkGreen,
+            activeThumbColor: AppColors.darkGreen,
           ),
         ),
       ],

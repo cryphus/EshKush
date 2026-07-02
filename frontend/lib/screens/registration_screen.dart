@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import '../services/FrontendAuthService.dart';
+import '../services/frontend_auth_service.dart';
 import '../state/app_state.dart';
 import 'package:shared/enums/UserRole.dart';
 
@@ -102,7 +102,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
               // Роль (только user и partner для самостоятельной регистрации)
               DropdownButtonFormField<UserRole>(
-                value: _selectedRole,
+                initialValue: _selectedRole,
                 decoration: _inputDecoration('Тип аккаунта', null),
                 items: [UserRole.user, UserRole.partner]
                     .map((role) => DropdownMenuItem(
@@ -215,6 +215,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           role: _selectedRole.name,
           token: result['access_token'],
         );
+        if (!mounted) return;
         Navigator.of(context).pushReplacementNamed('/main');
       }
     } catch (e) {

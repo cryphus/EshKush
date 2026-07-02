@@ -3,8 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
 import '../theme/colors.dart';
-import 'LoginPasswordScreen.dart';
-import 'SimpleRegisterScreen.dart';
+import 'login_password_screen.dart';
+import 'simple_register_screen.dart';
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
@@ -173,7 +173,7 @@ class _SocialButton extends StatelessWidget {
               border: Border.all(color: AppColors.accentGreen, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

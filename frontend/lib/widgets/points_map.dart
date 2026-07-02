@@ -103,7 +103,7 @@ class _PointsMapState extends ConsumerState<PointsMap> {
       const Offset(size / 2, size / 2 + 2),
       size / 2 - 4,
       Paint()
-        ..color = Colors.black.withOpacity(0.25)
+        ..color = Colors.black.withValues(alpha: 0.25)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
     );
     // Внешний круг
@@ -318,7 +318,7 @@ class _MapBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

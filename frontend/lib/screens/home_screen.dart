@@ -85,8 +85,8 @@ class _MainContentState extends ConsumerState<MainContent> {
 
   Widget _buildOrdersSection(OrdersState state) {
     if (state.isLoading && state.orders.isEmpty) {
-      return Column(
-        children: const [
+      return const Column(
+        children: [
           OrderCardSkeleton(),
           SizedBox(height: 8),
           OrderCardSkeleton(),
@@ -113,8 +113,8 @@ class _MainContentState extends ConsumerState<MainContent> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Row(
-          children: const [
+        child: const Row(
+          children: [
             Icon(Icons.receipt_long_outlined, color: Colors.black38, size: 22),
             SizedBox(width: 10),
             Expanded(
@@ -164,7 +164,7 @@ class _MainContentState extends ConsumerState<MainContent> {
                   'Только в этом месяце\nты сохранил 2 кг еды!',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black.withValues(alpha: 0.7),
                     height: 1.3,
                   ),
                 ),
@@ -222,7 +222,7 @@ class _MainContentState extends ConsumerState<MainContent> {
             actionText,
             style: TextStyle(
               fontSize: 15,
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
             ),
           ),
         ),

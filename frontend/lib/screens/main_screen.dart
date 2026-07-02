@@ -1,8 +1,8 @@
-import 'package:eshkush/screens/ProfileScreen.dart';
+import 'package:eshkush/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
-import './HomeScreen.dart';
-import './OffersScreen.dart';
-import './FavoritesScreen.dart';
+import './home_screen.dart';
+import './offers_screen.dart';
+import './favorites_screen.dart';
 
 import '../widgets/layouts/scaffold_layout.dart';
 

@@ -51,7 +51,7 @@ class PartnerDashboardTab extends StatelessWidget {
 
   Widget _buildStatsGrid() {
     final stats = [
-      _StatData(
+      const _StatData(
         label: 'Заказов',
         value: '24',
         icon: Icons.receipt_long_outlined,
@@ -59,7 +59,7 @@ class PartnerDashboardTab extends StatelessWidget {
         change: '+12%',
         positive: true,
       ),
-      _StatData(
+      const _StatData(
         label: 'Выручка',
         value: '14 800 ₽',
         icon: Icons.attach_money,
@@ -67,7 +67,7 @@ class PartnerDashboardTab extends StatelessWidget {
         change: '+8%',
         positive: true,
       ),
-      _StatData(
+      const _StatData(
         label: 'Продуктов',
         value: '6',
         icon: Icons.inventory_2_outlined,
@@ -75,7 +75,7 @@ class PartnerDashboardTab extends StatelessWidget {
         change: '0%',
         positive: true,
       ),
-      _StatData(
+      const _StatData(
         label: 'Рейтинг',
         value: '4.8 ★',
         icon: Icons.star_outline,
@@ -123,7 +123,7 @@ class PartnerDashboardTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 6,
               ),
             ],
@@ -184,7 +184,7 @@ class PartnerDashboardTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.04), blurRadius: 6),
+                  color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
             ],
           ),
           child: Row(
@@ -210,7 +210,7 @@ class PartnerDashboardTab extends StatelessWidget {
                     horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: (isCompleted ? Colors.green : Colors.red)
-                      .withOpacity(0.1),
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -264,7 +264,7 @@ class _StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05), blurRadius: 8),
+              color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -279,7 +279,7 @@ class _StatCard extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: (data.positive ? Colors.green : Colors.red)
-                      .withOpacity(0.1),
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(

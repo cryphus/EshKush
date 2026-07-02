@@ -149,6 +149,8 @@ frontend/.flutter-plugins-dependencies
 # Swagger/API docs
 swagger/
 *.html
+# ...но index.html веб-платформы Flutter обязан быть в репозитории
+!frontend/web/index.html
 
 # Telegram bot
 telegramAuth/__pycache__/

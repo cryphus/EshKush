@@ -112,19 +112,19 @@ class OfferCardSkeleton extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Column(
+        child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SkeletonBox(
               height: 100,
               width: double.infinity,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+              padding: EdgeInsets.fromLTRB(12, 12, 12, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   SkeletonBox(width: 160, height: 14),
                   SizedBox(height: 8),
                   SkeletonBox(width: 100, height: 12),
@@ -153,8 +153,8 @@ class OrderCardSkeleton extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Row(
-          children: const [
+        child: const Row(
+          children: [
             SkeletonBox(width: 80, height: 60),
             SizedBox(width: 14),
             Expanded(
@@ -187,8 +187,8 @@ class StatCardSkeleton extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          children: const [
+        child: const Column(
+          children: [
             SkeletonBox(width: 36, height: 36),
             SizedBox(height: 12),
             SkeletonBox(width: 50, height: 14),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
 import '../../state/app_state.dart';
-import 'PartnerDashboardTab.dart';
-import 'PartnerPointsTab.dart';
-import 'PartnerProductsTab.dart';
-import 'PartnerOrdersTab.dart';
+import 'partner_dashboard_tab.dart';
+import 'partner_points_tab.dart';
+import 'partner_products_tab.dart';
+import 'partner_orders_tab.dart';
 
 /// Главный экран веб-панели партнёра.
 /// Содержит боковую/нижнюю навигацию и 4 вкладки.
@@ -186,12 +186,12 @@ class _SideBar extends StatelessWidget {
         children: [
           const SizedBox(height: 48),
           // Лого
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'EshKush',
                   style: TextStyle(
                     color: Colors.white,
@@ -199,7 +199,7 @@ class _SideBar extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Text(
+                Text(
                   'Панель партнёра',
                   style: TextStyle(
                     color: Colors.white70,
@@ -257,7 +257,7 @@ class _SideBarItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.white.withOpacity(0.15)
+              ? Colors.white.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),

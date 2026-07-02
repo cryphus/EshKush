@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../theme/colors.dart';
 import '../state/app_state.dart';
-import 'RegistrationScreen.dart';
+import 'registration_screen.dart';
 
 /// Экран авторизации по номеру телефона.
 /// Фаза 1: ввод номера → фаза 2: ввод кода из СМС.
@@ -59,8 +59,8 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
               child: Container(
                 width: 100,
                 height: 100,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8FADC),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8FADC),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

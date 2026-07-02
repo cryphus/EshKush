@@ -6,7 +6,7 @@ import '../models/product.dart';
 import '../providers/cart_provider.dart';
 import '../theme/colors.dart';
 import '../utils/snackbar.dart';
-import 'CartScreem.dart';
+import 'cart_screen.dart';
 
 class ProductPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
@@ -117,7 +117,7 @@ class _ProductPageState extends ConsumerState<ProductPage> {
     if (_point == null) {
       return Text(
         widget.data['description']?.toString() ?? '',
-        style: TextStyle(fontSize: 14, color: Colors.black.withOpacity(0.7), height: 1.5),
+        style: TextStyle(fontSize: 14, color: Colors.black.withValues(alpha: 0.7), height: 1.5),
       );
     }
     if (_isLoadingProducts) {
@@ -185,7 +185,7 @@ class _ProductPageState extends ConsumerState<ProductPage> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.chevron_left, size: 24),
@@ -243,7 +243,7 @@ class _ProductPageState extends ConsumerState<ProductPage> {
           const SizedBox(width: 8),
           Text(
             subtitle,
-            style: TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
+            style: TextStyle(fontSize: 12, color: Colors.black.withValues(alpha: 0.5)),
           ),
         ],
       ],
@@ -278,9 +278,9 @@ class _ProductPageState extends ConsumerState<ProductPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         text,
@@ -335,7 +335,7 @@ class _ProductRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

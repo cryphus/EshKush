@@ -7,16 +7,16 @@ import '../utils/snackbar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/layouts/scaffold_layout.dart';
 import '../../theme/colors.dart';
-import 'PaymentMethodScreen.dart';
+import 'payment_method_screen.dart';
 
 class CartPage extends ConsumerWidget {
   const CartPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ScaffoldLayout(
+    return const ScaffoldLayout(
       pageTitle: 'Корзина',
-      bodyContent: const _CartBody(),
+      bodyContent: _CartBody(),
       showNavBar: false,
     );
   }
@@ -69,7 +69,7 @@ class _CartLine extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

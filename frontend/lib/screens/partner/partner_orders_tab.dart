@@ -180,10 +180,10 @@ class _PartnerOrdersTabState extends State<PartnerOrdersTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _DetailRow('Покупатель', order['customerName']),
-            _DetailRow('Точка', order['point']),
-            _DetailRow('Дата', order['date']),
-            _DetailRow('Итого', order['total']),
+            _detailRow('Покупатель', order['customerName']),
+            _detailRow('Точка', order['point']),
+            _detailRow('Дата', order['date']),
+            _detailRow('Итого', order['total']),
             const Divider(),
             const Text('Позиции:',
                 style: TextStyle(fontWeight: FontWeight.bold)),
@@ -213,7 +213,7 @@ class _PartnerOrdersTabState extends State<PartnerOrdersTab> {
   }
 }
 
-Widget _DetailRow(String label, String value) {
+Widget _detailRow(String label, String value) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 6),
     child: Row(
@@ -257,7 +257,7 @@ class _OrderCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05), blurRadius: 6),
+                color: Colors.black.withValues(alpha: 0.05), blurRadius: 6),
           ],
         ),
         child: Column(
@@ -311,7 +311,7 @@ class _OrderCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 3),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(

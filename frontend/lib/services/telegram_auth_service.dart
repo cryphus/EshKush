@@ -2,8 +2,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../screens/RegistrationScreen.dart';
-import 'dart:convert' show utf8, base64;
+import '../screens/registration_screen.dart';
 import '../config/app_config.dart';
 
 class TelegramAuthService {
@@ -38,7 +37,7 @@ class TelegramAuthService {
         throw Exception('Ошибка сервера: ${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка при открытии бота: $e');
+      debugPrint('Ошибка при открытии бота: $e');
       rethrow;
     }
   }
@@ -59,7 +58,7 @@ class TelegramAuthService {
         throw Exception('Ошибка проверки пользователя: ${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка при проверке пользователя: $e');
+      debugPrint('Ошибка при проверке пользователя: $e');
       rethrow;
     }
   }
@@ -98,7 +97,7 @@ class TelegramAuthService {
         }
       }
     } catch (e) {
-      print('Ошибка при обработке deep link: $e');
+      debugPrint('Ошибка при обработке deep link: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ошибка: $e')),

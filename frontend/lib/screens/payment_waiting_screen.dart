@@ -5,7 +5,7 @@ import '../models/order.dart';
 import '../providers/payment_provider.dart';
 import '../theme/colors.dart';
 import '../widgets/layouts/scaffold_layout.dart';
-import 'OrderConfirmationScreen.dart';
+import 'order_confirmation_screen.dart';
 
 /// Экран ожидания подтверждения оплаты.
 /// Запускает polling статуса платежа через [PaymentNotifier.startPolling].
@@ -49,10 +49,11 @@ class _PaymentWaitingScreenState
     });
 
     final state = ref.watch(paymentProvider);
-    return WillPopScope(
-      onWillPop: () async {
-        ref.read(paymentProvider.notifier).stopPolling();
-        return true;
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          ref.read(paymentProvider.notifier).stopPolling();
+        }
       },
       child: ScaffoldLayout(
         pageTitle: 'Оплата',

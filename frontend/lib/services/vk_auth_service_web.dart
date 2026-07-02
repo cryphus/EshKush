@@ -1,11 +1,9 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
-// ignore: uri_does_not_exist
 
-import 'dart:async';
-import 'dart:js' as js;
-// ignore: uri_does_not_exist
-import 'dart:js_util' as js_util;
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
@@ -18,56 +16,52 @@ class VKAuthService {
 
   Future<Map<String, dynamic>?> signIn() async {
     try {
-      print('Начинаем VK авторизацию...');
-      
-      if (!js.context.hasProperty('vkAuthModule')) {
-        print('vkAuthModule не найден');
+      debugPrint('Начинаем VK авторизацию...');
+
+      final module =
+          globalContext.getProperty<JSObject?>('vkAuthModule'.toJS);
+      if (module == null) {
+        debugPrint('vkAuthModule не найден');
         throw Exception('VK SDK не найден на странице');
       }
 
-      final jsPromise = js.context['vkAuthModule'].callMethod('login');
-      print('Получен Promise авторизации');
+      final jsPromise = module.callMethod<JSPromise>('login'.toJS);
+      debugPrint('Получен Promise авторизации');
 
-      final completer = Completer<Map<String, dynamic>>();
-      
-      final successCallback = js_util.allowInterop((result) {
-        print('Promise resolved: $result');
-        completer.complete(js_util.dartify(result as Object) as Map<String, dynamic>);
-      });
-
-      final errorCallback = js_util.allowInterop((error) {
-        print('Promise rejected: $error');
-        completer.completeError(error.toString());
-      });
-
-      jsPromise.callMethod('then', [successCallback]).callMethod('catch', [errorCallback]);
-
-      final authResult = await completer.future;
-      print('Получен результат авторизации: $authResult');
+      final rawResult = await jsPromise.toDart;
+      final dartified = rawResult.dartify();
+      if (dartified is! Map) {
+        throw Exception('Неожиданный ответ VK SDK: $dartified');
+      }
+      final authResult = Map<String, dynamic>.from(dartified);
+      debugPrint('Получен результат авторизации: $authResult');
 
       final userInfo = authResult['user'];
       if (userInfo == null) {
         throw Exception('Не получены данные пользователя');
       }
 
-      print('Данные пользователя VK: $userInfo');
+      debugPrint('Данные пользователя VK: $userInfo');
 
-      final response = await _sendToBackend(userInfo, authResult['email']);
-      print('Ответ от бэкенда: $response');
+      final response = await _sendToBackend(
+        Map<String, dynamic>.from(userInfo as Map),
+        authResult['email'] as String?,
+      );
+      debugPrint('Ответ от бэкенда: $response');
 
       await _saveTokens(response);
 
       return response;
     } catch (e, stackTrace) {
-      print('Ошибка при авторизации через VK: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('Ошибка при авторизации через VK: $e');
+      debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
   }
 
   Future<Map<String, dynamic>> _sendToBackend(Map<String, dynamic> userInfo, String? email) async {
     try {
-      final apiBase = AppConfig.apiBaseUrl;
+      const apiBase = AppConfig.apiBaseUrl;
       final response = await _dio.post(
         '$apiBase/auth/vk',
         data: {
@@ -86,7 +80,7 @@ class VKAuthService {
         throw Exception(errorMessage);
       }
     } catch (e) {
-      print('Ошибка при отправке данных на бэкенд: $e');
+      debugPrint('Ошибка при отправке данных на бэкенд: $e');
       rethrow;
     }
   }
@@ -97,4 +91,3 @@ class VKAuthService {
     await prefs.setString('refresh_token', response['refresh_token']);
   }
 }
-

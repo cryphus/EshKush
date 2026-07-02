@@ -32,7 +32,7 @@ class AuthButton extends StatelessWidget {
           iconPath,
           width: 60,
           height: 60,
-          color: iconColor,
+          colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
         ),
       ),
     );

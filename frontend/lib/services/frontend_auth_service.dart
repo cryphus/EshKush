@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../config/app_config.dart';
@@ -50,7 +51,7 @@ class FrontendAuthService {
         throw Exception('Ошибка аутентификации: ${response.data['error']}');
       }
     } catch (e) {
-      print('Ошибка при входе через Google: $e');
+      debugPrint('Ошибка при входе через Google: $e');
       rethrow;
     }
   }
@@ -92,7 +93,7 @@ class FrontendAuthService {
       }
       throw Exception('Ошибка при регистрации: ${response.data['error']}');
     } catch (e) {
-      print('Ошибка при завершении регистрации: $e');
+      debugPrint('Ошибка при завершении регистрации: $e');
       rethrow;
     }
   }
@@ -104,7 +105,7 @@ class FrontendAuthService {
       await prefs.remove('access_token');
       await prefs.remove('refresh_token');
     } catch (e) {
-      print('Ошибка при выходе: $e');
+      debugPrint('Ошибка при выходе: $e');
       rethrow;
     }
   }
