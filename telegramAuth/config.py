@@ -22,6 +22,8 @@ DATABASE_PATH = os.getenv('DATABASE_PATH', 'app/database.db')
 APP_URL = os.getenv('APP_URL', 'http://localhost:3000')
 # URL основного Dart Shelf backend
 BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:3000')
+# Общий секрет для сервис-to-сервис вызова POST /auth/telegram на основном backend
+TELEGRAM_SERVICE_SECRET = os.getenv('TELEGRAM_SERVICE_SECRET', '')
 
 # ── Прочее ────────────────────────────────────────────────────────────────────
 TOKEN_EXPIRATION_MINUTES = int(os.getenv('TOKEN_EXPIRATION_MINUTES', '10'))

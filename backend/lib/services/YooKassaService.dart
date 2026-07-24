@@ -12,6 +12,11 @@ import '../utils/AppException.dart';
 /// Делает только платёжные операции: создание платежа, получение статуса,
 /// возврат. Маппинг в доменные сущности (PaymentTransactions) лежит в
 /// [PaymentGatewayService].
+///
+/// Mock-режим: если YOOKASSA_SHOP_ID/SECRET_KEY не заданы и окружение
+/// не production, сервис не ходит в сеть, а мгновенно "подтверждает"
+/// платежи и возвраты. Позволяет прогонять полный флоу оплаты без
+/// боевых ключей.
 class YooKassaService {
   static const Duration _requestTimeout = Duration(seconds: 15);
   final AppConfig _config;
@@ -24,6 +29,9 @@ class YooKassaService {
     Uuid? uuid,
   })  : _httpClient = httpClient ?? http.Client(),
         _uuid = uuid ?? const Uuid();
+
+  /// Платёжный шлюз работает в тестовом режиме без реального провайдера.
+  bool get isMockMode => !_config.isYookassaConfigured && !_config.isProduction;
 
   /// Создаёт платёж у YooKassa и возвращает JSON-ответ.
   ///
@@ -38,6 +46,29 @@ class YooKassaService {
     bool capture = true,
     Map<String, String>? extraMetadata,
   }) async {
+    if (isMockMode) {
+      final id = 'mock-${_uuid.v4()}';
+      return {
+        'id': id,
+        'status': 'succeeded',
+        'paid': true,
+        'test': true,
+        'amount': {
+          'value': amount.toStringAsFixed(2),
+          'currency': currency,
+        },
+        'description': description,
+        'metadata': {'order_id': orderId.toString()},
+        'confirmation': {
+          'type': 'redirect',
+          'confirmation_url':
+              '${_config.oauthCallbackBaseUrl}/payments/mock-checkout'
+                  '?payment_id=$id&order_id=$orderId'
+                  '&amount=${Uri.encodeComponent(amount.toStringAsFixed(2))}',
+        },
+      };
+    }
+
     _assertConfigured();
 
     final metadata = <String, String>{
@@ -64,6 +95,15 @@ class YooKassaService {
 
   /// Получить текущий статус платежа у YooKassa.
   Future<Map<String, dynamic>> getPayment(String providerTransactionId) async {
+    if (isMockMode) {
+      return {
+        'id': providerTransactionId,
+        'status': 'succeeded',
+        'paid': true,
+        'test': true,
+      };
+    }
+
     _assertConfigured();
     final uri = Uri.parse(
         '${_config.yookassaApiBaseUrl}/payments/$providerTransactionId');
@@ -88,6 +128,19 @@ class YooKassaService {
     String currency = 'RUB',
     String? description,
   }) async {
+    if (isMockMode) {
+      return {
+        'id': 'mock-refund-${_uuid.v4()}',
+        'payment_id': providerTransactionId,
+        'status': 'succeeded',
+        'test': true,
+        'amount': {
+          'value': amount.toStringAsFixed(2),
+          'currency': currency,
+        },
+      };
+    }
+
     _assertConfigured();
 
     final body = <String, dynamic>{

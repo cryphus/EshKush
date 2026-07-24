@@ -1,8 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter/material.dart';
-import '../screens/registration_screen.dart';
+import 'package:flutter/foundation.dart';
 import '../config/app_config.dart';
 
 class TelegramAuthService {
@@ -42,67 +41,4 @@ class TelegramAuthService {
     }
   }
 
-  Future<Map<String, dynamic>> checkUser(String token) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/auth/telegram/check_user'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({'token': token}),
-      );
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        throw Exception('Ошибка проверки пользователя: ${response.statusCode}');
-      }
-    } catch (e) {
-      debugPrint('Ошибка при проверке пользователя: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> handleDeepLink(BuildContext context, String url) async {
-    try {
-      final uri = Uri.parse(url);
-      final encodedData = uri.queryParameters['data'];
-      
-      if (encodedData != null) {
-        final decodedData = utf8.decode(base64.decode(encodedData));
-        final data = json.decode(decodedData);
-        
-        final phoneNumber = data['phoneNumber'];
-        final firstName = data['firstName'];
-        final lastName = data['lastName'];
-        final exists = data['exists'];
-
-        if (exists) {
-          if (context.mounted) {
-            Navigator.of(context).pushReplacementNamed('/main');
-          }
-        } else {
-          if (context.mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => RegistrationScreen(
-                  email: '',
-                  displayName: '$firstName $lastName',
-                  phoneNumber: phoneNumber,
-                  isFromTelegram: true,
-                ),
-              ),
-            );
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Ошибка при обработке deep link: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')),
-        );
-      }
-    }
-  }
-} 
+}

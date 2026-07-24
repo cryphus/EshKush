@@ -8,6 +8,7 @@ import '../utils/LoggingUtils.dart';
 import '../utils/RequestContextUtils.dart';
 import '../utils/ErrorResponseUtils.dart';
 import '../model/dto/responses/ProductResponseDto.dart';
+import '../model/dto/responses/PointResponseDto.dart';
 import '../model/dto/requests/CreateProductDto.dart';
 import '../model/dto/requests/UpdateProductDto.dart';
 import '../utils/PaginationUtils.dart';
@@ -22,6 +23,7 @@ class ProductsController {
     final router = Router();
 
     router.get('/', getAllProducts);
+    router.get('/feed', getFeed);
     router.get('/<id>', getProductById);
     router.get('/point/<pointId>', getProductsByPointId);
     router.get('/category/<categoryId>', getProductsByCategory);
@@ -45,8 +47,20 @@ class ProductsController {
       );
 
       final pagination = PaginationUtils.parse(request);
-      final products = await _productsService.getAllProducts(
-          limit: pagination.limit, offset: pagination.offset);
+      // Фильтр ?point_id=N — товары конкретной точки (используется фронтендом).
+      final rawPointId = request.url.queryParameters['point_id'];
+      final pointId = rawPointId != null ? int.tryParse(rawPointId) : null;
+      if (rawPointId != null && pointId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный point_id',
+            code: ErrorCode.badRequest,
+            headers: _getCorsHeaders());
+      }
+      final products = pointId != null
+          ? await _productsService.getProductsByPointId(pointId,
+              limit: pagination.limit, offset: pagination.offset)
+          : await _productsService.getAllProducts(
+              limit: pagination.limit, offset: pagination.offset);
       final responseBody = jsonEncode(PaginationUtils.wrap(
         products.map((p) => ProductResponseDto.fromEntity(p).toJson()).toList(),
         pagination,
@@ -131,7 +145,7 @@ class ProductsController {
       final unauthorized = RequestContextUtils.requireUserOr401(request,
           headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
-      if (!RequestContextUtils.isAdmin(request)) {
+      if (!RequestContextUtils.isPartnerOrAdmin(request)) {
         return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
             code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
@@ -197,7 +211,7 @@ class ProductsController {
       final unauthorized = RequestContextUtils.requireUserOr401(request,
           headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
-      if (!RequestContextUtils.isAdmin(request)) {
+      if (!RequestContextUtils.isPartnerOrAdmin(request)) {
         return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
             code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
@@ -408,7 +422,7 @@ class ProductsController {
       final unauthorized = RequestContextUtils.requireUserOr401(request,
           headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
-      if (!RequestContextUtils.isAdmin(request)) {
+      if (!RequestContextUtils.isPartnerOrAdmin(request)) {
         return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
             code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
@@ -481,6 +495,62 @@ class ProductsController {
       return response;
     } catch (e) {
       await LoggingUtils.logError('Ошибка получения продуктов по ID точки', e,
+          requestId: RequestContextUtils.getRequestId(request));
+      return ErrorResponseUtils.errorResponse(e,
+          requestId: RequestContextUtils.getRequestId(request),
+          headers: _getCorsHeaders());
+    }
+  }
+
+  /// Лента предложений для главного экрана: доступные сейчас товары
+  /// вместе с данными их точки, одним запросом (без N+1 по каждой точке).
+  Future<Response> getFeed(Request request) async {
+    try {
+      await LoggingUtils.logRequest(
+        request.method,
+        request.url.path,
+        request.headers,
+        null,
+        requestId: RequestContextUtils.getRequestId(request),
+      );
+
+      final rawCityId = request.url.queryParameters['city_id'];
+      final cityId = rawCityId != null ? int.tryParse(rawCityId) : null;
+      if (rawCityId != null && cityId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный city_id',
+            code: ErrorCode.badRequest,
+            headers: _getCorsHeaders());
+      }
+
+      final pagination = PaginationUtils.parse(request);
+      final offers = await _productsService.getFeed(
+          cityId: cityId, limit: pagination.limit, offset: pagination.offset);
+      final responseBody = jsonEncode(PaginationUtils.wrap(
+        offers
+            .map((offer) => {
+                  'product': ProductResponseDto.fromEntity(offer.$1).toJson(),
+                  'point': PointResponseDto.fromEntity(offer.$2).toJson(),
+                })
+            .toList(),
+        pagination,
+      ));
+
+      final response = Response.ok(
+        responseBody,
+        headers: _getCorsHeaders(),
+      );
+
+      await LoggingUtils.logResponse(
+        response.statusCode,
+        response.headers,
+        responseBody,
+        requestId: RequestContextUtils.getRequestId(request),
+      );
+
+      return response;
+    } catch (e) {
+      await LoggingUtils.logError('Ошибка получения ленты предложений', e,
           requestId: RequestContextUtils.getRequestId(request));
       return ErrorResponseUtils.errorResponse(e,
           requestId: RequestContextUtils.getRequestId(request),

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/product_api_service.dart';
 import '../models/order.dart';
 import '../providers/auth_provider.dart';
 import '../providers/orders_provider.dart';
 import '../theme/colors.dart';
 import '../utils/snackbar.dart';
 import '../widgets/skeleton.dart';
+import 'order_details_screen.dart';
 
 class MainContent extends ConsumerStatefulWidget {
   final VoidCallback? onMoreOffers;
@@ -168,23 +170,6 @@ class _MainContentState extends ConsumerState<MainContent> {
                     height: 1.3,
                   ),
                 ),
-                if (!ref.read(authProvider).isGuest) ...[
-                  const SizedBox(height: 4),
-                  const Row(
-                    children: [
-                      Icon(Icons.savings_outlined,
-                          color: Colors.blue, size: 18),
-                      SizedBox(width: 4),
-                      Text(
-                        'Начните экономить с EshKush!',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),
@@ -192,10 +177,10 @@ class _MainContentState extends ConsumerState<MainContent> {
             borderRadius: BorderRadius.circular(12),
             child: Image.asset(
               'assets/images/mascot.png',
-              width: 110,
-              height: 90,
+              width: 150,
+              height: 140,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const SizedBox(width: 110, height: 90),
+              errorBuilder: (_, __, ___) => const SizedBox(width: 150, height: 140),
             ),
           ),
         ],
@@ -232,9 +217,10 @@ class _MainContentState extends ConsumerState<MainContent> {
 
   Widget _buildOrderCard(Order order) {
     return GestureDetector(
-      onTap: () {
-        // TODO: навигация к деталям заказа
-      },
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => OrderDetailsScreen(order: order)),
+      ),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -243,16 +229,8 @@ class _MainContentState extends ConsumerState<MainContent> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 80,
-              height: 60,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3E0),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Center(
-                child: Icon(Icons.bakery_dining, color: Color(0xFFD4A44C), size: 30),
-              ),
+            _OrderThumbnail(
+              productId: order.productsId.isNotEmpty ? order.productsId.first : null,
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -430,6 +408,89 @@ class _MainContentState extends ConsumerState<MainContent> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Миниатюра товара для карточки заказа: показывает реальное фото первого
+/// товара из заказа (если есть), с кэшем по id, чтобы не дёргать API
+/// повторно для одинаковых заказов при перерисовке списка.
+class _OrderThumbnail extends StatefulWidget {
+  final int? productId;
+
+  const _OrderThumbnail({required this.productId});
+
+  @override
+  State<_OrderThumbnail> createState() => _OrderThumbnailState();
+}
+
+class _OrderThumbnailState extends State<_OrderThumbnail> {
+  static final Map<int, String?> _imageUrlCache = {};
+  static final ProductApiService _api = ProductApiService();
+
+  String? _imageUrl;
+  bool _resolved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolve();
+  }
+
+  Future<void> _resolve() async {
+    final id = widget.productId;
+    if (id == null) {
+      setState(() => _resolved = true);
+      return;
+    }
+    if (_imageUrlCache.containsKey(id)) {
+      setState(() {
+        _imageUrl = _imageUrlCache[id];
+        _resolved = true;
+      });
+      return;
+    }
+    try {
+      final product = await _api.getProductById(id);
+      _imageUrlCache[id] = product.imageUrl;
+      if (!mounted) return;
+      setState(() {
+        _imageUrl = product.imageUrl;
+        _resolved = true;
+      });
+    } catch (_) {
+      _imageUrlCache[id] = null;
+      if (!mounted) return;
+      setState(() => _resolved = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 80,
+        height: 60,
+        color: const Color(0xFFFFF3E0),
+        child: _imageUrl == null
+            ? Center(
+                child: _resolved
+                    ? const Icon(Icons.bakery_dining, color: Color(0xFFD4A44C), size: 30)
+                    : const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+              )
+            : Image.network(
+                _imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Icon(Icons.bakery_dining, color: Color(0xFFD4A44C), size: 30),
+                ),
+              ),
       ),
     );
   }

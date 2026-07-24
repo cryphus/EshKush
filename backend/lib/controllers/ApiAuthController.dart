@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../middleware/SecurityMiddleware.dart';
 import '../model/dto/requests/LoginDto.dart';
+import '../model/entities/UserSessions.dart';
 import '../repositories/UserRepository.dart';
 import '../repositories/UserSessionRepository.dart';
 import '../services/AuthService.dart';
@@ -30,6 +32,7 @@ class ApiAuthController {
     router.post('/auth/refresh', _refresh);
     router.post('/login', _login);
     router.post('/auth/check_user', _checkUser);
+    router.post('/auth/telegram', _telegram);
     router.post('/logout', _logout);
     return router;
   }
@@ -148,6 +151,94 @@ class ApiAuthController {
 
       return Response.ok(
         jsonEncode({'exists': user != null}),
+        headers: {'content-type': 'application/json'},
+      );
+    } catch (e) {
+      return ErrorResponseUtils.errorResponse(
+        e,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+  }
+
+  /// Логин по номеру телефона, подтверждённому Telegram-ботом.
+  ///
+  /// Вызывается только сервисом telegramAuth (не публичный клиентский
+  /// эндпоинт): номер телефона приходит из Telegram Contact API, поэтому
+  /// его можно считать проверенным без пароля, но только если запрос
+  /// аутентифицирован общим секретом между сервисами.
+  Future<Response> _telegram(Request request) async {
+    try {
+      final expectedSecret = Platform.environment['TELEGRAM_SERVICE_SECRET'];
+      final providedSecret = request.headers['x-telegram-service-secret'];
+      if (expectedSecret == null ||
+          expectedSecret.isEmpty ||
+          providedSecret != expectedSecret) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+          'Недействительный сервисный секрет',
+          code: ErrorCode.unauthorized,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+
+      final data = await RequestBodyUtils.readJsonObject(request);
+      final phoneNumber = data['phoneNumber']?.toString();
+      final firstName = data['firstName']?.toString() ?? '';
+      final lastName = data['lastName']?.toString() ?? '';
+      if (phoneNumber == null || phoneNumber.isEmpty) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+          'Требуется номер телефона',
+          code: ErrorCode.badRequest,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+
+      final user = await _userRepository.findByNumber(phoneNumber);
+
+      if (user == null) {
+        return Response.ok(
+          jsonEncode({
+            'exists': false,
+            'phoneNumber': phoneNumber,
+            'firstName': firstName,
+            'lastName': lastName,
+          }),
+          headers: {'content-type': 'application/json'},
+        );
+      }
+
+      final bundle =
+          AuthUtils.generateTokenBundle(user.id, user.role.name.toLowerCase());
+      final refreshJti = bundle['refresh_jti'] as String;
+      final refreshExpiresAt = bundle['refresh_expires_at'] as DateTime;
+
+      await _userSessionRepository.create(
+        UserSessions(
+          id: 0,
+          userId: user.id,
+          createdAt: DateTime.now(),
+          expiresAt: refreshExpiresAt,
+          lastActive: DateTime.now(),
+          userAgent: request.headers['user-agent'] ?? 'unknown',
+          ipAddress: SecurityMiddleware.extractClientIp(request),
+          token: bundle['access_token'] as String,
+          refreshJtiHash: AuthUtils.hashRefreshJti(refreshJti),
+        ),
+      );
+
+      return Response.ok(
+        jsonEncode({
+          'exists': true,
+          'access_token': bundle['access_token'],
+          'refresh_token': bundle['refresh_token'],
+          'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'number': user.number,
+            'role': user.role.name.toLowerCase(),
+          },
+        }),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {

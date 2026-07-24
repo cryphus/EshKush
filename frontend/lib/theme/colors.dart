@@ -20,4 +20,9 @@ class AppColors {
   static const Color statusYellow = Color(0xFFF5C518);
   static const Color statusYellowDark = Color(0xFFB89010);
   static const Color statusYellowBg = Color(0xFFFFFAE8);
+
+  // Soft-UI токены (минималистичный редизайн главной / предложений)
+  static const Color chipInactive = Color(0xFFF2EFE6);
+  static const Color surfaceCream = Color(0xFFF7F4EC);
+  static const Color textMuted = Color(0xFF8A8578);
 }

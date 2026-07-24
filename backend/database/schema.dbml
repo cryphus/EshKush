@@ -1,0 +1,492 @@
+// ============================================================================
+// EshKush — схема БД (PostgreSQL) в формате DBML
+// Источник: backend/database/init.sql + migrations/001..006
+// Визуализация: https://dbdiagram.io  (Import → DBML)
+// ============================================================================
+
+Project EshKush {
+  database_type: 'PostgreSQL'
+  Note: 'Маркетплейс точек продаж/еды: пользователи, партнёры, точки, товары, заказы, оплаты, отзывы, лояльность, аудит.'
+}
+
+// ── ENUM-типы ───────────────────────────────────────────────────────────────
+Enum user_role {
+  admin
+  partner
+  support
+  user
+  guest
+}
+
+Enum point_category {
+  shop
+  restaurant
+  cafe
+  other
+}
+
+Enum order_status {
+  pending
+  processing
+  completed
+  cancelled
+}
+
+Enum payment_method {
+  cash
+  card
+  creditCard
+  mobilePayment
+  other
+}
+
+Enum payment_transaction_status {
+  pending
+  completed
+  failed
+  refunded
+}
+
+Enum notification_type {
+  otherUpdate
+  promotion
+  system
+}
+
+Enum discount_type {
+  fixed
+  percentage
+}
+
+Enum action_type {
+  create
+  read
+  update
+  delete
+  login
+  logout
+  search
+  filter
+  other
+}
+
+Enum history_status {
+  pending
+  completed
+  cancelled
+}
+
+Enum change_type {
+  create
+  update
+  delete
+  restore
+}
+
+Enum entity_type {
+  user
+  point
+  product
+  order
+  partner
+  category
+  promoCode
+  profile
+  other
+}
+
+Enum session_status {
+  active
+  expired
+  revoked
+}
+
+Enum error_severity {
+  low
+  medium
+  high
+  critical
+}
+
+// ── Пользователи и идентичность ─────────────────────────────────────────────
+Table users {
+  id int [pk, increment]
+  username varchar(50) [not null, unique]
+  password varchar(255)                       // nullable: telegram-only юзеры
+  number varchar(20)
+  email varchar(100) [unique]
+  telegram_id bigint [unique]
+  telegram_username varchar(64)
+  first_name varchar(64)
+  last_name varchar(64)
+  yandex_id varchar(100) [unique]
+  vk_id varchar(100) [unique]
+  role user_role [not null, default: 'user']
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz
+
+  Indexes {
+    username
+    email
+    telegram_id
+    yandex_id
+    vk_id
+  }
+}
+
+Table profiles {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]     // ON DELETE CASCADE
+  first_name varchar(50)
+  last_name varchar(50)
+  avatar_url text
+  bio text
+  sum_co2 int [default: 0]
+  saved_money decimal(10,2) [default: 0.0]
+  count_buy int [default: 0]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// ── Сессии и токены ─────────────────────────────────────────────────────────
+Table user_sessions {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]     // ON DELETE CASCADE
+  token text [not null]
+  refresh_jti_hash varchar(64) [not null]
+  device_info text
+  ip_address varchar(45)
+  status session_status [not null, default: 'active']
+  expires_at timestamptz [not null]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  last_active timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  is_active boolean [not null, default: true]
+}
+
+Table token_blacklist {
+  jti_hash varchar(64) [pk]
+  expires_at timestamptz [not null]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table telegram_auth_tokens {
+  token varchar(128) [pk]
+  status varchar(20) [not null, default: 'pending']
+  user_id int [ref: > users.id]               // ON DELETE SET NULL
+  telegram_id bigint
+  telegram_username varchar(64)
+  first_name varchar(64)
+  last_name varchar(64)
+  phone varchar(20)
+  access_token text
+  refresh_token text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  expires_at timestamptz [not null]
+  completed_at timestamptz
+}
+
+// ── География и партнёры ────────────────────────────────────────────────────
+Table cities {
+  id int [pk, increment]
+  name varchar(100) [not null]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table partners {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  name varchar(100) [not null]
+  contact_person int
+  contact_email varchar(100)
+  contact_phone varchar(20)
+  contact_document varchar(50)
+  max_discount decimal(5,2) [default: 0.0]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table partner_settings {
+  id int [pk, increment]
+  partner_id int [not null, ref: > partners.id]   // ON DELETE CASCADE
+  branding_color varchar(20) [not null, default: '#000000']
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table partner_statistics {
+  id int [pk, increment]
+  partner_id int [not null, ref: > partners.id]   // ON DELETE CASCADE
+  point_id int [not null, ref: > points.id]       // ON DELETE CASCADE
+  total_orders int [not null, default: 0]
+  total_revenue decimal(10,2) [not null, default: 0]
+  total_cancel int [not null, default: 0]
+  average_rating decimal(3,2) [not null, default: 0]
+  total_reviews int [not null, default: 0]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz
+}
+
+// ── Точки и их категории ────────────────────────────────────────────────────
+Table points {
+  id int [pk, increment]
+  name varchar(100) [not null]
+  address text [not null]
+  rating decimal(3,2) [default: 0.0]
+  city_id int [not null, ref: > cities.id]
+  products jsonb [not null, default: `'{}'`]
+  opening_hours varchar(5) [not null]
+  closing_hours varchar(5) [not null]
+  partner_id int [not null, ref: > partners.id]
+  longitude decimal(10,7) [not null]
+  latitude decimal(10,7) [not null]
+  tags jsonb [not null, default: `'{}'`]
+  image_url varchar(255)
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz
+
+  Indexes {
+    city_id
+    partner_id
+    (latitude, longitude) [name: 'points_earth_idx', note: 'GIST ll_to_earth — геопоиск в радиусе']
+  }
+}
+
+Table point_categories {
+  id int [pk, increment]
+  name varchar(50) [not null, unique]
+  description text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table point_category_map {
+  point_id int [not null, ref: > points.id]              // ON DELETE CASCADE
+  category_id int [not null, ref: > point_categories.id] // ON DELETE CASCADE
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (point_id, category_id) [pk]
+  }
+}
+
+// ── Товары и их категории ───────────────────────────────────────────────────
+Table products {
+  id int [pk, increment]
+  name varchar(100) [not null]
+  description text [not null]
+  price decimal(10,2) [not null]
+  image_url varchar(255)
+  partner_id int [not null, ref: > partners.id]
+  point_id int [not null, ref: > points.id]
+  weight decimal(10,2) [not null, default: 0.0]
+  is_available boolean [not null, default: true]
+  is_active boolean [not null, default: true]
+  quantity int [not null, default: 20]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz
+
+  Indexes {
+    partner_id
+    point_id
+  }
+}
+
+Table product_categories {
+  id int [pk, increment]
+  name varchar(50) [not null, unique]
+  description text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// Отдельная таблица categories существует, но не используется внешними ключами.
+Table categories {
+  id int [pk, increment]
+  name varchar(50) [not null, unique]
+  description text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table product_category_map {
+  product_id int [not null, ref: > products.id]            // ON DELETE CASCADE
+  category_id int [not null, ref: > product_categories.id] // ON DELETE CASCADE
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (product_id, category_id) [pk]
+  }
+}
+
+// ── Заказы, оплаты, история ─────────────────────────────────────────────────
+Table orders {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  point_id int [not null, ref: > points.id]
+  products_id "int[]" [not null, note: 'массив id товаров (без FK)']
+  date timestamptz [not null]
+  status order_status [not null, default: 'pending']
+  total_price decimal(10,2) [not null]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [note: 'обновляется триггером update_orders_updated_at']
+
+  Indexes {
+    user_id
+    point_id
+    status
+  }
+}
+
+Table payment_transactions {
+  id int [pk, increment]
+  order_id int [not null, ref: > orders.id]   // ON DELETE CASCADE
+  order_price decimal(10,2) [not null, default: 0]
+  status payment_transaction_status [not null, default: 'pending']
+  payment_method payment_method [not null, default: 'other']
+  provider_transaction_id text [not null, note: 'UUID-строка провайдера (YooKassa и т.п.)']
+  confirmation_url text
+  transaction_date timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz
+  error_message text
+  is_active boolean [not null, default: true]
+}
+
+Table order_history {
+  id int [pk, increment]
+  order_id int [not null, ref: > orders.id]   // ON DELETE CASCADE
+  point_id int [not null, ref: > points.id]
+  user_id int [not null, ref: > users.id]
+  order_date timestamptz [not null]
+  completion_date timestamptz
+  total_sum decimal(10,2) [not null, default: 0.0]
+  status history_status [not null, default: 'pending']
+  receipt_link text
+  discount_applied decimal(10,2)
+  promo_code_used text
+  co2_saved int [default: 0]
+  notes text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table order_actions {
+  id int [pk, increment]
+  order_id int [not null, ref: > orders.id]   // ON DELETE CASCADE
+  action_type action_type [not null]
+  description text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// ── Отзывы, избранное, уведомления ──────────────────────────────────────────
+Table reviews {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  point_id int [not null, ref: > points.id]
+  rating int [not null, note: 'CHECK 1..5']
+  comment text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table point_reviews {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  point_id int [not null, ref: > points.id]
+  rating decimal(2,1) [not null, note: 'CHECK 0..5']
+  comment text
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table user_favorites {
+  user_id int [not null, ref: > users.id]
+  point_id int [not null, ref: > points.id]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (user_id, point_id) [pk]
+  }
+}
+
+Table notifications {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  message text [not null]
+  type notification_type [not null]
+  is_read boolean [not null, default: false]
+  metadata jsonb [not null, default: `'{}'`]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  sent_at timestamptz
+  read_at timestamptz
+}
+
+// ── Лояльность ──────────────────────────────────────────────────────────────
+Table promo_codes {
+  id int [pk, increment]
+  code varchar(50) [not null, unique]
+  description text [not null]
+  start_date timestamptz [not null]
+  end_date timestamptz [not null]
+  min_order_sum decimal(10,2) [not null, default: 0]
+  discount_type discount_type [not null]
+  discount_value decimal(10,2) [not null]
+  is_active boolean [not null, default: true]
+  usage_limit int
+  current_usage int [not null, default: 0]
+  applicable_products "int[]"
+  applicable_points "int[]"
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (start_date, end_date) [name: 'promo_codes_dates_idx']
+  }
+}
+
+// ── Аудит и логи ────────────────────────────────────────────────────────────
+Table action_logs {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  action_type action_type [not null]
+  entity_type entity_type [not null]
+  entity_id int [not null]
+  details text [not null]
+  timestamp timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  ip_address varchar(45) [not null]
+  user_agent text
+  location text
+  is_success boolean [not null, default: true]
+  error_message text
+  metadata jsonb
+}
+
+Table changes {
+  id int [pk, increment]
+  entity_type entity_type [not null]
+  entity_id int [not null]
+  change_type change_type [not null]
+  field_name varchar(100) [not null]
+  old_value text
+  new_value text
+  changed_by int [ref: > users.id]
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  comment text
+  is_reverted boolean [not null, default: false]
+  reverted_at timestamptz
+  reverted_by int [ref: > users.id]
+}
+
+Table error_logs {
+  id int [pk, increment]
+  severity error_severity [not null]
+  message text [not null]
+  error_code text [not null]
+  stack_trace text [not null]
+  time timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  resolved boolean [not null, default: false]
+  module text
+  user_id int [ref: > users.id]
+  additional_info text
+  resolved_at timestamptz
+  resolved_by text
+}
+
+// ── Служебное ───────────────────────────────────────────────────────────────
+Table schema_migrations {
+  version text [pk]
+  applied_at timestamptz [not null, default: `now()`]
+}

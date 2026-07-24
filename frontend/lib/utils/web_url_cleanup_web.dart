@@ -18,10 +18,12 @@ void cleanupOAuthParamsFromUrl() {
   updatedQuery.remove('access_token');
   updatedQuery.remove('refresh_token');
   updatedQuery.remove('oauth_error');
+  updatedQuery.remove('data');
 
   fragmentParams.remove('access_token');
   fragmentParams.remove('refresh_token');
   fragmentParams.remove('oauth_error');
+  fragmentParams.remove('data');
 
   final queryChanged = updatedQuery.length != uri.queryParameters.length;
   final fragmentChanged = fragmentParams.length != originalFragment.length;

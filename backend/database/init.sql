@@ -141,6 +141,7 @@ CREATE TABLE points (
     longitude DECIMAL(10,7) NOT NULL,
     latitude DECIMAL(10,7) NOT NULL,
     tags JSONB NOT NULL DEFAULT '{}',
+    image_url VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
 );
@@ -202,6 +203,12 @@ CREATE TABLE products (
     weight DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
     is_available BOOLEAN NOT NULL DEFAULT TRUE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    quantity INTEGER NOT NULL DEFAULT 20,
+    original_price DECIMAL(10, 2),
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    pickup_start VARCHAR(5),
+    pickup_end VARCHAR(5),
+    items_count INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
 );

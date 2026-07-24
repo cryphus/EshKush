@@ -4,6 +4,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../model/dto/responses/PaymentTransactionDto.dart';
+import '../services/PaymentGatewayService.dart';
 import '../services/PaymentTransactionsService.dart';
 import '../utils/ErrorResponseUtils.dart';
 import '../utils/LoggingUtils.dart';
@@ -12,9 +13,12 @@ import '../utils/RequestContextUtils.dart';
 
 class PaymentTransactionsController {
   final PaymentTransactionsService _transactionsService;
+  final PaymentGatewayService? _gatewayService;
   late final Router _router;
 
-  PaymentTransactionsController(this._transactionsService) {
+  PaymentTransactionsController(this._transactionsService,
+      {PaymentGatewayService? gatewayService})
+      : _gatewayService = gatewayService {
     _router = Router();
     _router.get('/', _getMyTransactions);
     _router.get('/transaction', getTransaction);
@@ -166,7 +170,6 @@ class PaymentTransactionsController {
       final unauthorized = RequestContextUtils.requireUserOr401(request,
           headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
-      if (!_isElevated(request)) return _forbidden();
 
       final orderId =
           int.tryParse(request.url.queryParameters['order_id'] ?? '');
@@ -175,6 +178,24 @@ class PaymentTransactionsController {
           'Некорректный ID заказа',
           headers: _getCorsHeaders(),
         );
+      }
+
+      // Обычный пользователь видит транзакции только своих заказов —
+      // этот эндпоинт поллит фронтенд после инициации оплаты.
+      if (!_isElevated(request)) {
+        final requestUserId = RequestContextUtils.getUserId(request);
+        if (requestUserId == null) return _forbidden();
+        final owns = await _transactionsService.isOrderOwnedByUser(
+          orderId: orderId,
+          userId: requestUserId,
+        );
+        if (!owns) return _forbidden();
+      }
+
+      // Подтягиваем актуальные статусы pending-платежей у провайдера —
+      // критично, когда webhook не доходит (локальная разработка).
+      if (_gatewayService != null) {
+        await _gatewayService!.syncPendingByOrder(orderId);
       }
 
       final transactions =

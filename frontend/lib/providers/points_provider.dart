@@ -28,10 +28,10 @@ class PointsNotifier extends StateNotifier<PointsState> {
       : _api = api ?? PointApiService(),
         super(const PointsState());
 
-  Future<void> loadAll() async {
+  Future<void> loadAll({int? cityId}) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final points = await _api.getAllPoints();
+      final points = await _api.getAllPoints(cityId: cityId);
       state = PointsState(points: points);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

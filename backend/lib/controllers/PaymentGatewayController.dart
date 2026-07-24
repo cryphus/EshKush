@@ -21,7 +21,55 @@ class PaymentGatewayController {
     router.post('/create', createPayment);
     router.post('/webhook', webhook);
     router.post('/refund', refund);
+    router.get('/mock-checkout', mockCheckout);
     return router;
+  }
+
+  /// Страница "касса" mock-режима. Открывается вместо реальной страницы
+  /// оплаты YooKassa, когда шлюз работает без боевых ключей. Платёж к этому
+  /// моменту уже подтверждён, поэтому страница только информирует.
+  Future<Response> mockCheckout(Request request) async {
+    final orderId = request.url.queryParameters['order_id'] ?? '—';
+    final amount = request.url.queryParameters['amount'] ?? '—';
+    final html = '''
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тестовая оплата — EshKush</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #f4f8f2; display: flex;
+         align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .card { background: #fff; border-radius: 16px; padding: 40px 48px; text-align: center;
+          box-shadow: 0 4px 24px rgba(0,0,0,.08); max-width: 420px; }
+  .check { width: 72px; height: 72px; border-radius: 50%; background: #4CAF50;
+           color: #fff; font-size: 40px; line-height: 72px; margin: 0 auto 20px; }
+  h1 { font-size: 22px; margin: 0 0 8px; color: #1b3a1b; }
+  p { color: #555; margin: 6px 0; }
+  .badge { display: inline-block; margin-top: 16px; padding: 4px 12px; border-radius: 12px;
+           background: #FFF3CD; color: #856404; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="check">✓</div>
+    <h1>Оплата прошла успешно</h1>
+    <p>Заказ №$orderId</p>
+    <p>Сумма: $amount ₽</p>
+    <p>Можно вернуться в приложение — статус заказа обновится автоматически.</p>
+    <div class="badge">Тестовый режим (без реального списания)</div>
+  </div>
+</body>
+</html>''';
+    return Response.ok(
+      html,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Security-Policy':
+            "default-src 'none'; style-src 'unsafe-inline'; base-uri 'self'",
+      },
+    );
   }
 
   Future<Response> createPayment(Request request) async {

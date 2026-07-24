@@ -13,7 +13,12 @@ class ProductResponseDto {
   final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
-  final int? quantity;
+  final int quantity;
+  final double? originalPrice;
+  final List<String> tags;
+  final String? pickupStart;
+  final String? pickupEnd;
+  final int itemsCount;
 
   ProductResponseDto({
     required this.id,
@@ -28,7 +33,12 @@ class ProductResponseDto {
     required this.isActive,
     required this.createdAt,
     this.updatedAt,
-    this.quantity,
+    this.quantity = 0,
+    this.originalPrice,
+    this.tags = const [],
+    this.pickupStart,
+    this.pickupEnd,
+    this.itemsCount = 1,
   });
 
   factory ProductResponseDto.fromEntity(Product product) {
@@ -46,6 +56,11 @@ class ProductResponseDto {
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       quantity: product.quantity,
+      originalPrice: product.originalPrice,
+      tags: product.tags,
+      pickupStart: product.pickupStart,
+      pickupEnd: product.pickupEnd,
+      itemsCount: product.itemsCount,
     );
   }
 
@@ -63,7 +78,12 @@ class ProductResponseDto {
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
-      if (quantity != null) 'quantity': quantity,
+      'quantity': quantity,
+      'original_price': originalPrice,
+      'tags': tags,
+      'pickup_start': pickupStart,
+      'pickup_end': pickupEnd,
+      'items_count': itemsCount,
     };
   }
 }

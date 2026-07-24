@@ -40,6 +40,9 @@ class SecurityMiddleware {
     return (Handler innerHandler) {
       return (Request request) async {
         final response = await innerHandler(request);
+        // Если хендлер сам выставил CSP (например, HTML-страницы со встроенными
+        // стилями), не перезаписываем его дефолтным.
+        final existingCsp = response.headers['content-security-policy'];
         return response.change(headers: {
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'DENY',
@@ -47,7 +50,7 @@ class SecurityMiddleware {
           'Strict-Transport-Security':
               'max-age=31536000; includeSubDomains; preload',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
-          'Content-Security-Policy':
+          'Content-Security-Policy': existingCsp ??
               "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https:; upgrade-insecure-requests",
           'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
           'Cross-Origin-Opener-Policy': 'same-origin',

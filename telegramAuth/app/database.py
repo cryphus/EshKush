@@ -102,18 +102,24 @@ def get_active_session(token: str):
         conn.close()
 
 def create_user(user_id: int, first_name: str, last_name: str, token: str):
-    """Создание нового пользователя"""
+    """Создание пользователя или обновление его данных, если Telegram-пользователь
+    уже проходил авторизацию раньше (повторный /start — обычный сценарий,
+    не должен приводить к UNIQUE constraint failed по user_id)."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute('''
             INSERT INTO users (user_id, first_name, last_name, token)
             VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                first_name = excluded.first_name,
+                last_name = excluded.last_name,
+                token = excluded.token
         ''', (user_id, first_name, last_name, token))
-        
+
         conn.commit()
-        logger.info(f"User {user_id} created successfully")
+        logger.info(f"User {user_id} created/updated successfully")
     except Exception as e:
         logger.error(f"Error creating user: {str(e)}")
         raise

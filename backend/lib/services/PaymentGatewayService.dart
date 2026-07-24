@@ -157,6 +157,48 @@ class PaymentGatewayService {
     return saved;
   }
 
+  /// Ленивая синхронизация статусов pending-транзакций заказа с провайдером.
+  /// Нужна, когда webhook недоступен (локальная разработка): фронтенд поллит
+  /// GET /payment-transactions/order, а мы перед ответом спрашиваем YooKassa.
+  Future<void> syncPendingByOrder(int orderId) async {
+    final transactions = await _transactionsRepository.findByOrderId(orderId);
+    // Placeholder-записи (создаются вместе с заказом, provider_transaction_id =
+    // числовой id заказа) провайдеру неизвестны — их не синхронизируем.
+    final pending = transactions.where((t) =>
+        t.isActive &&
+        t.status == PaymentTransactionStatus.pending &&
+        int.tryParse(t.providerTransactionId) == null);
+    for (final transaction in pending) {
+      try {
+        final payment =
+            await _yooKassa.getPayment(transaction.providerTransactionId);
+        final newStatus = _mapProviderStatus(payment['status']?.toString());
+        if (newStatus == transaction.status) continue;
+
+        String? errorMessage;
+        if (newStatus == PaymentTransactionStatus.failed) {
+          final details = payment['cancellation_details'];
+          if (details is Map<String, dynamic>) {
+            errorMessage = details['reason']?.toString();
+          }
+        }
+        final saved = await _transactionsRepository.update(transaction.copyWith(
+          status: newStatus,
+          updatedAt: DateTime.now(),
+          errorMessage: errorMessage,
+        ));
+        await _syncOrderStatus(saved);
+      } catch (e, st) {
+        // Синхронизация — best effort: провайдер недоступен → отдаём то, что в БД.
+        await LoggingUtils.logError(
+          'Не удалось синхронизировать статус платежа ${transaction.providerTransactionId}',
+          e,
+          stackTrace: st,
+        );
+      }
+    }
+  }
+
   Future<PaymentTransactions> refund({
     required int orderId,
     double? amount,

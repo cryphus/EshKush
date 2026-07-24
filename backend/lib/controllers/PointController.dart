@@ -46,8 +46,16 @@ class PointController {
       );
 
       final pagination = PaginationUtils.parse(request);
+      final rawCityId = request.url.queryParameters['city_id'];
+      final cityId = rawCityId != null ? int.tryParse(rawCityId) : null;
+      if (rawCityId != null && cityId == null) {
+        return ErrorResponseUtils.errorResponseWithMessage(
+            'Некорректный city_id',
+            code: ErrorCode.badRequest,
+            headers: _getCorsHeaders());
+      }
       final points = await _pointService.getAllPoints(
-          limit: pagination.limit, offset: pagination.offset);
+          limit: pagination.limit, offset: pagination.offset, cityId: cityId);
       final pointsJson = jsonEncode(PaginationUtils.wrap(
         points.map((p) => PointResponseDto.fromEntity(p).toJson()).toList(),
         pagination,
@@ -284,7 +292,7 @@ class PointController {
       final unauthorized = RequestContextUtils.requireUserOr401(request,
           headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
-      if (!RequestContextUtils.isAdmin(request)) {
+      if (!RequestContextUtils.isPartnerOrAdmin(request)) {
         return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
             code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }
@@ -348,7 +356,7 @@ class PointController {
       final unauthorized = RequestContextUtils.requireUserOr401(request,
           headers: _getCorsHeaders());
       if (unauthorized != null) return unauthorized;
-      if (!RequestContextUtils.isAdmin(request)) {
+      if (!RequestContextUtils.isPartnerOrAdmin(request)) {
         return ErrorResponseUtils.errorResponseWithMessage('Нет прав доступа',
             code: ErrorCode.forbidden, headers: _getCorsHeaders());
       }

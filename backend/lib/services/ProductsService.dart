@@ -1,5 +1,6 @@
 import '../model/entities/Product.dart';
 import '../model/entities/ProductCategory.dart';
+import '../model/entities/Point.dart';
 import '../repositories/ProductsRepository.dart';
 import '../utils/AppException.dart';
 import 'CacheService.dart';
@@ -119,6 +120,14 @@ class ProductsService {
         createdAt: existingProduct.createdAt,
         updatedAt: DateTime.now(),
         isActive: data['is_active'] ?? existingProduct.isActive,
+        quantity: data['quantity'] ?? existingProduct.quantity,
+        originalPrice: data['original_price'] ?? existingProduct.originalPrice,
+        tags: data['tags'] != null
+            ? (data['tags'] as List).map((e) => e.toString()).toList()
+            : existingProduct.tags,
+        pickupStart: data['pickup_start'] ?? existingProduct.pickupStart,
+        pickupEnd: data['pickup_end'] ?? existingProduct.pickupEnd,
+        itemsCount: data['items_count'] ?? existingProduct.itemsCount,
       );
 
       final result = await _productsRepository.update(updatedProduct);
@@ -176,12 +185,20 @@ class ProductsService {
         limit: limit, offset: offset);
   }
 
+  Future<List<(Product, Point)>> getFeed({int? cityId, int limit = 50, int offset = 0}) async {
+    return await _productsRepository.findFeed(
+        cityId: cityId, limit: limit, offset: offset);
+  }
+
   void _validateProductData(Map<String, dynamic> data) {
     if (data['price'] != null && (data['price'] as num) < 0) {
       throw const BadRequestException('Цена не может быть отрицательной');
     }
     if (data['weight'] != null && (data['weight'] as num) < 0) {
       throw const BadRequestException('Вес не может быть отрицательным');
+    }
+    if (data['original_price'] != null && (data['original_price'] as num) < 0) {
+      throw const BadRequestException('Старая цена не может быть отрицательной');
     }
     if (data['is_active'] != null && data['is_active'] is! bool) {
       throw const BadRequestException(

@@ -8,7 +8,7 @@ import 'BaseRepository.dart';
 class PointRepository extends BaseRepository {
   PointRepository(PostgreSQLConnection connection) : super(connection);
 
-  Future<List<Point>> findAll({int limit = 20, int offset = 0}) async {
+  Future<List<Point>> findAll({int limit = 20, int offset = 0, int? cityId}) async {
     try {
       final result = await connection.mappedResultsQuery('''
         WITH point_ratings AS (
@@ -19,9 +19,14 @@ class PointRepository extends BaseRepository {
         SELECT p.*, COALESCE(pr.current_rating, 0) as rating
         FROM points p
         LEFT JOIN point_ratings pr ON p.id = pr.point_id
+        ${cityId != null ? 'WHERE p.city_id = @cityId' : ''}
         ORDER BY p.id
         LIMIT @limit OFFSET @offset
-      ''', substitutionValues: {'limit': limit, 'offset': offset});
+      ''', substitutionValues: {
+        'limit': limit,
+        'offset': offset,
+        if (cityId != null) 'cityId': cityId,
+      });
 
       return result.map((row) => Point.fromJson(row['points']!)).toList();
     } catch (e) {
@@ -78,7 +83,7 @@ class PointRepository extends BaseRepository {
           COALESCE(pr.current_rating, 0) AS rating,
           p.city_id, p.products, p.opening_hours, p.closing_hours,
           p.partner_id, p.longitude, p.latitude, p.tags,
-          p.created_at, p.updated_at,
+          p.image_url, p.created_at, p.updated_at,
           earth_distance(
             ll_to_earth(p.latitude::float8, p.longitude::float8),
             ll_to_earth(@lat, @lon)
@@ -114,10 +119,11 @@ class PointRepository extends BaseRepository {
           'longitude': row[9],
           'latitude': row[10],
           'tags': row[11],
-          'created_at': row[12],
-          'updated_at': row[13],
+          'image_url': row[12],
+          'created_at': row[13],
+          'updated_at': row[14],
         };
-        final distanceM = (row[14] as num?)?.toDouble() ?? 0.0;
+        final distanceM = (row[15] as num?)?.toDouble() ?? 0.0;
         return NearbyPoint(
           point: Point.fromJson(pointJson),
           distanceM: distanceM,

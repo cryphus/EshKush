@@ -110,26 +110,24 @@ class OfferCardSkeleton extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(24),
         ),
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SkeletonBox(
-              height: 100,
+              height: 140,
               width: double.infinity,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             Padding(
-              padding: EdgeInsets.fromLTRB(12, 12, 12, 14),
+              padding: EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SkeletonBox(width: 160, height: 14),
+                  SkeletonBox(width: 160, height: 15),
                   SizedBox(height: 8),
-                  SkeletonBox(width: 100, height: 12),
-                  SizedBox(height: 10),
-                  SkeletonBox(width: 200, height: 10),
+                  SkeletonBox(width: 200, height: 11),
                 ],
               ),
             ),
@@ -148,14 +146,14 @@ class OrderCardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Shimmer(
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: const Row(
           children: [
-            SkeletonBox(width: 80, height: 60),
+            SkeletonBox(width: 56, height: 56),
             SizedBox(width: 14),
             Expanded(
               child: Column(

@@ -12,6 +12,11 @@ class Product {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final int? quantity;
+  final double? originalPrice;
+  final List<String> tags;
+  final String? pickupStart;
+  final String? pickupEnd;
+  final int itemsCount;
 
   const Product({
     required this.id,
@@ -27,6 +32,11 @@ class Product {
     required this.createdAt,
     this.updatedAt,
     this.quantity,
+    this.originalPrice,
+    this.tags = const [],
+    this.pickupStart,
+    this.pickupEnd,
+    this.itemsCount = 1,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
@@ -43,7 +53,21 @@ class Product {
         createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
         updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
         quantity: json['quantity'] as int?,
+        originalPrice: (json['original_price'] as num?)?.toDouble(),
+        tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+        pickupStart: json['pickup_start'] as String?,
+        pickupEnd: json['pickup_end'] as String?,
+        itemsCount: (json['items_count'] as num?)?.toInt() ?? 1,
       );
+
+  /// Товар можно купить/добавить в корзину, только если он доступен и
+  /// остаток на складе не исчерпан (null остатка считаем "не отслеживается").
+  bool get isPurchasable => isAvailable && (quantity == null || quantity! > 0);
+
+  bool get hasDiscount => originalPrice != null && originalPrice! > price;
+
+  String? get pickupWindowLabel =>
+      (pickupStart != null && pickupEnd != null) ? '$pickupStart - $pickupEnd' : null;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -57,5 +81,10 @@ class Product {
         'is_available': isAvailable,
         'is_active': isActive,
         if (quantity != null) 'quantity': quantity,
+        if (originalPrice != null) 'original_price': originalPrice,
+        'tags': tags,
+        if (pickupStart != null) 'pickup_start': pickupStart,
+        if (pickupEnd != null) 'pickup_end': pickupEnd,
+        'items_count': itemsCount,
       };
 }

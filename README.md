@@ -8,6 +8,7 @@
 | `backend/` | Dart Shelf API + Swagger (`/swagger`) |
 | `shared/` | Общие типы Dart, подключаются как `path: ../shared` |
 | `telegramAuth/` | Telegram-бот + Flask API (Python) |
+| `partner-web/` | Веб-панель партнёра — Nuxt 3 (Vue), отдельное SPA-приложение |
 | `docker-compose.yml` | Инфраструктура: Postgres, Redis, backend, Nginx |
 | `scripts/` | Вспомогательные bash-скрипты запуска и сборки |
 
@@ -163,9 +164,8 @@ flutter build apk --release \
 | Что | Значение | Где |
 |---|---|---|
 | Application ID | `com.eshkush.app` | `android/app/build.gradle.kts` |
-| `minSdkVersion` | **26** (требование `yandex_mapkit`) | `android/app/build.gradle.kts` |
+| `minSdkVersion` | **26** | `android/app/build.gradle.kts` |
 | Cleartext HTTP | разрешён (backend/медиа по `http://`) | `android/app/src/main/res/xml/network_security_config.xml` |
-| Yandex MapKit key | `REPLACE_WITH_YANDEX_MAPKIT_API_KEY` — **заменить перед релизом** | `android/app/src/main/AndroidManifest.xml` |
 
 > **Подключение к backend с устройства.** На реальном устройстве/эмуляторе
 > `localhost` указывает на сам телефон, а не на твой ПК. Для **эмулятора**
@@ -215,6 +215,29 @@ python -m app.bot
 
 ---
 
+## Веб-панель партнёра (partner-web)
+
+Отдельное SPA-приложение на Nuxt 3 — не часть мобильного/веб-приложения
+пользователя. Партнёры и админы управляют точками, предложениями и заказами,
+смотрят аналитику с графиками. Аутентификация — логин/пароль через тот же
+Dart backend (`POST /login`), доступ только ролям `partner`/`admin`.
+
+```bash
+cd partner-web
+npm install
+
+# По умолчанию ходит на http://localhost:3000 (см. .env.example)
+cp .env.example .env
+
+npm run dev        # http://localhost:3010
+npm run build       # продакшн-сборка (.output/)
+```
+
+> Backend должен разрешать origin панели в `ALLOWED_ORIGINS` (корневой `.env`).
+> Для dev-порта 3010 уже добавлено `http://localhost:3010,http://127.0.0.1:3010`.
+
+---
+
 ## Shared пакет
 
 Подключён в `frontend/pubspec.yaml` и `backend/pubspec.yaml` как `path: ../shared`. При Docker-сборке `shared/` копируется в образ (см. Dockerfile'ы).
@@ -238,7 +261,6 @@ python -m app.bot
 | Postgres не стартует | `docker-compose down -v`, затем снова `up --build` (сбросит тома) |
 | `assets/assets/...` 404 | В коде путь `icons/xxx.svg`, в `pubspec.yaml` — `assets/icons/` |
 | Gradle version check (Android) | `./gradlew wrapper --gradle-version 8.11.1` |
-| `yandex_mapkit requires a higher Android SDK` | Уже исправлено: `minSdk = 26` в `android/app/build.gradle.kts` |
 | `Could not close incremental caches` (Kotlin, Windows) | Уже отключено: `kotlin.incremental=false` в `android/gradle.properties`. Если всплыло снова — `flutter clean` |
 | Android: данные/картинки не грузятся (cleartext) | Уже разрешено через `network_security_config.xml`; проверь, что API доступен с устройства (см. раздел Android) |
 | Flutter конфиг не применяется | Убедись что передаёшь `--dart-define` при `flutter run` / `flutter build` |

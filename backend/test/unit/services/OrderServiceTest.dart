@@ -54,10 +54,10 @@ void main() {
     tags: {}, createdAt: DateTime(2024),
   );
 
-  Map<String, dynamic> _productJson({double price = 100.0}) => {
+  Map<String, dynamic> _productJson({double price = 100.0, int quantity = 20}) => {
     'id': 1, 'name': 'Product', 'description': '', 'price': price,
     'partner_id': 1, 'point_id': 1, 'weight': 0.5,
-    'is_available': true, 'is_active': true,
+    'is_available': true, 'is_active': true, 'quantity': quantity,
     'created_at': '2024-01-01T00:00:00.000Z',
   };
 
@@ -133,6 +133,36 @@ void main() {
       when(productsRepo.findByIds([1])).thenAnswer((_) async => [_productJson(price: 200.0)]);
       // total_price = 100, но продукт стоит 200
       expect(() => sut.createOrder(_orderData(price: 100.0)), throwsA(isA<Exception>()));
+    });
+
+    test('бросает если товара не хватает на складе', () async {
+      when(userRepo.findById(1)).thenAnswer((_) async => _user());
+      when(pointRepo.findById(1)).thenAnswer((_) async => _point());
+      when(productsRepo.findByIds([1]))
+          .thenAnswer((_) async => [_productJson(price: 100.0, quantity: 0)]);
+      expect(() => sut.createOrder(_orderData(price: 100.0)), throwsA(isA<Exception>()));
+    });
+
+    test('считает количество по повторяющимся id в products_id (заказ нескольких штук одного товара)', () async {
+      when(userRepo.findById(1)).thenAnswer((_) async => _user());
+      when(pointRepo.findById(1)).thenAnswer((_) async => _point());
+      when(productsRepo.findByIds([1]))
+          .thenAnswer((_) async => [_productJson(price: 100.0, quantity: 5)]);
+      when(orderRepo.createWithPayment(any)).thenAnswer((_) async => _order(price: 200.0));
+
+      final data = {..._orderData(), 'products_id': [1, 1], 'total_price': 200.0};
+      final result = await sut.createOrder(data);
+      expect(result.id, 1);
+    });
+
+    test('бросает если заказано больше, чем есть на складе (2 шт. при остатке 1)', () async {
+      when(userRepo.findById(1)).thenAnswer((_) async => _user());
+      when(pointRepo.findById(1)).thenAnswer((_) async => _point());
+      when(productsRepo.findByIds([1]))
+          .thenAnswer((_) async => [_productJson(price: 100.0, quantity: 1)]);
+
+      final data = {..._orderData(), 'products_id': [1, 1], 'total_price': 200.0};
+      expect(() => sut.createOrder(data), throwsA(isA<Exception>()));
     });
   });
 

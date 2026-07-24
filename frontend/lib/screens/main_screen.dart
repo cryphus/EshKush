@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import './home_screen.dart';
 import './offers_screen.dart';
 import './favorites_screen.dart';
+import './all_orders_screen.dart';
 
 import '../widgets/layouts/scaffold_layout.dart';
 
@@ -42,9 +43,10 @@ class _MainScreenState extends State<MainScreen> {
         children: [
           MainContent(
             onMoreOffers: () => _switchToTab(1),
-            onViewAllOrders: () {
-              // TODO: экран всех заказов
-            },
+            onViewAllOrders: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AllOrdersScreen()),
+            ),
             onViewAllCategories: () => _switchToTab(1),
           ),
           const OffersPage(),

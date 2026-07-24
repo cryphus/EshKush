@@ -264,9 +264,6 @@ class DependencyFactory {
 
     final paymentTransactionsRepository =
         PaymentTransactionsRepository(db.connection);
-    final paymentTransactionsController = PaymentTransactionsController(
-      PaymentTransactionsService(paymentTransactionsRepository),
-    );
 
     final yooKassaService = YooKassaService(config);
     final paymentGatewayService = PaymentGatewayService(
@@ -278,6 +275,11 @@ class DependencyFactory {
     );
     final paymentGatewayController =
         PaymentGatewayController(paymentGatewayService);
+
+    final paymentTransactionsController = PaymentTransactionsController(
+      PaymentTransactionsService(paymentTransactionsRepository),
+      gatewayService: paymentGatewayService,
+    );
 
     final orderController = OrderController(
       orderService,

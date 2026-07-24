@@ -12,7 +12,12 @@ class Product {
   final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
-  final int? quantity;
+  final int quantity;
+  final double? originalPrice;
+  final List<String> tags;
+  final String? pickupStart;
+  final String? pickupEnd;
+  final int itemsCount;
 
   Product({
     required this.id,
@@ -27,7 +32,12 @@ class Product {
     required this.isActive,
     required this.createdAt,
     this.updatedAt,
-    this.quantity,
+    this.quantity = 0,
+    this.originalPrice,
+    this.tags = const [],
+    this.pickupStart,
+    this.pickupEnd,
+    this.itemsCount = 1,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -58,6 +68,31 @@ class Product {
       final isAvailable = json['is_available'] as bool? ?? true;
       final isActive = json['is_active'] as bool? ?? true;
 
+      final quantity = json['quantity'] == null
+          ? 0
+          : (json['quantity'] is String
+              ? int.parse(json['quantity'] as String)
+              : (json['quantity'] as num).toInt());
+
+      final originalPrice = json['original_price'] == null
+          ? null
+          : (json['original_price'] is String
+              ? double.parse(json['original_price'] as String)
+              : (json['original_price'] as num).toDouble());
+
+      final tags = json['tags'] == null
+          ? <String>[]
+          : (json['tags'] as List).map((e) => e.toString()).toList();
+
+      final pickupStart = json['pickup_start']?.toString();
+      final pickupEnd = json['pickup_end']?.toString();
+
+      final itemsCount = json['items_count'] == null
+          ? 1
+          : (json['items_count'] is String
+              ? int.parse(json['items_count'] as String)
+              : (json['items_count'] as num).toInt());
+
       // Преобразуем даты
       final createdAt = json['created_at'] == null ? DateTime.now() :
           (json['created_at'] is DateTime 
@@ -82,8 +117,14 @@ class Product {
         isActive: isActive,
         createdAt: createdAt,
         updatedAt: updatedAt,
+        quantity: quantity,
+        originalPrice: originalPrice,
+        tags: tags,
+        pickupStart: pickupStart,
+        pickupEnd: pickupEnd,
+        itemsCount: itemsCount,
       );
-      
+
       return product;
     } catch (e) {
       rethrow;
@@ -105,6 +146,11 @@ class Product {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'quantity': quantity,
+      'original_price': originalPrice,
+      'tags': tags,
+      'pickup_start': pickupStart,
+      'pickup_end': pickupEnd,
+      'items_count': itemsCount,
     };
   }
 } 

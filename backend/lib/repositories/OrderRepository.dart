@@ -95,6 +95,32 @@ class OrderRepository extends BaseRepository {
       if (orderResult.isEmpty) throw const InternalServerException();
       order = Order.fromJson(orderResult.first.values.first);
 
+      // Списываем остаток атомарно в той же транзакции: UPDATE ... WHERE
+      // quantity >= @qty гарантирует, что при гонке двух заказов на
+      // последний товар только один из них спишет остаток успешно —
+      // второй получит 0 обновлённых строк и упадёт в ConflictException,
+      // откатывая всю транзакцию (заказ и платёж не создадутся).
+      final requestedQty = <int, int>{};
+      for (final id in productsId) {
+        requestedQty[id] = (requestedQty[id] ?? 0) + 1;
+      }
+      for (final entry in requestedQty.entries) {
+        final updated = await txn.query(
+          '''
+          UPDATE products
+          SET quantity = quantity - @qty
+          WHERE id = @productId AND quantity >= @qty
+          RETURNING quantity
+          ''',
+          substitutionValues: {'productId': entry.key, 'qty': entry.value},
+        );
+        if (updated.isEmpty) {
+          throw ConflictException(
+            'Недостаточно товара на складе (id: ${entry.key})',
+          );
+        }
+      }
+
       // Создаём запись о платеже атомарно вместе с заказом.
       // provider_transaction_id = order.id как placeholder до получения ответа от платёжного провайдера.
       await txn.mappedResultsQuery(

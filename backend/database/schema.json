@@ -1,0 +1,440 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "database": "EshKush",
+  "engine": "PostgreSQL",
+  "source": "backend/database/init.sql + migrations/001..006",
+  "extensions": ["cube", "earthdistance"],
+  "enums": {
+    "user_role": ["admin", "partner", "support", "user", "guest"],
+    "point_category": ["shop", "restaurant", "cafe", "other"],
+    "order_status": ["pending", "processing", "completed", "cancelled"],
+    "payment_method": ["cash", "card", "creditCard", "mobilePayment", "other"],
+    "payment_transaction_status": ["pending", "completed", "failed", "refunded"],
+    "notification_type": ["otherUpdate", "promotion", "system"],
+    "discount_type": ["fixed", "percentage"],
+    "action_type": ["create", "read", "update", "delete", "login", "logout", "search", "filter", "other"],
+    "history_status": ["pending", "completed", "cancelled"],
+    "change_type": ["create", "update", "delete", "restore"],
+    "entity_type": ["user", "point", "product", "order", "partner", "category", "promoCode", "profile", "other"],
+    "session_status": ["active", "expired", "revoked"],
+    "error_severity": ["low", "medium", "high", "critical"]
+  },
+  "tables": {
+    "users": {
+      "comment": "Учётные записи. email/password/number nullable — для telegram-only.",
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "username": { "type": "varchar(50)", "not_null": true, "unique": true },
+        "password": { "type": "varchar(255)" },
+        "number": { "type": "varchar(20)" },
+        "email": { "type": "varchar(100)", "unique": true },
+        "telegram_id": { "type": "bigint", "unique": true },
+        "telegram_username": { "type": "varchar(64)" },
+        "first_name": { "type": "varchar(64)" },
+        "last_name": { "type": "varchar(64)" },
+        "yandex_id": { "type": "varchar(100)", "unique": true },
+        "vk_id": { "type": "varchar(100)", "unique": true },
+        "role": { "type": "user_role", "not_null": true, "default": "user" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "timestamptz" }
+      },
+      "indexes": ["username", "email", "telegram_id", "yandex_id", "vk_id"]
+    },
+    "profiles": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "user_id": { "type": "integer", "not_null": true, "references": { "table": "users", "column": "id", "on_delete": "CASCADE" } },
+        "first_name": { "type": "varchar(50)" },
+        "last_name": { "type": "varchar(50)" },
+        "avatar_url": { "type": "text" },
+        "bio": { "type": "text" },
+        "sum_co2": { "type": "integer", "default": 0 },
+        "saved_money": { "type": "decimal(10,2)", "default": 0.0 },
+        "count_buy": { "type": "integer", "default": 0 },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      }
+    },
+    "user_sessions": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "user_id": { "type": "integer", "not_null": true, "references": { "table": "users", "column": "id", "on_delete": "CASCADE" } },
+        "token": { "type": "text", "not_null": true },
+        "refresh_jti_hash": { "type": "varchar(64)", "not_null": true },
+        "device_info": { "type": "text" },
+        "ip_address": { "type": "varchar(45)" },
+        "status": { "type": "session_status", "not_null": true, "default": "active" },
+        "expires_at": { "type": "timestamptz", "not_null": true },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "last_active": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "is_active": { "type": "boolean", "not_null": true, "default": true }
+      },
+      "indexes": ["user_id", "token", "refresh_jti_hash", "expires_at"]
+    },
+    "token_blacklist": {
+      "primary_key": ["jti_hash"],
+      "columns": {
+        "jti_hash": { "type": "varchar(64)" },
+        "expires_at": { "type": "timestamptz", "not_null": true },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "indexes": ["expires_at"]
+    },
+    "telegram_auth_tokens": {
+      "comment": "Одноразовые токены telegram-логина (initiate → bot → complete → poll status).",
+      "primary_key": ["token"],
+      "columns": {
+        "token": { "type": "varchar(128)" },
+        "status": { "type": "varchar(20)", "not_null": true, "default": "pending" },
+        "user_id": { "type": "integer", "references": { "table": "users", "column": "id", "on_delete": "SET NULL" } },
+        "telegram_id": { "type": "bigint" },
+        "telegram_username": { "type": "varchar(64)" },
+        "first_name": { "type": "varchar(64)" },
+        "last_name": { "type": "varchar(64)" },
+        "phone": { "type": "varchar(20)" },
+        "access_token": { "type": "text" },
+        "refresh_token": { "type": "text" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "expires_at": { "type": "timestamptz", "not_null": true },
+        "completed_at": { "type": "timestamptz" }
+      },
+      "indexes": ["status", "expires_at"]
+    },
+    "cities": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "name": { "type": "varchar(100)", "not_null": true },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      }
+    },
+    "partners": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "user_id": { "type": "integer", "not_null": true, "references": { "table": "users", "column": "id" } },
+        "name": { "type": "varchar(100)", "not_null": true },
+        "contact_person": { "type": "integer" },
+        "contact_email": { "type": "varchar(100)" },
+        "contact_phone": { "type": "varchar(20)" },
+        "contact_document": { "type": "varchar(50)" },
+        "max_discount": { "type": "decimal(5,2)", "default": 0.0 },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "indexes": ["user_id"]
+    },
+    "partner_settings": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "partner_id": { "type": "integer", "not_null": true, "references": { "table": "partners", "column": "id", "on_delete": "CASCADE" } },
+        "branding_color": { "type": "varchar(20)", "not_null": true, "default": "#000000" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "indexes": ["partner_id"]
+    },
+    "partner_statistics": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "partner_id": { "type": "integer", "not_null": true, "references": { "table": "partners", "column": "id", "on_delete": "CASCADE" } },
+        "point_id": { "type": "integer", "not_null": true, "references": { "table": "points", "column": "id", "on_delete": "CASCADE" } },
+        "total_orders": { "type": "integer", "not_null": true, "default": 0 },
+        "total_revenue": { "type": "decimal(10,2)", "not_null": true, "default": 0 },
+        "total_cancel": { "type": "integer", "not_null": true, "default": 0 },
+        "average_rating": { "type": "decimal(3,2)", "not_null": true, "default": 0 },
+        "total_reviews": { "type": "integer", "not_null": true, "default": 0 },
+        "is_active": { "type": "boolean", "not_null": true, "default": true },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "timestamptz" }
+      },
+      "indexes": ["partner_id"]
+    },
+    "points": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "name": { "type": "varchar(100)", "not_null": true },
+        "address": { "type": "text", "not_null": true },
+        "rating": { "type": "decimal(3,2)", "default": 0.0 },
+        "city_id": { "type": "integer", "not_null": true, "references": { "table": "cities", "column": "id" } },
+        "products": { "type": "jsonb", "not_null": true, "default": "{}" },
+        "opening_hours": { "type": "varchar(5)", "not_null": true },
+        "closing_hours": { "type": "varchar(5)", "not_null": true },
+        "partner_id": { "type": "integer", "not_null": true, "references": { "table": "partners", "column": "id" } },
+        "longitude": { "type": "decimal(10,7)", "not_null": true },
+        "latitude": { "type": "decimal(10,7)", "not_null": true },
+        "tags": { "type": "jsonb", "not_null": true, "default": "{}" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "timestamptz" }
+      },
+      "indexes": ["city_id", "partner_id", { "name": "points_earth_idx", "type": "gist", "expr": "ll_to_earth(latitude, longitude)" }]
+    },
+    "point_categories": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "name": { "type": "varchar(50)", "not_null": true, "unique": true },
+        "description": { "type": "text" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      }
+    },
+    "point_category_map": {
+      "comment": "M:N точки ↔ категории точек.",
+      "primary_key": ["point_id", "category_id"],
+      "columns": {
+        "point_id": { "type": "integer", "not_null": true, "references": { "table": "points", "column": "id", "on_delete": "CASCADE" } },
+        "category_id": { "type": "integer", "not_null": true, "references": { "table": "point_categories", "column": "id", "on_delete": "CASCADE" } },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      }
+    },
+    "products": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "name": { "type": "varchar(100)", "not_null": true },
+        "description": { "type": "text", "not_null": true },
+        "price": { "type": "decimal(10,2)", "not_null": true },
+        "image_url": { "type": "varchar(255)" },
+        "partner_id": { "type": "integer", "not_null": true, "references": { "table": "partners", "column": "id" } },
+        "point_id": { "type": "integer", "not_null": true, "references": { "table": "points", "column": "id" } },
+        "weight": { "type": "decimal(10,2)", "not_null": true, "default": 0.0 },
+        "is_available": { "type": "boolean", "not_null": true, "default": true },
+        "is_active": { "type": "boolean", "not_null": true, "default": true },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "timestamptz" }
+      },
+      "indexes": ["partner_id", "point_id"]
+    },
+    "product_categories": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "name": { "type": "varchar(50)", "not_null": true, "unique": true },
+        "description": { "type": "text" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      }
+    },
+    "categories": {
+      "comment": "Существует, но не используется внешними ключами.",
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "name": { "type": "varchar(50)", "not_null": true, "unique": true },
+        "description": { "type": "text" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      }
+    },
+    "product_category_map": {
+      "comment": "M:N товары ↔ категории товаров.",
+      "primary_key": ["product_id", "category_id"],
+      "columns": {
+        "product_id": { "type": "integer", "not_null": true, "references": { "table": "products", "column": "id", "on_delete": "CASCADE" } },
+        "category_id": { "type": "integer", "not_null": true, "references": { "table": "product_categories", "column": "id", "on_delete": "CASCADE" } },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      }
+    },
+    "orders": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "user_id": { "type": "integer", "not_null": true, "references": { "table": "users", "column": "id" } },
+        "point_id": { "type": "integer", "not_null": true, "references": { "table": "points", "column": "id" } },
+        "products_id": { "type": "integer[]", "not_null": true, "note": "массив id товаров, без FK" },
+        "date": { "type": "timestamptz", "not_null": true },
+        "status": { "type": "order_status", "not_null": true, "default": "pending" },
+        "total_price": { "type": "decimal(10,2)", "not_null": true },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "timestamptz", "note": "триггер update_orders_updated_at" }
+      },
+      "indexes": ["user_id", "point_id", "status"]
+    },
+    "payment_transactions": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "order_id": { "type": "integer", "not_null": true, "references": { "table": "orders", "column": "id", "on_delete": "CASCADE" } },
+        "order_price": { "type": "decimal(10,2)", "not_null": true, "default": 0 },
+        "status": { "type": "payment_transaction_status", "not_null": true, "default": "pending" },
+        "payment_method": { "type": "payment_method", "not_null": true, "default": "other" },
+        "provider_transaction_id": { "type": "text", "not_null": true },
+        "confirmation_url": { "type": "text" },
+        "transaction_date": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "timestamptz" },
+        "error_message": { "type": "text" },
+        "is_active": { "type": "boolean", "not_null": true, "default": true }
+      },
+      "indexes": ["order_id", "provider_transaction_id"]
+    },
+    "order_history": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "order_id": { "type": "integer", "not_null": true, "references": { "table": "orders", "column": "id", "on_delete": "CASCADE" } },
+        "point_id": { "type": "integer", "not_null": true, "references": { "table": "points", "column": "id" } },
+        "user_id": { "type": "integer", "not_null": true, "references": { "table": "users", "column": "id" } },
+        "order_date": { "type": "timestamptz", "not_null": true },
+        "completion_date": { "type": "timestamptz" },
+        "total_sum": { "type": "decimal(10,2)", "not_null": true, "default": 0.0 },
+        "status": { "type": "history_status", "not_null": true, "default": "pending" },
+        "receipt_link": { "type": "text" },
+        "discount_applied": { "type": "decimal(10,2)" },
+        "promo_code_used": { "type": "text" },
+        "co2_saved": { "type": "integer", "default": 0 },
+        "notes": { "type": "text" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "indexes": ["order_id", "user_id", "point_id", "status"]
+    },
+    "order_actions": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "order_id": { "type": "integer", "not_null": true, "references": { "table": "orders", "column": "id", "on_delete": "CASCADE" } },
+        "action_type": { "type": "action_type", "not_null": true },
+        "description": { "type": "text" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "indexes": ["order_id", "action_type"]
+    },
+    "reviews": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "user_id": { "type": "integer", "not_null": true, "references": { "table": "users", "column": "id" } },
+        "point_id": { "type": "integer", "not_null": true, "references": { "table": "points", "column": "id" } },
+        "rating": { "type": "integer", "not_null": true, "check": "rating >= 1 AND rating <= 5" },
+        "comment": { "type": "text" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "indexes": ["user_id", "point_id"]
+    },
+    "point_reviews": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "user_id": { "type": "integer", "not_null": true, "references": { "table": "users", "column": "id" } },
+        "point_id": { "type": "integer", "not_null": true, "references": { "table": "points", "column": "id" } },
+        "rating": { "type": "decimal(2,1)", "not_null": true, "check": "rating >= 0 AND rating <= 5" },
+        "comment": { "type": "text" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "indexes": ["user_id", "point_id"]
+    },
+    "user_favorites": {
+      "primary_key": ["user_id", "point_id"],
+      "columns": {
+        "user_id": { "type": "integer", "not_null": true, "references": { "table": "users", "column": "id" } },
+        "point_id": { "type": "integer", "not_null": true, "references": { "table": "points", "column": "id" } },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "indexes": ["user_id", "point_id"]
+    },
+    "notifications": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "user_id": { "type": "integer", "not_null": true, "references": { "table": "users", "column": "id" } },
+        "message": { "type": "text", "not_null": true },
+        "type": { "type": "notification_type", "not_null": true },
+        "is_read": { "type": "boolean", "not_null": true, "default": false },
+        "metadata": { "type": "jsonb", "not_null": true, "default": "{}" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "sent_at": { "type": "timestamptz" },
+        "read_at": { "type": "timestamptz" }
+      },
+      "indexes": ["user_id", "is_read"]
+    },
+    "promo_codes": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "code": { "type": "varchar(50)", "not_null": true, "unique": true },
+        "description": { "type": "text", "not_null": true },
+        "start_date": { "type": "timestamptz", "not_null": true },
+        "end_date": { "type": "timestamptz", "not_null": true },
+        "min_order_sum": { "type": "decimal(10,2)", "not_null": true, "default": 0 },
+        "discount_type": { "type": "discount_type", "not_null": true },
+        "discount_value": { "type": "decimal(10,2)", "not_null": true },
+        "is_active": { "type": "boolean", "not_null": true, "default": true },
+        "usage_limit": { "type": "integer" },
+        "current_usage": { "type": "integer", "not_null": true, "default": 0 },
+        "applicable_products": { "type": "integer[]" },
+        "applicable_points": { "type": "integer[]" },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "indexes": ["code", "is_active", { "name": "promo_codes_dates_idx", "columns": ["start_date", "end_date"] }]
+    },
+    "action_logs": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "user_id": { "type": "integer", "references": { "table": "users", "column": "id" } },
+        "action_type": { "type": "action_type", "not_null": true },
+        "entity_type": { "type": "entity_type", "not_null": true },
+        "entity_id": { "type": "integer", "not_null": true },
+        "details": { "type": "text", "not_null": true },
+        "timestamp": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "ip_address": { "type": "varchar(45)", "not_null": true },
+        "user_agent": { "type": "text" },
+        "location": { "type": "text" },
+        "is_success": { "type": "boolean", "not_null": true, "default": true },
+        "error_message": { "type": "text" },
+        "metadata": { "type": "jsonb" }
+      },
+      "indexes": ["user_id", "entity_type"]
+    },
+    "changes": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "entity_type": { "type": "entity_type", "not_null": true },
+        "entity_id": { "type": "integer", "not_null": true },
+        "change_type": { "type": "change_type", "not_null": true },
+        "field_name": { "type": "varchar(100)", "not_null": true },
+        "old_value": { "type": "text" },
+        "new_value": { "type": "text" },
+        "changed_by": { "type": "integer", "references": { "table": "users", "column": "id" } },
+        "created_at": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "comment": { "type": "text" },
+        "is_reverted": { "type": "boolean", "not_null": true, "default": false },
+        "reverted_at": { "type": "timestamptz" },
+        "reverted_by": { "type": "integer", "references": { "table": "users", "column": "id" } }
+      },
+      "indexes": ["entity_type", "entity_id"]
+    },
+    "error_logs": {
+      "primary_key": ["id"],
+      "columns": {
+        "id": { "type": "serial" },
+        "severity": { "type": "error_severity", "not_null": true },
+        "message": { "type": "text", "not_null": true },
+        "error_code": { "type": "text", "not_null": true },
+        "stack_trace": { "type": "text", "not_null": true },
+        "time": { "type": "timestamptz", "not_null": true, "default": "CURRENT_TIMESTAMP" },
+        "resolved": { "type": "boolean", "not_null": true, "default": false },
+        "module": { "type": "text" },
+        "user_id": { "type": "integer", "references": { "table": "users", "column": "id" } },
+        "additional_info": { "type": "text" },
+        "resolved_at": { "type": "timestamptz" },
+        "resolved_by": { "type": "text" }
+      },
+      "indexes": ["severity"]
+    },
+    "schema_migrations": {
+      "primary_key": ["version"],
+      "columns": {
+        "version": { "type": "text" },
+        "applied_at": { "type": "timestamptz", "not_null": true, "default": "now()" }
+      }
+    }
+  },
+  "triggers": [
+    { "name": "update_orders_updated_at", "table": "orders", "when": "BEFORE UPDATE", "function": "update_updated_at_column" }
+  ]
+}

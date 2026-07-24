@@ -145,16 +145,23 @@ class OrderService {
       throw const NotFoundException('Точка не найдена');
     }
 
+    // products_id — плоский список с повторами: товар с количеством 3
+    // встречается в списке трижды. Считаем количество по каждому id.
     final List<int> productsId = List<int>.from(data['products_id']);
-    final productsData = await _productsRepository.findByIds(productsId);
-    if (productsData.length != productsId.length) {
+    final requestedQty = <int, int>{};
+    for (final id in productsId) {
+      requestedQty[id] = (requestedQty[id] ?? 0) + 1;
+    }
+
+    final productsData = await _productsRepository.findByIds(requestedQty.keys.toList());
+    if (productsData.length != requestedQty.length) {
       throw const BadRequestException('Некоторые товары не найдены');
     }
 
     final products = productsData.map((p) => Product.fromJson(p)).toList();
     final calculatedTotal = products.fold<double>(
       0,
-      (sum, product) => sum + product.price,
+      (sum, product) => sum + product.price * requestedQty[product.id]!,
     );
 
     final totalPrice = data['total_price'] is String
@@ -165,6 +172,16 @@ class OrderService {
       throw const BadRequestException(
         'Сумма заказа не соответствует сумме товаров',
       );
+    }
+
+    for (final product in products) {
+      final qty = requestedQty[product.id]!;
+      if (!product.isAvailable || product.quantity < qty) {
+        throw ConflictException(
+          'Товара «${product.name}» не хватает на складе '
+          '(доступно: ${product.quantity}, запрошено: $qty)',
+        );
+      }
     }
   }
 

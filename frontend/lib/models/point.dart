@@ -11,6 +11,7 @@ class Point {
   final double longitude;
   final double latitude;
   final Map<String, dynamic> tags;
+  final String? imageUrl;
   final DateTime createdAt;
   final DateTime? updatedAt;
   /// Расстояние до пользователя в метрах.
@@ -30,6 +31,7 @@ class Point {
     required this.longitude,
     required this.latitude,
     required this.tags,
+    this.imageUrl,
     required this.createdAt,
     this.updatedAt,
     this.distanceM,
@@ -48,6 +50,7 @@ class Point {
         longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
         latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
         tags: json['tags'] as Map<String, dynamic>? ?? {},
+        imageUrl: json['image_url'] as String?,
         createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
         updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
         distanceM: (json['distance_m'] as num?)?.toDouble(),
@@ -66,10 +69,15 @@ class Point {
         'longitude': longitude,
         'latitude': latitude,
         'tags': tags,
+        'image_url': imageUrl,
         if (distanceM != null) 'distance_m': distanceM,
       };
 
   String get workingHours => '$openingHours - $closingHours';
+
+  /// Фото заведения: реальное (из БД), либо, пока его нет, стабильная
+  /// (детерминированная по id) заглушка.
+  String get photoUrl => imageUrl ?? 'https://picsum.photos/seed/venue-$id/800/400';
 
   /// Человекочитаемое расстояние, например "450 м" или "2.3 км".
   /// Возвращает null если distanceM не задан.

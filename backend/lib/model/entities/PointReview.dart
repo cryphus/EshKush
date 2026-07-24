@@ -4,6 +4,7 @@ class PointReview {
   final int id;
   final int pointId;
   final int userId;
+  final String? userName;
   double rating;
   String? comment;
   final DateTime createdAt;
@@ -13,6 +14,7 @@ class PointReview {
     required this.pointId,
     required this.userId,
     required this.createdAt,
+    this.userName,
     this.rating = 0.0,
     this.comment,
   }) {
@@ -83,6 +85,7 @@ class PointReview {
       id: int.parse(json['id'].toString()),
       pointId: int.parse(json['point_id'].toString()),
       userId: int.parse(json['user_id'].toString()),
+      userName: json['username']?.toString(),
       rating: double.parse(json['rating'].toString()),
       comment: sanitizedComment,
       createdAt: json['created_at'] == null 
@@ -98,6 +101,7 @@ class PointReview {
       'id': id,
       'point_id': pointId,
       'user_id': userId,
+      'user_name': userName,
       'rating': rating,
       'comment': comment,
       'created_at': createdAt.toIso8601String(),

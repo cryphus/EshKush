@@ -5,40 +5,16 @@ import '../models/point.dart';
 class PointApiService {
   final Dio _dio = ApiClient().dio;
 
-  /// Получить все точки
-  Future<List<Point>> getAllPoints() async {
+  /// Получить все точки. [cityId] — фильтр по городу (бэкенд: ?city_id=N).
+  Future<List<Point>> getAllPoints({int? cityId}) async {
     try {
-      final response = await _dio.get('/points/');
+      final response = await _dio.get('/points/', queryParameters: {
+        'limit': 100,
+        if (cityId != null) 'city_id': cityId,
+      });
       final data = response.data;
       final list = data is Map ? (data['data'] as List? ?? []) : (data as List);
       return list.map((j) => Point.fromJson(j as Map<String, dynamic>)).toList();
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
-  }
-
-  /// Поиск точек в радиусе [radiusM] метров вокруг (lat, lon),
-  /// отсортированных по возрастанию расстояния. Возвращает Point с
-  /// заполненным distanceM. Бэкенд: GET /points/nearby.
-  Future<List<Point>> getNearby({
-    required double lat,
-    required double lon,
-    double radiusM = 5000,
-    int limit = 100,
-  }) async {
-    try {
-      final response = await _dio.get(
-        '/points/nearby',
-        queryParameters: {
-          'lat': lat,
-          'lon': lon,
-          'radius': radiusM,
-          'limit': limit,
-        },
-      );
-      return (response.data as List)
-          .map((j) => Point.fromJson(j as Map<String, dynamic>))
-          .toList();
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

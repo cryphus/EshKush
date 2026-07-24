@@ -13,6 +13,7 @@ class PointResponseDto {
   final double longitude;
   final double latitude;
   final Map<String, dynamic> tags;
+  final String? imageUrl;
   final DateTime createdAt;
   final DateTime? updatedAt;
   /// Расстояние до запрошенной точки в метрах.
@@ -32,6 +33,7 @@ class PointResponseDto {
     required this.longitude,
     required this.latitude,
     required this.tags,
+    this.imageUrl,
     required this.createdAt,
     this.updatedAt,
     this.distanceM,
@@ -51,6 +53,7 @@ class PointResponseDto {
       longitude: point.longitude,
       latitude: point.latitude,
       tags: point.tags,
+      imageUrl: point.imageUrl,
       createdAt: point.createdAt,
       updatedAt: point.updatedAt,
       distanceM: distanceM,
@@ -71,6 +74,7 @@ class PointResponseDto {
       'longitude': longitude,
       'latitude': latitude,
       'tags': tags,
+      'image_url': imageUrl,
       'created_at': createdAt.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
       if (distanceM != null) 'distance_m': distanceM,

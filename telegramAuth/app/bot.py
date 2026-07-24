@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
-from config import TELEGRAM_BOT_TOKEN, BOT_USERNAME, WEBHOOK_HOST, WEBHOOK_SSL_CERT, BACKEND_URL, FLASK_PORT
+from config import TELEGRAM_BOT_TOKEN, BOT_USERNAME, WEBHOOK_HOST, WEBHOOK_SSL_CERT, BACKEND_URL, FLASK_PORT, TELEGRAM_SERVICE_SECRET
 from app.database import (
     init_db, create_auth_session, get_active_session,
     deactivate_session, create_user, update_user_phone,
@@ -160,60 +160,76 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.error(f"Ошибка при обновлении номера телефона: {e}")
             raise
         
-        # Проверяем существование пользователя в базе данных приложения
+        # Проверяем существование пользователя и логинимся (если существует)
+        # через основной backend. Секретный заголовок доказывает бекенду,
+        # что номер телефона подтверждён Telegram Contact API, а не введён
+        # клиентом напрямую.
         try:
-            # Отправляем запрос на проверку пользователя в приложении
-            logger.info("Отправка запроса на проверку пользователя в бекенд")
+            logger.info("Отправка запроса на логин/проверку пользователя в бекенд")
             response = requests.post(
-                f'{BACKEND_URL}/auth/check_user',
+                f'{BACKEND_URL}/auth/telegram',
                 json={
                     'phoneNumber': phone_number,
                     'firstName': first_name,
                     'lastName': last_name
                 },
+                headers={'X-Telegram-Service-Secret': TELEGRAM_SERVICE_SECRET},
                 timeout=5
             )
-            
+
             logger.info(f"Получен ответ: {response.status_code}")
-            logger.info(f"Тело ответа: {response.text}")
-            
+
             if response.status_code == 200:
                 data = response.json()
                 user_exists = data.get('exists', False)
-                
-                # Формируем данные для возврата в приложение
+
+                # Формируем данные для возврата в приложение.
+                # Если пользователь уже существует — сразу передаём токены,
+                # чтобы фронтенд мог войти без пароля.
                 app_data = {
                     'phoneNumber': phone_number,
                     'firstName': first_name,
                     'lastName': last_name,
-                    'exists': user_exists
+                    'exists': user_exists,
                 }
-                
-                # Кодируем данные в base64 для передачи через deep link
-                encoded_data = base64.b64encode(json.dumps(app_data).encode()).decode()
+                if user_exists:
+                    app_data['accessToken'] = data.get('access_token')
+                    app_data['refreshToken'] = data.get('refresh_token')
+
+                # Кодируем данные в URL-safe base64 для передачи через deep link
+                # (обычный base64 может содержать '+' и '/', которые ломают query string)
+                encoded_data = base64.urlsafe_b64encode(json.dumps(app_data).encode()).decode()
                 
                 # Формируем deep link в приложение (используем APP_URL из конфига)
                 from config import APP_URL
                 deep_link = f"{APP_URL}/auth/telegram?data={encoded_data}"
                 
                 logger.info(f"Создан deep link: {deep_link}")
-                
-                # Создаем клавиатуру с кнопками
-                keyboard = [
-                    [
-                        InlineKeyboardButton(
-                            "Вернуться в приложение",
-                            url=deep_link
-                        )
+
+                # Telegram принимает URL инлайн-кнопок только по https (или
+                # tg://, t.me). Для локальной разработки (http://localhost:...)
+                # кнопка была бы отклонена API ("wrong http url"), поэтому
+                # шлём ссылку обычным текстом — так работает с любой схемой.
+                reply_markup = None
+                if deep_link.startswith('https://'):
+                    keyboard = [
+                        [
+                            InlineKeyboardButton(
+                                "Вернуться в приложение",
+                                url=deep_link
+                            )
+                        ]
                     ]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    link_line = ""
+                else:
+                    link_line = f"\n\nОткройте ссылку в браузере: {deep_link}"
+
                 if user_exists:
                     # Если пользователь существует
                     await update.message.reply_text(
                         f"✅ Авторизация успешна!\n\n"
-                        f"Теперь вы можете вернуться в приложение.",
+                        f"Теперь вы можете вернуться в приложение.{link_line}",
                         reply_markup=reply_markup
                     )
                 else:
@@ -221,7 +237,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await update.message.reply_text(
                         f"Здравствуйте, {first_name}!\n\n"
                         f"Для завершения регистрации в нашем сервисе, пожалуйста, "
-                        f"укажите дополнительные данные в приложении.",
+                        f"укажите дополнительные данные в приложении.{link_line}",
                         reply_markup=reply_markup
                     )
             else:

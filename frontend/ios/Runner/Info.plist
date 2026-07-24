@@ -45,13 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<!-- Геолокация для Yandex MapKit (Фаза 3) -->
+	<!-- Геолокация для карты (OpenStreetMap через flutter_map) -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>EshKush использует ваше местоположение, чтобы показывать ближайшие точки и предложения.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>EshKush использует ваше местоположение, чтобы показывать ближайшие точки и предложения.</string>
-	<!-- Yandex MapKit API key. Заменить на боевой ключ перед релизом. -->
-	<key>YandexMapkitApiKey</key>
-	<string>REPLACE_WITH_YANDEX_MAPKIT_API_KEY</string>
 </dict>
 </plist>

@@ -10,15 +10,17 @@ class PointReviewRepository extends BaseRepository {
     try {
       final result = await queryOne(
         '''
-        SELECT 
-          id,
-          point_id,
-          user_id,
-          rating,
-          comment,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
-        FROM point_reviews 
-        WHERE id = @id
+        SELECT
+          pr.id,
+          pr.point_id,
+          pr.user_id,
+          u.username,
+          pr.rating,
+          pr.comment,
+          to_char(pr.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
+        FROM point_reviews pr
+        LEFT JOIN users u ON u.id = pr.user_id
+        WHERE pr.id = @id
         ''',
         params: {'id': id},
       );
@@ -32,15 +34,18 @@ class PointReviewRepository extends BaseRepository {
     try {
       final results = await query(
         '''
-        SELECT 
-          id,
-          point_id,
-          user_id,
-          rating,
-          comment,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
-        FROM point_reviews 
-        WHERE point_id = @point_id
+        SELECT
+          pr.id,
+          pr.point_id,
+          pr.user_id,
+          u.username,
+          pr.rating,
+          pr.comment,
+          to_char(pr.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
+        FROM point_reviews pr
+        LEFT JOIN users u ON u.id = pr.user_id
+        WHERE pr.point_id = @point_id
+        ORDER BY pr.created_at DESC
         ''',
         params: {'point_id': pointId},
       );
@@ -54,15 +59,18 @@ class PointReviewRepository extends BaseRepository {
     try {
       final results = await query(
         '''
-        SELECT 
-          id,
-          point_id,
-          user_id,
-          rating,
-          comment,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
-        FROM point_reviews 
-        WHERE user_id = @user_id
+        SELECT
+          pr.id,
+          pr.point_id,
+          pr.user_id,
+          u.username,
+          pr.rating,
+          pr.comment,
+          to_char(pr.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
+        FROM point_reviews pr
+        LEFT JOIN users u ON u.id = pr.user_id
+        WHERE pr.user_id = @user_id
+        ORDER BY pr.created_at DESC
         ''',
         params: {'user_id': userId},
       );

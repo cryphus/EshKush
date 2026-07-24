@@ -124,11 +124,17 @@ class _FavoriteCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                  child: Container(
+                  child: SizedBox(
                     height: 100,
                     width: double.infinity,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.store, size: 40, color: Colors.grey),
+                    child: Image.network(
+                      point.photoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.store, size: 40, color: Colors.grey),
+                      ),
+                    ),
                   ),
                 ),
                 Positioned(

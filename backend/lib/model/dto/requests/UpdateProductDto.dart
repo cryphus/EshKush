@@ -10,6 +10,12 @@ class UpdateProductDto {
   final double? weight;
   final bool? isAvailable;
   final bool? isActive;
+  final int? quantity;
+  final double? originalPrice;
+  final List<String>? tags;
+  final String? pickupStart;
+  final String? pickupEnd;
+  final int? itemsCount;
 
   UpdateProductDto({
     this.name,
@@ -21,6 +27,12 @@ class UpdateProductDto {
     this.weight,
     this.isAvailable,
     this.isActive,
+    this.quantity,
+    this.originalPrice,
+    this.tags,
+    this.pickupStart,
+    this.pickupEnd,
+    this.itemsCount,
   });
 
   factory UpdateProductDto.fromJson(Map<String, dynamic> json) {
@@ -56,6 +68,31 @@ class UpdateProductDto {
       errors.add('Вес должен быть неотрицательным числом');
     }
 
+    final quantity = json['quantity'] != null ? int.tryParse(json['quantity'].toString()) : null;
+    if (quantity != null && quantity < 0) {
+      errors.add('Количество товара не может быть отрицательным');
+    }
+
+    final originalPrice = json['original_price'] != null
+        ? double.tryParse(json['original_price'].toString())
+        : null;
+    if (originalPrice != null && originalPrice < 0) {
+      errors.add('Старая цена не может быть отрицательной');
+    }
+
+    final tags = json['tags'] == null
+        ? null
+        : (json['tags'] as List).map((e) => e.toString()).toList();
+
+    final pickupStart = json['pickup_start']?.toString();
+    final pickupEnd = json['pickup_end']?.toString();
+
+    final itemsCount =
+        json['items_count'] != null ? int.tryParse(json['items_count'].toString()) : null;
+    if (itemsCount != null && itemsCount < 1) {
+      errors.add('Количество позиций в боксе должно быть не меньше 1');
+    }
+
     if (errors.isNotEmpty) {
       throw ValidationException(errors.join(', '));
     }
@@ -70,6 +107,12 @@ class UpdateProductDto {
       weight: weight,
       isAvailable: json['is_available'] as bool?,
       isActive: json['is_active'] as bool?,
+      quantity: quantity,
+      originalPrice: originalPrice,
+      tags: tags,
+      pickupStart: pickupStart,
+      pickupEnd: pickupEnd,
+      itemsCount: itemsCount,
     );
   }
 
@@ -84,6 +127,12 @@ class UpdateProductDto {
     if (weight != null) data['weight'] = weight;
     if (isAvailable != null) data['is_available'] = isAvailable;
     if (isActive != null) data['is_active'] = isActive;
+    if (quantity != null) data['quantity'] = quantity;
+    if (originalPrice != null) data['original_price'] = originalPrice;
+    if (tags != null) data['tags'] = tags;
+    if (pickupStart != null) data['pickup_start'] = pickupStart;
+    if (pickupEnd != null) data['pickup_end'] = pickupEnd;
+    if (itemsCount != null) data['items_count'] = itemsCount;
     return data;
   }
 

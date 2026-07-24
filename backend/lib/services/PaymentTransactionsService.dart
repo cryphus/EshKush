@@ -36,6 +36,13 @@ class PaymentTransactionsService {
     return _repository.findByOrderId(orderId);
   }
 
+  Future<bool> isOrderOwnedByUser({
+    required int orderId,
+    required int userId,
+  }) async {
+    return _repository.isOrderOwnedByUser(orderId: orderId, userId: userId);
+  }
+
   Future<PaymentTransactions> createTransaction(
       Map<String, dynamic> data) async {
     _validateTransactionData(data);

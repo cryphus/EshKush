@@ -470,8 +470,11 @@ class OrderController {
     return {'Content-Type': 'application/json'};
   }
 
+  /// Партнёр приравнивается к привилегированным ролям в контексте заказов:
+  /// по бизнес-модели он управляет входящими заказами своих точек (просмотр
+  /// списка, смена статуса на «готов»/«выполнен»). См. FR-05 и раздел 5.3 ВКР.
   bool _isElevated(Request request) {
     final role = RequestContextUtils.getRole(request);
-    return role == 'admin' || role == 'support';
+    return role == 'admin' || role == 'support' || role == 'partner';
   }
 }

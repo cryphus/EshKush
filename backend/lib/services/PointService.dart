@@ -36,9 +36,13 @@ class PointService {
     }
   }
 
-  Future<List<Point>> getAllPoints({int limit = 20, int offset = 0}) async {
+  Future<List<Point>> getAllPoints(
+      {int limit = 20, int offset = 0, int? cityId}) async {
     try {
-      if (limit == 20 && offset == 0) {
+      if (cityId != null && cityId <= 0) {
+        throw const BadRequestException('Некорректный ID города');
+      }
+      if (limit == 20 && offset == 0 && cityId == null) {
         final cacheKey = CacheKeys.allPoints();
         final cachedData = await _cacheService.get<List>(cacheKey);
         if (cachedData != null) {
@@ -51,7 +55,8 @@ class PointService {
         await _cacheService.set(cacheKey, points, ttl: CacheTTL.point);
         return points;
       }
-      return await _pointRepository.findAll(limit: limit, offset: offset);
+      return await _pointRepository.findAll(
+          limit: limit, offset: offset, cityId: cityId);
     } catch (e) {
       rethrow;
     }

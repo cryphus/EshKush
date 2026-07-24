@@ -1,17 +1,27 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:eshkush/screens/main_screen.dart';
 import 'package:eshkush/screens/product_page.dart';
+import 'package:eshkush/screens/product_detail_screen.dart';
 import 'package:eshkush/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yandex_mapkit/yandex_mapkit.dart';
 import 'providers/auth_provider.dart';
+import 'providers/cart_provider.dart';
 import 'screens/auth_screen.dart';
+import 'screens/registration_screen.dart';
 import 'screens/simple_register_screen.dart';
 import 'state/app_state.dart';
 import 'utils/snackbar.dart';
 import 'utils/web_url_cleanup.dart';
+
+/// Данные из Telegram-бота для пользователя, которого ещё нет в системе —
+/// заполняются в main() из deep link `?data=...` и один раз потребляются
+/// маршрутом `/`, чтобы показать RegistrationScreen с предзаполненными полями.
+class PendingTelegramRegistration {
+  static Map<String, dynamic>? data;
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,13 +53,36 @@ void main() async {
     if (oauthToken != null || oauthRefresh != null || oauthError != null) {
       cleanupOAuthParamsFromUrl();
     }
+
+    // Обрабатываем возврат из Telegram-бота: бэкенд(telegramAuth) редиректит
+    // на /auth/telegram?data=<base64url JSON>. Если пользователь уже
+    // существует — data содержит accessToken/refreshToken (вход без пароля).
+    // Если нет — данные телефона/имени сохраняются для экрана регистрации.
+    final telegramDataRaw = uri.queryParameters['data'] ?? fragmentParams['data'];
+    if (telegramDataRaw != null && telegramDataRaw.isNotEmpty) {
+      try {
+        final decoded = utf8.decode(base64Url.decode(base64Url.normalize(telegramDataRaw)));
+        final telegramData = jsonDecode(decoded) as Map<String, dynamic>;
+        final exists = telegramData['exists'] == true;
+        final accessToken = telegramData['accessToken']?.toString();
+        if (exists && accessToken != null && accessToken.isNotEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('access_token', accessToken);
+          final refreshToken = telegramData['refreshToken']?.toString();
+          if (refreshToken != null && refreshToken.isNotEmpty) {
+            await prefs.setString('refresh_token', refreshToken);
+          }
+        } else if (!exists) {
+          PendingTelegramRegistration.data = telegramData;
+        }
+      } catch (_) {
+        // Повреждённые/устаревшие данные диплинка — просто игнорируем.
+      }
+      cleanupOAuthParamsFromUrl();
+    }
   }
 
   await AppState().initialize();
-
-  if (!kIsWeb) {
-    AndroidYandexMap.useAndroidViewSurface = false;
-  }
 
   final container = ProviderContainer();
   await container.read(authProvider.notifier).loadSavedAuth();
@@ -63,8 +96,14 @@ class EshKush extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.read(authProvider);
+    final auth = ref.watch(authProvider);
     final isSignedIn = auth.accessToken != null;
+
+    ref.listen(cartProvider, (previous, next) {
+      if (next.error != null && next.error != previous?.error) {
+        showSnack(next.error!, kind: SnackKind.error);
+      }
+    });
 
     return MaterialApp(
       title: 'EshKush',
@@ -95,11 +134,29 @@ class EshKush extends ConsumerWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => isSignedIn ? const MainScreen() : const AuthScreen(),
+        '/': (context) {
+          final pending = PendingTelegramRegistration.data;
+          if (pending != null) {
+            PendingTelegramRegistration.data = null;
+            final firstName = pending['firstName']?.toString() ?? '';
+            final lastName = pending['lastName']?.toString() ?? '';
+            return RegistrationScreen(
+              email: '',
+              displayName: '$firstName $lastName'.trim(),
+              phoneNumber: pending['phoneNumber']?.toString(),
+              isFromTelegram: true,
+            );
+          }
+          return isSignedIn ? const MainScreen() : const AuthScreen();
+        },
         '/auth': (context) => const AuthScreen(),
         '/main': (context) => const MainScreen(),
         '/register': (context) => const SimpleRegisterScreen(),
         '/product': (context) => ProductPage(
+              data: ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>,
+            ),
+        '/product-detail': (context) => ProductDetailScreen(
               data: ModalRoute.of(context)?.settings.arguments
                   as Map<String, dynamic>,
             ),

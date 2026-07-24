@@ -11,9 +11,10 @@ class Point {
   final double longitude;
   final double latitude;
   final Map<String, dynamic> tags;
+  final String? imageUrl;
   final DateTime createdAt;
   final DateTime? updatedAt;
-  
+
   Point({
     required this.id,
     required this.name,
@@ -27,6 +28,7 @@ class Point {
     required this.longitude,
     required this.latitude,
     required this.tags,
+    this.imageUrl,
     required this.createdAt,
     this.updatedAt,
   }) {
@@ -55,6 +57,7 @@ class Point {
       longitude: double.parse(json['longitude'].toString()),
       latitude: double.parse(json['latitude'].toString()),
       tags: json['tags'] as Map<String, dynamic>,
+      imageUrl: json['image_url'] as String?,
       createdAt: json['created_at'] is DateTime ? json['created_at'] as DateTime : DateTime.parse(json['created_at'].toString()),
       updatedAt: json['updated_at'] != null ? (json['updated_at'] is DateTime ? json['updated_at'] as DateTime : DateTime.parse(json['updated_at'].toString())) : null,
     );
@@ -74,6 +77,7 @@ class Point {
       'longitude': longitude,
       'latitude': latitude,
       'tags': tags,
+      'image_url': imageUrl,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };

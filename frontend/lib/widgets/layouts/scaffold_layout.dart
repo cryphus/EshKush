@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../models/city.dart';
+import '../../providers/city_provider.dart';
 import '../../providers/connectivity_provider.dart';
 import '../../theme/colors.dart';
+import '../../theme/decorations.dart';
 import '../../screens/cart_screen.dart';
 
-class ScaffoldLayout extends StatefulWidget {
+class ScaffoldLayout extends ConsumerStatefulWidget {
   final String pageTitle;
   final Widget bodyContent;
   final bool showNavBar;
@@ -22,23 +25,15 @@ class ScaffoldLayout extends StatefulWidget {
   });
 
   @override
-  State<ScaffoldLayout> createState() => _ScaffoldLayoutState();
+  ConsumerState<ScaffoldLayout> createState() => _ScaffoldLayoutState();
 }
 
-class _ScaffoldLayoutState extends State<ScaffoldLayout> {
-  String _selectedCity = 'Тюмень';
-
-  // TODO: загружать из БД
-  final List<String> _cities = [
-    'Тюмень',
-    'Москва',
-    'Санкт-Петербург',
-    'Екатеринбург',
-    'Новосибирск',
-    'Казань',
-  ];
-
+class _ScaffoldLayoutState extends ConsumerState<ScaffoldLayout> {
   void _showCityPicker() {
+    final cities = ref.read(citiesProvider).valueOrNull ?? const <City>[];
+    if (cities.isEmpty) return;
+    final selected = ref.read(selectedCityProvider) ?? cities.first;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.colorBackground,
@@ -64,24 +59,24 @@ class _ScaffoldLayoutState extends State<ScaffoldLayout> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ..._cities.map((city) => ListTile(
+            ...cities.map((city) => ListTile(
                   leading: Icon(
                     Icons.location_on_outlined,
-                    color: city == _selectedCity ? AppColors.accentGreen : Colors.grey,
+                    color: city.id == selected.id ? AppColors.accentGreen : Colors.grey,
                   ),
                   title: Text(
-                    city,
+                    city.name,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: city == _selectedCity ? FontWeight.w600 : FontWeight.normal,
-                      color: city == _selectedCity ? AppColors.accentGreen : Colors.black87,
+                      fontWeight: city.id == selected.id ? FontWeight.w600 : FontWeight.normal,
+                      color: city.id == selected.id ? AppColors.accentGreen : Colors.black87,
                     ),
                   ),
-                  trailing: city == _selectedCity
+                  trailing: city.id == selected.id
                       ? const Icon(Icons.check, color: AppColors.accentGreen)
                       : null,
                   onTap: () {
-                    setState(() => _selectedCity = city);
+                    ref.read(selectedCityProvider.notifier).state = city;
                     Navigator.pop(context);
                   },
                 )),
@@ -94,6 +89,16 @@ class _ScaffoldLayoutState extends State<ScaffoldLayout> {
 
   @override
   Widget build(BuildContext context) {
+    // Когда список городов загрузился, а город ещё не выбран — выбираем первый.
+    ref.listen(citiesProvider, (prev, next) {
+      final list = next.valueOrNull;
+      if (list != null &&
+          list.isNotEmpty &&
+          ref.read(selectedCityProvider) == null) {
+        ref.read(selectedCityProvider.notifier).state = list.first;
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppColors.colorBackground,
       appBar: _buildAppBar(),
@@ -126,30 +131,45 @@ class _ScaffoldLayoutState extends State<ScaffoldLayout> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() => AppBar(
+  PreferredSizeWidget _buildAppBar() {
+    final cities = ref.watch(citiesProvider).valueOrNull ?? const <City>[];
+    final selectedCity = ref.watch(selectedCityProvider) ??
+        (cities.isNotEmpty ? cities.first : null);
+
+    return AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         titleSpacing: 16,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             GestureDetector(
               onTap: _showCityPicker,
-              child: Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, color: Colors.black, size: 18),
-                  const SizedBox(width: 4),
-                  Text(
-                    _selectedCity,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: AppShadows.subtle,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.location_on_outlined, color: AppColors.darkGreen, size: 17),
+                    const SizedBox(width: 5),
+                    Text(
+                      selectedCity?.name ?? 'Город',
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 2),
-                  const Icon(Icons.keyboard_arrow_down, color: Colors.black54, size: 20),
-                ],
+                    const SizedBox(width: 2),
+                    const Icon(Icons.keyboard_arrow_down, color: Colors.black38, size: 18),
+                  ],
+                ),
               ),
             ),
             GestureDetector(
@@ -159,25 +179,42 @@ class _ScaffoldLayoutState extends State<ScaffoldLayout> {
                   MaterialPageRoute(builder: (context) => const CartPage()),
                 );
               },
-              child: SvgPicture.asset(
-                'assets/icons/cart.svg',
-                width: 24,
-                height: 24,
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: AppShadows.subtle,
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/icons/cart.svg',
+                    width: 20,
+                    height: 20,
+                    colorFilter: const ColorFilter.mode(AppColors.darkGreen, BlendMode.srcIn),
+                  ),
+                ),
               ),
             ),
           ],
         ),
       );
+  }
 
-  Widget _buildBottomNavBar() => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.lightGreen,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          child: SizedBox(
-            height: 76,
-            child: Row(
+  Widget _buildBottomNavBar() => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: AppShadows.card,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _NavItem(
@@ -201,6 +238,7 @@ class _ScaffoldLayoutState extends State<ScaffoldLayout> {
                   onTap: () => widget.onNavItemTapped?.call(3),
                 ),
               ],
+              ),
             ),
           ),
         ),
@@ -256,28 +294,24 @@ class _NavItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              iconPath,
-              width: 26,
-              height: 26,
-              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 52,
+        height: 44,
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.veryLightGray : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Center(
+          child: SvgPicture.asset(
+            iconPath,
+            width: 22,
+            height: 22,
+            colorFilter: ColorFilter.mode(
+              isActive ? AppColors.darkGreen : Colors.black26,
+              BlendMode.srcIn,
             ),
-            const SizedBox(height: 6),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: 3,
-              width: 20,
-              decoration: BoxDecoration(
-                color: isActive ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

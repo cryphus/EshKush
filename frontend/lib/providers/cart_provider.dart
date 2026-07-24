@@ -44,14 +44,25 @@ class CartNotifier extends StateNotifier<CartState> {
         super(const CartState());
 
   void addItem(Product product, int pointId, String pointName) {
+    final stock = product.quantity;
     final existingIndex = state.items.indexWhere((i) => i.product.id == product.id);
     if (existingIndex >= 0) {
+      final current = state.items[existingIndex].quantity;
+      if (stock != null && current >= stock) {
+        state = state.copyWith(error: 'Больше нельзя добавить: осталось $stock шт.');
+        return;
+      }
       final updated = List<CartItem>.from(state.items);
       updated[existingIndex].quantity++;
-      state = state.copyWith(items: updated);
+      state = state.copyWith(items: updated, clearError: true);
     } else {
+      if (stock != null && stock <= 0) {
+        state = state.copyWith(error: 'Товар закончился');
+        return;
+      }
       state = state.copyWith(
         items: [...state.items, CartItem(product: product, pointId: pointId, pointName: pointName)],
+        clearError: true,
       );
     }
   }
@@ -70,8 +81,13 @@ class CartNotifier extends StateNotifier<CartState> {
     final updated = List<CartItem>.from(state.items);
     final index = updated.indexWhere((i) => i.product.id == productId);
     if (index >= 0) {
+      final stock = updated[index].product.quantity;
+      if (stock != null && quantity > stock) {
+        state = state.copyWith(error: 'Больше нельзя добавить: осталось $stock шт.');
+        return;
+      }
       updated[index].quantity = quantity;
-      state = state.copyWith(items: updated);
+      state = state.copyWith(items: updated, clearError: true);
     }
   }
 

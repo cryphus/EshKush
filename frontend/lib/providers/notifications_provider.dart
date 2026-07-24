@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/notification_api_service.dart';
 import '../models/notification.dart';
 
 class NotificationsState {
@@ -23,7 +24,51 @@ class NotificationsState {
 }
 
 class NotificationsNotifier extends StateNotifier<NotificationsState> {
-  NotificationsNotifier() : super(const NotificationsState());
+  final NotificationApiService _api;
+
+  NotificationsNotifier({NotificationApiService? api})
+      : _api = api ?? NotificationApiService(),
+        super(const NotificationsState());
+
+  Future<void> load() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final notifications = await _api.getNotifications()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      state = NotificationsState(notifications: notifications);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> markAsRead(int id) async {
+    final target = state.notifications.where((n) => n.id == id).firstOrNull;
+    if (target == null || target.isRead) return;
+    try {
+      await _api.markAsRead(id);
+      state = state.copyWith(
+        notifications: [
+          for (final n in state.notifications)
+            if (n.id == id)
+              AppNotification(
+                id: n.id,
+                userId: n.userId,
+                message: n.message,
+                notificationType: n.notificationType,
+                isRead: true,
+                metadata: n.metadata,
+                createdAt: n.createdAt,
+                sentAt: n.sentAt,
+                readAt: DateTime.now(),
+              )
+            else
+              n,
+        ],
+      );
+    } catch (_) {
+      // не критично — просто оставляем как непрочитанное
+    }
+  }
 
   void setNotifications(List<AppNotification> notifications) {
     state = NotificationsState(notifications: notifications);

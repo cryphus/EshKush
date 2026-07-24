@@ -10,6 +10,12 @@ class CreateProductDto {
   final double weight;
   final bool isAvailable;
   final bool isActive;
+  final int quantity;
+  final double? originalPrice;
+  final List<String> tags;
+  final String? pickupStart;
+  final String? pickupEnd;
+  final int itemsCount;
 
   CreateProductDto({
     required this.name,
@@ -21,6 +27,12 @@ class CreateProductDto {
     required this.weight,
     this.isAvailable = true,
     this.isActive = true,
+    this.quantity = 20,
+    this.originalPrice,
+    this.tags = const [],
+    this.pickupStart,
+    this.pickupEnd,
+    this.itemsCount = 1,
   });
 
   factory CreateProductDto.fromJson(Map<String, dynamic> json) {
@@ -60,6 +72,32 @@ class CreateProductDto {
       errors.add('Вес продукта должен быть неотрицательным числом');
     }
 
+    final quantity =
+        json['quantity'] != null ? int.tryParse(json['quantity'].toString()) ?? 20 : 20;
+    if (quantity < 0) {
+      errors.add('Количество товара не может быть отрицательным');
+    }
+
+    final originalPrice = json['original_price'] != null
+        ? double.tryParse(json['original_price'].toString())
+        : null;
+    if (originalPrice != null && originalPrice < 0) {
+      errors.add('Старая цена не может быть отрицательной');
+    }
+
+    final tags = json['tags'] == null
+        ? <String>[]
+        : (json['tags'] as List).map((e) => e.toString()).toList();
+
+    final pickupStart = json['pickup_start']?.toString();
+    final pickupEnd = json['pickup_end']?.toString();
+
+    final itemsCount =
+        json['items_count'] != null ? int.tryParse(json['items_count'].toString()) ?? 1 : 1;
+    if (itemsCount < 1) {
+      errors.add('Количество позиций в боксе должно быть не меньше 1');
+    }
+
     if (errors.isNotEmpty) {
       throw ValidationException(errors.join(', '));
     }
@@ -74,6 +112,12 @@ class CreateProductDto {
       weight: weight,
       isAvailable: json['is_available'] as bool? ?? true,
       isActive: json['is_active'] as bool? ?? true,
+      quantity: quantity,
+      originalPrice: originalPrice,
+      tags: tags,
+      pickupStart: pickupStart,
+      pickupEnd: pickupEnd,
+      itemsCount: itemsCount,
     );
   }
 
@@ -88,6 +132,12 @@ class CreateProductDto {
       'weight': weight,
       'is_available': isAvailable,
       'is_active': isActive,
+      'quantity': quantity,
+      'original_price': originalPrice,
+      'tags': tags,
+      'pickup_start': pickupStart,
+      'pickup_end': pickupEnd,
+      'items_count': itemsCount,
     };
   }
 }

@@ -25,6 +25,8 @@ class NotificationController {
     _router.get('/recent', getRecentNotifications);
     _router.post('/create', createNotification);
     _router.post('/read', markAsRead);
+    // REST-вариант того же действия — его использует фронтенд.
+    _router.put('/<id>/read', markAsReadByPath);
     _router.post('/sent', markAsSent);
   }
 
@@ -300,7 +302,18 @@ class NotificationController {
     }
   }
 
+  /// PUT /notifications/<id>/read — отметить прочитанным по id из пути.
+  Future<Response> markAsReadByPath(Request request, String id) async {
+    return _markAsReadById(request, int.tryParse(id));
+  }
+
   Future<Response> markAsRead(Request request) async {
+    final notificationId =
+        int.tryParse(request.url.queryParameters['notificationId'] ?? '');
+    return _markAsReadById(request, notificationId);
+  }
+
+  Future<Response> _markAsReadById(Request request, int? notificationId) async {
     try {
       final unauthorized = RequestContextUtils.requireUserOr401(
         request,
@@ -311,8 +324,6 @@ class NotificationController {
       final requestUserId = RequestContextUtils.getUserId(request);
       if (requestUserId == null) return _forbidden();
 
-      final notificationId =
-          int.tryParse(request.url.queryParameters['notificationId'] ?? '');
       if (notificationId == null) {
         return ErrorResponseUtils.errorResponseWithMessage(
           'Некорректный ID уведомления',

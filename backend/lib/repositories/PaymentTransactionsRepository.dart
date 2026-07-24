@@ -31,6 +31,26 @@ class PaymentTransactionsRepository extends BaseRepository {
         .toList();
   }
 
+  /// Принадлежит ли заказ пользователю (для доступа к транзакциям заказа).
+  Future<bool> isOrderOwnedByUser({
+    required int orderId,
+    required int userId,
+  }) async {
+    final results = await connection.mappedResultsQuery(
+      '''
+      SELECT 1 AS owns
+      FROM orders o
+      WHERE o.id = @orderId AND o.user_id = @userId
+      LIMIT 1
+      ''',
+      substitutionValues: {
+        'orderId': orderId,
+        'userId': userId,
+      },
+    );
+    return results.isNotEmpty;
+  }
+
   Future<bool> isOwnedByUser({
     required int transactionId,
     required int userId,

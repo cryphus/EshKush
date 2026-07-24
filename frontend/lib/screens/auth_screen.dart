@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
+import '../services/telegram_auth_service.dart';
 import '../theme/colors.dart';
 import 'login_password_screen.dart';
 import 'simple_register_screen.dart';
@@ -20,6 +21,22 @@ class AuthScreen extends StatelessWidget {
           behavior: SnackBarBehavior.floating,
         ),
       );
+    }
+  }
+
+  Future<void> _openTelegram(BuildContext context) async {
+    try {
+      await TelegramAuthService().openTelegramBot();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Не удалось открыть Telegram: $e'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -65,14 +82,17 @@ class AuthScreen extends StatelessWidget {
                 children: [
                   _SocialButton(
                     iconPath: 'assets/icons/yandex.svg',
-                    label: 'Яндекс',
                     onTap: () => _openOAuth(context, 'yandex'),
                   ),
                   const SizedBox(width: 20),
                   _SocialButton(
                     iconPath: 'assets/icons/vk.svg',
-                    label: 'ВКонтакте',
                     onTap: () => _openOAuth(context, 'vk'),
+                  ),
+                  const SizedBox(width: 20),
+                  _SocialButton(
+                    iconPath: 'assets/icons/telegram.svg',
+                    onTap: () => _openTelegram(context),
                   ),
                 ],
               ),
@@ -148,12 +168,10 @@ class AuthScreen extends StatelessWidget {
 
 class _SocialButton extends StatelessWidget {
   final String? iconPath;
-  final String label;
   final VoidCallback onTap;
 
   const _SocialButton({
     this.iconPath,
-    required this.label,
     required this.onTap,
   });
 
@@ -161,44 +179,29 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.accentGreen, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: Center(
-              child: iconPath != null
-                  ? SvgPicture.asset(
-                      iconPath!,
-                      width: 36,
-                      height: 36,
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.accentGreen,
-                        BlendMode.srcIn,
-                      ),
-                    )
-                  : const Icon(Icons.login, size: 36, color: AppColors.accentGreen),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-        ],
+          ],
+        ),
+        child: Center(
+          child: iconPath != null
+              ? SvgPicture.asset(
+                  iconPath!,
+                  width: 48,
+                  height: 48,
+                )
+              : const Icon(Icons.login, size: 48, color: AppColors.accentGreen),
+        ),
       ),
     );
   }

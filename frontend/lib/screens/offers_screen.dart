@@ -5,8 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/point.dart';
+import '../models/product_offer.dart';
+import '../providers/city_provider.dart';
+import '../providers/favorites_provider.dart';
 import '../providers/points_provider.dart';
+import '../providers/product_feed_provider.dart';
 import '../theme/colors.dart';
+import '../theme/decorations.dart';
 import '../utils/snackbar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/points_map.dart';
@@ -48,23 +53,36 @@ class _OffersPageState extends ConsumerState<OffersPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(pointsProvider.notifier).loadAll();
+      _loadPoints();
+      ref.read(favoritesProvider.notifier).load();
     });
+  }
+
+  void _loadPoints() {
+    final city = ref.read(selectedCityProvider);
+    ref.read(pointsProvider.notifier).loadAll(cityId: city?.id);
+    ref.read(productFeedProvider.notifier).loadAll(cityId: city?.id);
   }
 
   Future<void> _refresh() async {
     setState(() => _visibleCount = _pageSize);
-    await ref.read(pointsProvider.notifier).loadAll();
+    final city = ref.read(selectedCityProvider);
+    await Future.wait([
+      ref.read(pointsProvider.notifier).loadAll(cityId: city?.id),
+      ref.read(productFeedProvider.notifier).loadAll(cityId: city?.id),
+    ]);
   }
 
-  List<Point> _filter(List<Point> points) {
-    Iterable<Point> result = points;
+  List<ProductOffer> _filter(List<ProductOffer> offers) {
+    Iterable<ProductOffer> result = offers;
 
     if (_selectedCategory > 0) {
       final tag = _categories[_selectedCategory].toLowerCase();
-      result = result.where((p) {
-        // ищем в названии и в тегах (значениях/ключах)
-        if (p.name.toLowerCase().contains(tag.substring(0, tag.length - 1))) {
+      result = result.where((o) {
+        final p = o.point;
+        // ищем в названии точки, названии товара и в тегах точки (значениях/ключах)
+        if (p.name.toLowerCase().contains(tag.substring(0, tag.length - 1)) ||
+            o.product.name.toLowerCase().contains(tag.substring(0, tag.length - 1))) {
           return true;
         }
         for (final entry in p.tags.entries) {
@@ -79,34 +97,40 @@ class _OffersPageState extends ConsumerState<OffersPage> {
 
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      result = result.where((p) =>
-          p.name.toLowerCase().contains(q) ||
-          p.address.toLowerCase().contains(q));
+      result = result.where((o) =>
+          o.point.name.toLowerCase().contains(q) ||
+          o.point.address.toLowerCase().contains(q) ||
+          o.product.name.toLowerCase().contains(q));
     }
 
-    // "Рядом": добавляем distanceM и сортируем по возрастанию расстояния.
+    // "Рядом": добавляем distanceM точке и сортируем по возрастанию расстояния.
     if (_nearMeEnabled && _userLat != null && _userLon != null) {
-      final enriched = result.map((p) {
+      final enriched = result.map((o) {
+        final p = o.point;
         final d = _haversineM(_userLat!, _userLon!, p.latitude, p.longitude);
-        return Point(
-          id: p.id,
-          name: p.name,
-          address: p.address,
-          rating: p.rating,
-          cityId: p.cityId,
-          products: p.products,
-          openingHours: p.openingHours,
-          closingHours: p.closingHours,
-          partnerId: p.partnerId,
-          longitude: p.longitude,
-          latitude: p.latitude,
-          tags: p.tags,
-          createdAt: p.createdAt,
-          updatedAt: p.updatedAt,
-          distanceM: d,
+        return ProductOffer(
+          product: o.product,
+          point: Point(
+            id: p.id,
+            name: p.name,
+            address: p.address,
+            rating: p.rating,
+            cityId: p.cityId,
+            products: p.products,
+            openingHours: p.openingHours,
+            closingHours: p.closingHours,
+            partnerId: p.partnerId,
+            longitude: p.longitude,
+            latitude: p.latitude,
+            tags: p.tags,
+            imageUrl: p.imageUrl,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+            distanceM: d,
+          ),
         );
       }).toList()
-        ..sort((a, b) => (a.distanceM ?? 0).compareTo(b.distanceM ?? 0));
+        ..sort((a, b) => (a.point.distanceM ?? 0).compareTo(b.point.distanceM ?? 0));
       return enriched;
     }
 
@@ -174,8 +198,17 @@ class _OffersPageState extends ConsumerState<OffersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final pointsState = ref.watch(pointsProvider);
-    final filtered = _filter(pointsState.points);
+    // Смена города — перезагружаем точки/предложения с фильтром по city_id.
+    ref.listen(selectedCityProvider, (prev, next) {
+      if (prev?.id != next?.id) {
+        setState(() => _visibleCount = _pageSize);
+        ref.read(pointsProvider.notifier).loadAll(cityId: next?.id);
+        ref.read(productFeedProvider.notifier).loadAll(cityId: next?.id);
+      }
+    });
+
+    final feedState = ref.watch(productFeedProvider);
+    final filtered = _filter(feedState.offers);
     final visible = filtered.take(_visibleCount).toList();
 
     return Column(
@@ -199,7 +232,7 @@ class _OffersPageState extends ConsumerState<OffersPage> {
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: _buildList(pointsState, filtered, visible),
+            child: _buildList(feedState, filtered, visible),
           ),
         ] else ...[
           Expanded(child: _buildMapView()),
@@ -208,8 +241,9 @@ class _OffersPageState extends ConsumerState<OffersPage> {
     );
   }
 
-  Widget _buildList(PointsState state, List<Point> filtered, List<Point> visible) {
-    if (state.isLoading && state.points.isEmpty) {
+  Widget _buildList(
+      ProductFeedState state, List<ProductOffer> filtered, List<ProductOffer> visible) {
+    if (state.isLoading && state.offers.isEmpty) {
       return ListView.separated(
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 5,
@@ -217,7 +251,7 @@ class _OffersPageState extends ConsumerState<OffersPage> {
         itemBuilder: (_, __) => const OfferCardSkeleton(),
       );
     }
-    if (state.error != null && state.points.isEmpty) {
+    if (state.error != null && state.offers.isEmpty) {
       return EmptyState(
         icon: Icons.cloud_off_outlined,
         title: 'Не удалось загрузить',
@@ -262,14 +296,14 @@ class _OffersPageState extends ConsumerState<OffersPage> {
               ),
             );
           }
-          final point = visible[index];
-          return _OfferCard(
-            point: point,
+          final offer = visible[index];
+          return _ProductOfferCard(
+            offer: offer,
             onTap: () {
               Navigator.pushNamed(
                 context,
-                '/product',
-                arguments: {'point': point},
+                '/product-detail',
+                arguments: {'product': offer.product, 'point': offer.point},
               );
             },
           );
@@ -311,9 +345,9 @@ class _OffersPageState extends ConsumerState<OffersPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: _nearMeEnabled ? const Color(0xFFE8FADC) : Colors.white,
-              border: Border.all(color: AppColors.darkGreen, width: 1.2),
-              borderRadius: BorderRadius.circular(10),
+              color: _nearMeEnabled ? AppColors.veryLightGray : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: AppShadows.subtle,
             ),
             child: Center(
               child: _nearMeLoading
@@ -340,9 +374,9 @@ class _OffersPageState extends ConsumerState<OffersPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: _isSearchVisible ? const Color(0xFFE8FADC) : Colors.white,
-              border: Border.all(color: AppColors.darkGreen, width: 1.2),
-              borderRadius: BorderRadius.circular(10),
+              color: _isSearchVisible ? AppColors.veryLightGray : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: AppShadows.subtle,
             ),
             child: Center(
               child: SvgPicture.asset(
@@ -362,15 +396,16 @@ class _OffersPageState extends ConsumerState<OffersPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
-        height: 44,
+        height: 46,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppColors.darkGreen, width: 1.2),
+          borderRadius: BorderRadius.circular(23),
+          boxShadow: AppShadows.subtle,
         ),
         child: TextField(
           decoration: const InputDecoration(
             hintText: 'Поиск точек...',
+            hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
             prefixIcon:
                 Icon(Icons.search, color: AppColors.darkGreen, size: 20),
             border: InputBorder.none,
@@ -392,20 +427,21 @@ class _OffersPageState extends ConsumerState<OffersPage> {
         _selectedCategory = index;
         _visibleCount = _pageSize;
       }),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.accentGreen : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.accentGreen : Colors.grey.shade300,
-          ),
+          boxShadow: isSelected
+              ? AppShadows.soft(alpha: 0.16, blur: 12, offset: const Offset(0, 4))
+              : AppShadows.subtle,
         ),
         child: Text(
           _categories[index],
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             color: isSelected ? Colors.white : Colors.black87,
           ),
         ),
@@ -416,7 +452,7 @@ class _OffersPageState extends ConsumerState<OffersPage> {
   Widget _buildMapView() {
     return const Padding(
       padding: EdgeInsets.only(bottom: 8),
-      child: PointsMap(radiusM: 5000),
+      child: PointsMap(),
     );
   }
 }
@@ -438,12 +474,15 @@ class _TabButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         height: 48,
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFE8FADC) : Colors.white,
-          border: Border.all(color: AppColors.darkGreen, width: 1.2),
-          borderRadius: BorderRadius.circular(10),
+          color: isActive ? AppColors.accentGreen : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: isActive
+              ? AppShadows.soft(alpha: 0.16, blur: 14, offset: const Offset(0, 5))
+              : AppShadows.subtle,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -452,13 +491,16 @@ class _TabButton extends StatelessWidget {
               iconPath,
               width: 16,
               height: 16,
-              colorFilter: const ColorFilter.mode(AppColors.darkGreen, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(
+                isActive ? Colors.white : AppColors.darkGreen,
+                BlendMode.srcIn,
+              ),
             ),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
-                color: AppColors.darkGreen,
+              style: TextStyle(
+                color: isActive ? Colors.white : AppColors.darkGreen,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -470,134 +512,235 @@ class _TabButton extends StatelessWidget {
   }
 }
 
-class _OfferCard extends StatelessWidget {
-  final Point point;
+class _ProductOfferCard extends ConsumerWidget {
+  final ProductOffer offer;
   final VoidCallback? onTap;
 
-  const _OfferCard({required this.point, this.onTap});
+  const _ProductOfferCard({required this.offer, this.onTap});
+
+  Point get point => offer.point;
+
+  Future<void> _toggleFavorite(BuildContext context, WidgetRef ref, bool isFav) async {
+    try {
+      if (isFav) {
+        await ref.read(favoritesProvider.notifier).remove(point.id);
+        showSnack('Удалено из избранного', kind: SnackKind.info);
+      } else {
+        await ref.read(favoritesProvider.notifier).add(point);
+        showSnack('Добавлено в избранное', kind: SnackKind.success);
+      }
+    } catch (e) {
+      showApiError(e);
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFav = ref.watch(favoritesProvider).favorites.any((f) => f.id == point.id);
+    final product = offer.product;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              offset: const Offset(0, 2),
-              blurRadius: 8,
-            ),
-          ],
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: AppShadows.card,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-              child: Container(
-                height: 100,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              child: SizedBox(
+                height: 140,
                 width: double.infinity,
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.store, size: 40, color: Colors.grey),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                point.name,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.star, color: Color(0xFFFFB800), size: 15),
-                            Text(
-                              ' ${point.rating.toStringAsFixed(1)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      point.photoUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) => progress == null
+                          ? child
+                          : Container(color: Colors.grey.shade100),
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.store, size: 40, color: Colors.grey),
                       ),
-                      Row(
-                        children: [
-                          const Icon(Icons.access_time, size: 13, color: Colors.black54),
-                          const SizedBox(width: 3),
-                          Text(
-                            point.workingHours,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            const Icon(Icons.location_on_outlined, size: 16, color: Colors.black54),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                point.address,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12, color: Colors.black54),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (point.distanceLabel != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8FADC),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.directions_walk,
-                                  size: 12, color: AppColors.darkGreen),
-                              const SizedBox(width: 3),
-                              Text(
-                                point.distanceLabel!,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.darkGreen,
-                                ),
-                              ),
+                    ),
+                    // Мягкое затемнение снизу для читаемости чипа времени самовывоза.
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: 56,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0),
+                              Colors.black.withValues(alpha: 0.38),
                             ],
                           ),
                         ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: GestureDetector(
+                        onTap: () => _toggleFavorite(context, ref, isFav),
+                        child: Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: AppShadows.subtle,
+                          ),
+                          child: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                            color: isFav ? Colors.redAccent : Colors.black45,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: _Pill(
+                        color: Colors.white,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star, color: Color(0xFFFFB800), size: 14),
+                            const SizedBox(width: 3),
+                            Text(
+                              point.rating.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (product.pickupWindowLabel != null)
+                      Positioned(
+                        left: 12,
+                        bottom: 10,
+                        right: 12,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time, size: 13, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              product.pickupWindowLabel!,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    point.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      // Бейдж пакета — количество ПОЗИЦИЙ внутри бокса
+                      // (например "суп, второе, компот" = 3), а не остаток
+                      // на складе — тот учитывается только для лимита корзины.
+                      SizedBox(
+                        width: 26,
+                        height: 29,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/bag_offer.svg',
+                              width: 26,
+                              height: 29,
+                            ),
+                            Align(
+                              alignment: const Alignment(0, 0.25),
+                              child: Text(
+                                '${product.itemsCount}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (point.distanceLabel != null)
+                        Expanded(
+                          child: Text(
+                            point.distanceLabel!,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+                          ),
+                        )
+                      else
+                        Expanded(
+                          child: Text(
+                            point.address,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+                          ),
+                        ),
+                      if (product.hasDiscount) ...[
+                        Text(
+                          '${product.originalPrice!.toStringAsFixed(0)} ₽',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.textMuted,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
                       ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentGreen,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${product.price.toStringAsFixed(0)} ₽',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -606,6 +749,28 @@ class _OfferCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Мини-таблетка (пилюля) с тенью — используется для рейтинга/дистанции
+/// поверх фото заведения.
+class _Pill extends StatelessWidget {
+  final Color color;
+  final Widget child;
+
+  const _Pill({required this.color, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: AppShadows.subtle,
+      ),
+      child: child,
     );
   }
 }

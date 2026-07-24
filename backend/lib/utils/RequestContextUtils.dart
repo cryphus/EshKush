@@ -46,6 +46,14 @@ class RequestContextUtils {
   /// Единственное место в коде, где знают, что означает «admin».
   /// Все контроллеры должны использовать этот метод вместо payload['role'] == 'admin'.
   static bool isAdmin(Request request) => hasRole(request, 'admin');
+
+  /// Возвращает true если пользователь — партнёр или администратор.
+  ///
+  /// Используется для операций управления собственным контентом партнёра
+  /// (создание/редактирование точек и продуктов), которые по RBAC-модели
+  /// доступны роли partner и выше (см. FR-05 и таблицу маршрутов API).
+  static bool isPartnerOrAdmin(Request request) =>
+      hasRole(request, 'partner') || hasRole(request, 'admin');
 }
 
 
