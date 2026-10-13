@@ -176,6 +176,9 @@ class OrderService {
 
     for (final product in products) {
       final qty = requestedQty[product.id]!;
+      if (product.pointId != pointId || !product.isActive) {
+        throw const BadRequestException('Товар недоступен в выбранном заведении');
+      }
       if (!product.isAvailable || product.quantity < qty) {
         throw ConflictException(
           'Товара «${product.name}» не хватает на складе '
@@ -193,5 +196,7 @@ class OrderService {
     await _cacheService.delete(CacheKeys.order(orderId));
     await _cacheService.delete(CacheKeys.userOrders(userId));
     await _cacheService.delete(CacheKeys.pointOrders(pointId));
+    await _cacheService.deleteByPattern('products:*');
+    await _cacheService.deleteByPattern('product:*');
   }
 }

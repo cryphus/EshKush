@@ -166,7 +166,7 @@ class LoggingMiddleware {
   }
 
   static bool _skipBodyLoggingForPath(Uri uri) {
-    final path = '/${uri.path}';
+    final path = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
     if (path.startsWith('/auth')) return true;
     if (path == '/login' || path.startsWith('/login')) return true;
     return false;

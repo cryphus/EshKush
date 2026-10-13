@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'SeedDemoData.dart' as demo;
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:backend/database/Database.dart';
 import 'package:backend/middleware/CorsMiddleware.dart';
@@ -21,6 +22,7 @@ void main() async {
     await cacheService.initialize();
 
     final db = await Database.instance;
+    if (config.isDemo) await demo.main();
     final dependencies = await DependencyFactory.create(
       config: config,
       cacheService: cacheService,

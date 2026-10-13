@@ -82,6 +82,7 @@ class _RefreshInterceptor extends Interceptor {
 
       final newAccessToken = response.data['access_token'] as String;
       await prefs.setString('access_token', newAccessToken);
+      await prefs.setString('refresh_token', response.data['refresh_token'] as String);
 
       // Повторяем оригинальный запрос с новым токеном
       final opts = err.requestOptions;

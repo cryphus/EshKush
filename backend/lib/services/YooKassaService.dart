@@ -31,7 +31,7 @@ class YooKassaService {
         _uuid = uuid ?? const Uuid();
 
   /// Платёжный шлюз работает в тестовом режиме без реального провайдера.
-  bool get isMockMode => !_config.isYookassaConfigured && !_config.isProduction;
+  bool get isMockMode => _config.isDemo || (!_config.isYookassaConfigured && !_config.isProduction);
 
   /// Создаёт платёж у YooKassa и возвращает JSON-ответ.
   ///

@@ -62,6 +62,17 @@ class PaymentGatewayService {
     if (order.totalPrice <= 0) {
       throw const BadRequestException('Сумма заказа должна быть положительной');
     }
+    if (order.status == OrderStatus.cancelled || order.status == OrderStatus.completed) {
+      throw const ConflictException('Этот заказ больше нельзя оплатить');
+    }
+    final existing = await _transactionsRepository.findByOrderId(orderId);
+    for (final transaction in existing.reversed) {
+      if (transaction.isActive && transaction.confirmationUrl != null &&
+          (transaction.status == PaymentTransactionStatus.pending ||
+           transaction.status == PaymentTransactionStatus.completed)) {
+        return PaymentInitResult(transaction: transaction, confirmationUrl: transaction.confirmationUrl!);
+      }
+    }
 
     final providerResponse = await _yooKassa.createPayment(
       amount: order.totalPrice,

@@ -84,6 +84,8 @@ class Routes {
   };
 
   static const Map<String, Map<String, Set<String>>> rbacRoleRules = {
+    'demo':                 {'*': authenticatedRoles},
+    'logout':               {'POST': authenticatedRoles},
     'users':                {'*': authenticatedRoles},
     'profiles':             {'*': authenticatedRoles},
     'sessions':             {'*': authenticatedRoles},

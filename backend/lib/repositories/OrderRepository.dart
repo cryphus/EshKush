@@ -142,32 +142,34 @@ class OrderRepository extends BaseRepository {
   }
 
   Future<Order?> updateStatus(int id, OrderStatus status) async {
-    try {
-      final result = await queryOne(
-        '''
-        UPDATE orders 
-        SET status = @status::order_status, updated_at = CURRENT_TIMESTAMP
-        WHERE id = @id
-        RETURNING 
-          id,
-          user_id,
-          point_id,
-          products_id,
-          to_char(date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as date,
-          status,
-          total_price,
-          to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-          to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at
-        ''',
-        params: {
-          'id': id,
-          'status': status.name.toLowerCase(),
-        },
-      );
-      return result == null ? null : Order.fromJson(result);
-    } catch (e) {
-      rethrow;
-    }
+    Order? result;
+    await transaction((txn) async {
+      final rows = await txn.mappedResultsQuery(
+        'SELECT * FROM orders WHERE id=@id FOR UPDATE', substitutionValues: {'id': id});
+      if (rows.isEmpty) return;
+      final current = Order.fromJson(rows.first.values.first);
+      if (current.status == OrderStatus.cancelled && status != OrderStatus.cancelled) {
+        throw const ConflictException('Отменённый заказ нельзя восстановить');
+      }
+      if (status == OrderStatus.processing || status == OrderStatus.completed) {
+        final paid = await txn.query("SELECT id FROM payment_transactions WHERE order_id=@id AND status='completed' AND is_active=true LIMIT 1",
+          substitutionValues: {'id': id});
+        if (paid.isEmpty) throw const ConflictException('Сначала оплатите заказ');
+      }
+      if (status == OrderStatus.cancelled && current.status != OrderStatus.cancelled && current.status != OrderStatus.completed) {
+        final quantities = <int, int>{};
+        for (final product in current.productsId) { quantities[product] = (quantities[product] ?? 0) + 1; }
+        for (final entry in quantities.entries) {
+          await txn.execute('UPDATE products SET quantity=quantity+@qty WHERE id=@product',
+            substitutionValues: {'qty': entry.value, 'product': entry.key});
+        }
+      }
+      final updated = await txn.mappedResultsQuery(
+        'UPDATE orders SET status=@status::order_status, updated_at=CURRENT_TIMESTAMP WHERE id=@id RETURNING *',
+        substitutionValues: {'status': status.name, 'id': id});
+      result = Order.fromJson(updated.first.values.first);
+    });
+    return result;
   }
 
   Future<Order?> deleteOrder(int id) async {

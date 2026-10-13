@@ -38,7 +38,8 @@ class AuthService {
       throw ConflictException('Пользователь уже существует');
     }
 
-    final roleStr = (data['role'] as String? ?? 'user').toLowerCase();
+    data = {...data, 'role': 'user'};
+    final roleStr = 'user';
     if (!UserValidationUtils.isValidUserRole(roleStr)) {
       throw ValidationException(
         'Некорректная роль пользователя. Доступные роли: '

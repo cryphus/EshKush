@@ -5,10 +5,12 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../config/Routes.dart';
 import 'DependencyFactory.dart';
+import '../controllers/DemoController.dart';
 
 class AppRouterFactory {
   static Router create(AppDependencies dependencies) {
     final app = Router();
+    app.mount('/demo', DemoController(dependencies.authService, dependencies.userRepository.connection).router);
 
     app.get('/', (Request request) {
       return Response.ok(
@@ -62,5 +64,5 @@ class AppRouterFactory {
   }
 
   static List<String> get openPaths =>
-      Routes.openPathSegments + ['payments/webhook', 'payments/mock-checkout'];
+      Routes.openPathSegments + ['payments/webhook', 'payments/mock-checkout', 'demo/session', 'demo/status', 'demo/media'];
 }

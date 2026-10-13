@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:dotenv/dotenv.dart';
 import '../utils/AppException.dart';
 
 class AppConfig {
+  bool get isDemo => Platform.environment['DEMO_MODE'] == 'true';
   static final AppConfig _instance = AppConfig._internal();
   factory AppConfig() => _instance;
   AppConfig._internal();

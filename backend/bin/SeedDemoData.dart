@@ -24,6 +24,13 @@ Future<void> main() async {
   await conn.open();
 
   try {
+    // Startup must preserve changes made during a presentation.
+    final count = await conn.query('SELECT COUNT(*) FROM points');
+    final reset = Platform.environment['DEMO_MODE'] == 'true' && Platform.environment['DEMO_RESET'] == 'true';
+    if ((count.first.first as int) > 0 && !reset) {
+      print('[seed] Existing catalog preserved');
+      return;
+    }
     // ── Пользователи ─────────────────────────────────────────────────────────
     final demoId = await _ensureUser(
       conn,
@@ -451,7 +458,7 @@ Future<int> _ensurePoint(
     'lon': p['lon'],
     'lat': p['lat'],
     'tags': p['tags'],
-    'imageUrl': p['image'],
+    'imageUrl': Platform.environment['DEMO_MODE'] == 'true' ? '/demo/media/food-${(p['partner'] as int) % 6}.svg' : p['image'],
   });
   return rows.first[0] as int;
 }
@@ -550,7 +557,7 @@ Future<int?> _ensureProduct(
     'name': pr['name'],
     'desc': pr['desc'],
     'price': pr['price'],
-    'imageUrl': _productImageUrl(pr['name'] as String),
+    'imageUrl': Platform.environment['DEMO_MODE'] == 'true' ? '/demo/media/food-${pointId % 6}.svg' : _productImageUrl(pr['name'] as String),
     'partnerId': pr['partner'],
     'pointId': pointId,
     'weight': pr['weight'],
@@ -636,5 +643,12 @@ Future<void> _seedOrders(
     });
     created++;
   }
+  await conn.execute("""
+    INSERT INTO payment_transactions(order_id,provider_transaction_id,order_price,payment_method,status,transaction_date,is_active)
+    SELECT id, 'mock-seed-' || id::text, total_price, 'card',
+      CASE WHEN status='cancelled' THEN 'refunded'::payment_transaction_status ELSE 'completed'::payment_transaction_status END,
+      date, true FROM orders o WHERE o.user_id=@user
+      AND NOT EXISTS (SELECT 1 FROM payment_transactions t WHERE t.order_id=o.id)
+  """, substitutionValues: {'user': userId});
   print('[seed] orders: $created');
 }

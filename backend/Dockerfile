@@ -43,14 +43,19 @@ FROM deps AS build
 
 RUN dart compile exe bin/Service.dart -o bin/server
 RUN dart compile exe bin/Migrate.dart -o bin/migrate
+RUN dart compile exe bin/SeedDemoData.dart -o bin/seed-demo
 
 # ── Stage 4: финальный runtime-образ ────────────────────────────────────────
 FROM debian:stable-slim AS runtime
+WORKDIR /app
 
 RUN apt-get update && apt-get install -y ca-certificates curl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/bin/server  /app/server
 COPY --from=build /app/bin/migrate /app/migrate
+COPY --from=build /app/bin/seed-demo /app/seed-demo
+COPY --from=build /app/database/migrations /app/database/migrations
+COPY --from=build /app/public /app/public
 COPY --from=build /app/lib/config/swagger.json /app/lib/config/swagger.json
 
 EXPOSE 3000
