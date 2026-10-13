@@ -37,6 +37,9 @@ Future<bool> _serverAvailable() async {
 Future<bool>? _serverReadyFuture;
 
 void main() {
+  final frontendBase = Uri.parse(
+    Platform.environment['TEST_FRONTEND_URL'] ?? 'http://localhost:3000/',
+  );
   group('OAuth callbacks', () {
     test('GET /auth/yandex/callback without cookie state -> invalid_state',
         () async {
@@ -50,7 +53,7 @@ void main() {
       expect(code, 302);
       expect(
         headers['location'],
-        'http://localhost:3000/?oauth_error=invalid_state',
+        frontendBase.replace(queryParameters: {'oauth_error': 'invalid_state'}).toString(),
       );
     });
 
@@ -68,7 +71,7 @@ void main() {
       expect(code, 302);
       expect(
         headers['location'],
-        'http://localhost:3000/?oauth_error=invalid_state',
+        frontendBase.replace(queryParameters: {'oauth_error': 'invalid_state'}).toString(),
       );
     });
 
@@ -84,7 +87,7 @@ void main() {
       expect(code, 302);
       expect(
         headers['location'],
-        'http://localhost:3000/?oauth_error=access_denied',
+        frontendBase.replace(queryParameters: {'oauth_error': 'access_denied'}).toString(),
       );
     });
   });
