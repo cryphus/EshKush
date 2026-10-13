@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:postgres/postgres.dart';
 import 'package:bcrypt/bcrypt.dart';
+import 'package:backend/demo/TyumenCatalog.dart';
 
 /// Сидирует демо-данные для ручного тестирования приложения:
 /// города (Тюмень, Ялуторовск), партнёры, точки с реальными координатами,
@@ -27,6 +28,10 @@ Future<void> main() async {
     // Startup must preserve changes made during a presentation.
     final count = await conn.query('SELECT COUNT(*) FROM points');
     final reset = Platform.environment['DEMO_MODE'] == 'true' && Platform.environment['DEMO_RESET'] == 'true';
+    if ((count.first.first as int) > 0 && !reset && Platform.environment['DEMO_CATALOG_UPGRADE'] == 'true') {
+      await seedTyumenCatalog(conn);
+      return;
+    }
     if ((count.first.first as int) > 0 && !reset) {
       print('[seed] Existing catalog preserved');
       return;
@@ -310,6 +315,10 @@ Future<void> main() async {
     }
     print('[seed] products: $productCount');
 
+    if (Platform.environment['DEMO_MODE'] == 'true') {
+      await seedTyumenCatalog(conn);
+    }
+
     // ── Демо-заказы (для наполнения аналитики партнёра) ─────────────────────
     await _seedOrders(conn, demoId, productsByPoint);
 
@@ -463,26 +472,8 @@ Future<int> _ensurePoint(
   return rows.first[0] as int;
 }
 
-/// Уникальная demo-фотография КАЖДОГО товара (фото конкретных блюд с
-/// Wikimedia Commons — стабильные прямые ссылки, не протухают в отличие от
-/// VK/2GIS/Instagram, в отличие от прежней версии не переиспользуются
-/// между товарами одной категории).
-String _demoImage(String name) {
-  final text = name.toLowerCase();
-  var image = 0;
-  if (text.contains('поке') || text.contains('салат')) {
-    image = 3;
-  } else if (RegExp('суши|ролл|сет').hasMatch(text)) {
-    image = 2;
-  } else if (text.contains('пицц')) {
-    image = 1;
-  } else if (RegExp('торт|эклер|пирожн|десерт|чизкейк|кофе').hasMatch(text)) {
-    image = 5;
-  } else if (RegExp('обед|ужин|суп|пельмен').hasMatch(text)) {
-    image = 4;
-  }
-  return '/demo/media/food-$image.svg';
-}
+/// Локальная фотография соответствующей категории еды.
+String _demoImage(String name) => foodPhoto(name);
 
 String _productImageUrl(String name) {
   const productImages = {
