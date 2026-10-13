@@ -30,6 +30,13 @@ void main() {
 
   tearDownAll(() async => TestDb.close());
 
+  Future<void> markPaid(int id) async {
+    await conn.execute(
+      "UPDATE payment_transactions SET status='completed' WHERE order_id=@id",
+      substitutionValues: {'id': id},
+    );
+  }
+
   Map<String, dynamic> _orderData({double totalPrice = 250.0}) => {
         'user_id': userId,
         'point_id': pointId,
@@ -82,8 +89,22 @@ void main() {
 
   // ── updateStatus ──────────────────────────────────────────────────────────
   group('updateStatus', () {
+    test('не выдаёт неоплаченный заказ', () async {
+      final created = await repo.createWithPayment(_orderData());
+      await expectLater(() => repo.updateStatus(created.id, OrderStatus.completed), throwsA(isA<Exception>()));
+      expect((await repo.findById(created.id))?.status, OrderStatus.pending);
+    });
+
+    test('не восстанавливает отменённый заказ', () async {
+      final created = await repo.createWithPayment(_orderData());
+      await repo.updateStatus(created.id, OrderStatus.cancelled);
+      await expectLater(() => repo.updateStatus(created.id, OrderStatus.processing), throwsA(isA<Exception>()));
+      expect((await repo.findById(created.id))?.status, OrderStatus.cancelled);
+    });
+
     test('обновляет статус заказа', () async {
       final created = await repo.createWithPayment(_orderData());
+      await markPaid(created.id);
       final updated = await repo.updateStatus(created.id, OrderStatus.completed);
       expect(updated?.status, OrderStatus.completed);
     });
@@ -103,6 +124,7 @@ void main() {
 
     test('фильтрует по статусу', () async {
       final order = await repo.createWithPayment(_orderData());
+      await markPaid(order.id);
       await repo.updateStatus(order.id, OrderStatus.completed);
       final pending = await repo.getAllOrders(status: OrderStatus.pending);
       expect(pending.every((o) => o.status == OrderStatus.pending), isTrue);

@@ -1,0 +1,65 @@
+name: eshkush-demo
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: eshkush_demo
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: eshkush_local_demo
+    volumes:
+      - demo_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U demo -d eshkush_demo']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    environment:
+      DEMO_MODE: 'true'
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_NAME: eshkush_demo
+      DB_USER: demo
+      DB_PASSWORD: eshkush_local_demo
+      JWT_SECRET: eshkush_demo_access_key_local_only_2026
+      JWT_REFRESH_SECRET: eshkush_demo_refresh_key_local_only_2026
+      ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      OAUTH_CALLBACK_BASE_URL: http://localhost:8080/api
+      FRONTEND_URL: http://localhost:8080/shop
+      LOG_LEVEL: warn
+      BCRYPT_LOG_ROUNDS: '8'
+      RATE_LIMIT_REQUESTS: '300'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, -fsS, 'http://localhost:3000/health']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+  web:
+    build:
+      context: .
+      dockerfile: partner-web/Dockerfile
+    ports:
+      - '127.0.0.1:8080:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, --spider, 'http://127.0.0.1/demo/']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  demo_data:

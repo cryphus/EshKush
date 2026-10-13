@@ -467,6 +467,23 @@ Future<int> _ensurePoint(
 /// Wikimedia Commons — стабильные прямые ссылки, не протухают в отличие от
 /// VK/2GIS/Instagram, в отличие от прежней версии не переиспользуются
 /// между товарами одной категории).
+String _demoImage(String name) {
+  final text = name.toLowerCase();
+  var image = 0;
+  if (text.contains('поке') || text.contains('салат')) {
+    image = 3;
+  } else if (RegExp('суши|ролл|сет').hasMatch(text)) {
+    image = 2;
+  } else if (text.contains('пицц')) {
+    image = 1;
+  } else if (RegExp('торт|эклер|пирожн|десерт|чизкейк|кофе').hasMatch(text)) {
+    image = 5;
+  } else if (RegExp('обед|ужин|суп|пельмен').hasMatch(text)) {
+    image = 4;
+  }
+  return '/demo/media/food-$image.svg';
+}
+
 String _productImageUrl(String name) {
   const productImages = {
     'Бокс «Вечерняя выпечка»':
@@ -557,7 +574,7 @@ Future<int?> _ensureProduct(
     'name': pr['name'],
     'desc': pr['desc'],
     'price': pr['price'],
-    'imageUrl': Platform.environment['DEMO_MODE'] == 'true' ? '/demo/media/food-${pointId % 6}.svg' : _productImageUrl(pr['name'] as String),
+    'imageUrl': Platform.environment['DEMO_MODE'] == 'true' ? _demoImage(pr['name'] as String) : _productImageUrl(pr['name'] as String),
     'partnerId': pr['partner'],
     'pointId': pointId,
     'weight': pr['weight'],
@@ -589,6 +606,14 @@ Future<void> _seedOrders(
   if (productsByPoint.isEmpty) {
     print('[seed] orders: нет продуктов для заказов');
     return;
+  }
+
+  final customers = <int>[userId];
+  for (var i = 1; i <= 8; i++) {
+    customers.add(await _ensureUser(conn,
+      username: 'demo_guest_$i', password: 'Demo@1234',
+      email: 'guest$i@eshkush.test', number: '+7900000010$i',
+      role: 'user', firstName: 'Гость $i', lastName: 'Демо'));
   }
 
   final rnd = Random(42); // фиксированный seed — воспроизводимые данные
@@ -630,14 +655,16 @@ Future<void> _seedOrders(
             ? 'cancelled'
             : 'processing';
 
+    final orderUserId = i < 15 ? userId : customers[rnd.nextInt(customers.length)];
+    final orderDate = status == 'processing' ? DateTime.now().subtract(Duration(minutes: rnd.nextInt(90))) : date;
     await conn.execute('''
       INSERT INTO orders (user_id, point_id, products_id, date, status, total_price)
       VALUES (@userId, @pointId, @productsId::int[], @date, @status::order_status, @total)
     ''', substitutionValues: {
-      'userId': userId,
+      'userId': orderUserId,
       'pointId': pointId,
       'productsId': productIdsLiteral,
-      'date': date.toUtc(),
+      'date': orderDate.toUtc(),
       'status': status,
       'total': total,
     });
@@ -647,8 +674,8 @@ Future<void> _seedOrders(
     INSERT INTO payment_transactions(order_id,provider_transaction_id,order_price,payment_method,status,transaction_date,is_active)
     SELECT id, 'mock-seed-' || id::text, total_price, 'card',
       CASE WHEN status='cancelled' THEN 'refunded'::payment_transaction_status ELSE 'completed'::payment_transaction_status END,
-      date, true FROM orders o WHERE o.user_id=@user
+      date, true FROM orders o WHERE true
       AND NOT EXISTS (SELECT 1 FROM payment_transactions t WHERE t.order_id=o.id)
-  """, substitutionValues: {'user': userId});
+  """);
   print('[seed] orders: $created');
 }

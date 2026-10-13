@@ -73,7 +73,7 @@ Future<String?> _registerAndLogin(
       'email': email,
       'number': phone,
     });
-    return _login(username, password);
+    return await _login(username, password);
   } catch (_) {
     return null;
   }

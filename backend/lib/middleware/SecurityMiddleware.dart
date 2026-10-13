@@ -228,7 +228,7 @@ class SecurityMiddleware {
           final modifiedRequest = request.change(context: {
             'user': payload,
           });
-          return innerHandler(modifiedRequest);
+          return await innerHandler(modifiedRequest);
         } catch (e) {
           return ErrorResponseUtils.errorResponseWithMessage(
             'Недействительный токен',

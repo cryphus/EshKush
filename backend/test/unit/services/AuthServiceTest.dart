@@ -78,6 +78,19 @@ void main() {
     }, skip: jwtEnvReady ? null : kJwtSkipReason);
   });
 
+  test('public registration ignores a privileged role requested by the client', () async {
+    when(userRepo.findByUsername('newuser')).thenAnswer((_) async => null);
+    when(userRepo.createUser(any)).thenAnswer((_) async => _user(username: 'newuser'));
+    when(sessionRepo.create(any)).thenAnswer((_) async => _session());
+    final result = await sut.register({
+      'username': 'newuser', 'email': 'new@example.com', 'number': '+79001234567',
+      'password': 'Pass1!xx', 'password_confirm': 'Pass1!xx', 'role': 'admin',
+    });
+    final saved = verify(userRepo.createUser(captureAny)).captured.single as Map<String, dynamic>;
+    expect(saved['role'], 'user');
+    expect(result['user']['role'], 'user');
+  }, skip: jwtEnvReady ? null : kJwtSkipReason);
+
   // ── login ─────────────────────────────────────────────────────────────────────
   group('login', () {
     test('бросает при пустых credentials', () async {

@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/.nuxt
+**/.output
+**/.dart_tool
+**/build
+**/.env
+**/.env.*
+!**/.env.example
+**/__pycache__
+**/*.log
+**/*.db
+**/auth.db
