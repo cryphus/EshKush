@@ -26,6 +26,7 @@ function parseListResponse<T>(data: T[] | Paginated<T>): T[] {
  */
 export function usePartnerData() {
   const { request } = useApi()
+  const config = useRuntimeConfig()
 
   const points = ref<Point[]>([])
   const products = ref<Product[]>([])
@@ -37,10 +38,17 @@ export function usePartnerData() {
     loading.value = true
     error.value = null
     try {
+      if (config.public.demoMode) {
+        const state = await request<{ points: Point[], products: Product[], orders: Order[] }>('/demo/state')
+        points.value = state.points
+        products.value = state.products
+        orders.value = state.orders
+        return
+      }
       const [pointsRes, productsRes, ordersRes] = await Promise.all([
         request<Point[] | Paginated<Point>>('/points/', { params: { limit: 100 } }),
         request<Product[] | Paginated<Product>>('/products/', { params: { limit: 100 } }),
-        request<Order[] | Paginated<Order>>('/orders/', { params: { limit: 200 } }).catch(() => [])
+        request<Order[] | Paginated<Order>>('/orders/', { params: { limit: 100 } })
       ])
       points.value = parseListResponse(pointsRes)
       products.value = parseListResponse(productsRes)

@@ -15,9 +15,11 @@ export default defineNuxtConfig({
   },
 
   css: ['~/assets/css/main.css'],
+  ui: { fonts: false },
 
   runtimeConfig: {
     public: {
+      demoMode: process.env.NUXT_PUBLIC_DEMO_MODE === 'true',
       // URL основного Dart-бэкенда EshKush.
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3000'
     }
@@ -28,6 +30,7 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2026-06-30',
+  nitro: { prerender: { routes: ['/demo', '/shop', '/login'] } },
 
   eslint: {
     config: {

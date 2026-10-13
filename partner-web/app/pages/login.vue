@@ -1,5 +1,6 @@
 <script setup lang="ts">
-definePageMeta({ layout: false })
+definePageMeta({ layout: false
+})
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -8,6 +9,29 @@ const username = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
+const config = useRuntimeConfig()
+const demoEnabled = ref(false)
+onMounted(async () => {
+  try {
+    await $fetch('/demo/status', {
+      baseURL: config.public.apiBase
+    })
+    demoEnabled.value = true
+  } catch {
+    /* regular login */
+  }
+})
+async function openDemo() {
+  loading.value = true
+  try {
+    await auth.demoLogin('partner')
+    await navigateTo('/')
+  } catch (e) {
+    error.value = getErrorMessage(e, 'Не удалось открыть кабинет')
+  } finally {
+    loading.value = false
+  }
+}
 
 if (route.query.error === 'forbidden') {
   error.value = 'Доступ разрешён только партнёрам и администраторам.'
@@ -86,6 +110,23 @@ async function onSubmit() {
           Войти
         </UButton>
       </form>
+      <div
+        v-if="demoEnabled"
+        class="mt-5 border-t border-default pt-5 flex flex-col gap-3"
+      >
+        <UButton
+          block
+          variant="soft"
+          :loading="loading"
+          @click="openDemo"
+        >
+          Открыть демо-кабинет
+        </UButton>
+        <NuxtLink
+          to="/shop"
+          class="text-center text-sm text-primary"
+        >Приложение покупателя →</NuxtLink>
+      </div>
     </UCard>
   </div>
 </template>

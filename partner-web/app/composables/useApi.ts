@@ -1,4 +1,6 @@
 type FetchOptions = NonNullable<Parameters<typeof $fetch>[1]>
+type TokenPair = { access_token: string, refresh_token: string }
+let refreshInFlight: Promise<TokenPair> | null = null
 
 /**
  * Аутентифицированный клиент к основному Dart-бэкенду EshKush.
@@ -11,6 +13,7 @@ export function useApi() {
   const auth = useAuthStore()
 
   async function request<T>(path: string, options: FetchOptions = {}): Promise<T> {
+    const usedToken = auth.accessToken
     const doRequest = (token: string | null) =>
       $fetch<T>(path, {
         baseURL: config.public.apiBase,
@@ -22,21 +25,25 @@ export function useApi() {
       })
 
     try {
-      return await doRequest(auth.accessToken)
+      return await doRequest(usedToken)
     } catch (err) {
       const status = (err as { response?: { status?: number }, status?: number })?.response?.status
         ?? (err as { status?: number })?.status
       if (status === 401 && auth.refreshToken) {
         try {
-          const refreshed = await $fetch<{ access_token: string, refresh_token: string }>(
+          if (usedToken !== auth.accessToken) return await doRequest(auth.accessToken)
+          refreshInFlight ??= $fetch<TokenPair>(
             '/auth/refresh',
             {
               baseURL: config.public.apiBase,
               method: 'POST',
               body: { refresh_token: auth.refreshToken }
             }
-          )
-          auth.updateAccessToken(refreshed.access_token)
+          ).then((pair) => {
+            auth.updateTokens(pair.access_token, pair.refresh_token)
+            return pair
+          }).finally(() => { refreshInFlight = null })
+          const refreshed = await refreshInFlight
           return await doRequest(refreshed.access_token)
         } catch {
           auth.logout()

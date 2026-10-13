@@ -6,7 +6,8 @@ const links = [
   { label: 'Аналитика', icon: 'i-lucide-layout-dashboard', to: '/' },
   { label: 'Точки', icon: 'i-lucide-store', to: '/points' },
   { label: 'Предложения', icon: 'i-lucide-package', to: '/products' },
-  { label: 'Заказы', icon: 'i-lucide-receipt', to: '/orders' }
+  { label: 'Заказы', icon: 'i-lucide-receipt', to: '/orders' },
+  { label: 'Демонстрация', icon: 'i-lucide-play', to: '/demo' }
 ]
 
 const pageTitle = computed(() => (route.meta.title as string) || 'EshKush Partner')

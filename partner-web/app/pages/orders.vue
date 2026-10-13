@@ -34,7 +34,7 @@ const money = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB
 
 const statusLabel: Record<OrderStatus, string> = {
   pending: 'Новый',
-  processing: 'Готовится',
+  processing: 'Готов к выдаче',
   completed: 'Выполнен',
   cancelled: 'Отменён'
 }
@@ -51,7 +51,11 @@ async function setStatus(order: Order, status: OrderStatus) {
   if (busyId.value !== null) return
   busyId.value = order.id
   try {
-    await request(`/orders/${order.id}/status`, { method: 'PUT', body: { status } })
+    if (status === 'cancelled') {
+      await request(`/orders/${order.id}/refund`, { method: 'POST', body: {} })
+    } else {
+      await request(`/orders/${order.id}/status`, { method: 'PUT', body: { status } })
+    }
     await refresh()
     toast.add({ title: `Заказ #${order.id}: ${statusLabel[status]}`, color: 'success' })
   } catch (e) {
@@ -129,7 +133,7 @@ const columns = [
               :loading="busyId === row.original.id"
               @click="setStatus(row.original, 'processing')"
             >
-              Принять
+              Готов к выдаче
             </UButton>
             <UButton
               size="xs"

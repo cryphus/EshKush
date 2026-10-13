@@ -46,6 +46,27 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
+    async demoLogin(role: 'user' | 'partner' | 'admin' = 'user') {
+      const config = useRuntimeConfig()
+      const res = await $fetch<LoginResponse>('/demo/session', {
+        baseURL: config.public.apiBase, method: 'POST', body: { role }
+      })
+      const user: User = {
+        id: res.user.id ?? 0, username: res.user.username ?? 'demo',
+        email: res.user.email ?? null, number: res.user.phoneNumber ?? null,
+        role: res.user.role ?? role
+      }
+      this.user = user
+      this.accessToken = res.access_token
+      this.refreshToken = res.refresh_token
+      this.hydrated = true
+      writeStorage({ user, accessToken: res.access_token, refreshToken: res.refresh_token })
+    },
+    updateTokens(accessToken: string, refreshToken: string) {
+      this.accessToken = accessToken
+      this.refreshToken = refreshToken
+      if (this.user) writeStorage({ accessToken, refreshToken, user: this.user })
+    },
     /** Восстанавливает сессию из localStorage. Вызывается один раз при старте приложения. */
     hydrate() {
       if (this.hydrated) return
@@ -87,6 +108,12 @@ export const useAuthStore = defineStore('auth', {
     },
 
     logout() {
+      const token = this.accessToken
+      if (token) {
+        const config = useRuntimeConfig()
+        void $fetch('/logout', { baseURL: config.public.apiBase, method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }, body: {} }).catch(() => {})
+      }
       this.accessToken = null
       this.refreshToken = null
       this.user = null
