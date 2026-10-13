@@ -4,7 +4,7 @@ export default defineNuxtRouteMiddleware((to) => {
 
   const auth = useAuthStore()
   auth.hydrate()
-  if (to.path === '/shop' || to.path === '/demo') return
+  if (to.path === '/shop' || to.path === '/demo' || to.path === '/about') return
   if (to.path === '/' && !auth.isAuthenticated && useRuntimeConfig().public.demoMode) return navigateTo('/demo')
 
   const isLoginPage = to.path === '/login'

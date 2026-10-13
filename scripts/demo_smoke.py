@@ -48,6 +48,21 @@ def main():
     partner = session('partner')['access_token']
     _, state = call('/demo/state', token=token)
     check(len(state['products']) >= 10 and len(state['points']) >= 5, 'catalog populated')
+    check(len(state['points']) == 30 and len({(p['latitude'], p['longitude']) for p in state['points']}) == 30,
+        '30 distinct Tyumen locations')
+    tyumen = next(c['id'] for c in state['cities'] if c['name'] == 'Тюмень')
+    check(all(p['city_id'] == tyumen for p in state['points']), 'all map locations are in Tyumen')
+    photos = {p['image_url'] for p in state['points'] + state['products']}
+    for photo in photos:
+        assert photo and photo.startswith('/demo/media/') and not photo.endswith('.svg'), photo
+        with urllib.request.urlopen(base + '/api' + photo) as image:
+            assert image.status == 200 and image.headers['Content-Type'].startswith('image/'), photo
+            assert len(image.read()) > 2000, photo
+    check(True, 'all venue and food photographs served locally')
+    places = {p['id']: p for p in state['points']}
+    check(all(p['pickup_start'] < p['pickup_end'] <= places[p['point_id']]['closing_hours'] for p in state['products']),
+        'pickup windows fit venue opening hours')
+    check(all(50 <= p['weight'] <= 5000 for p in state['products']), 'offer weights are stored in grams')
     products = [p for p in state['products'] if p['quantity'] >= 2 and p['is_active']]
     first = products[0]
     second = next(p for p in products if p['point_id'] != first['point_id'])

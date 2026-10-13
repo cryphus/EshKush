@@ -30,7 +30,7 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2026-06-30',
-  nitro: { prerender: { routes: ['/demo', '/shop', '/login'] } },
+  nitro: { prerender: { routes: ['/demo', '/shop', '/login', '/about'] } },
 
   eslint: {
     config: {

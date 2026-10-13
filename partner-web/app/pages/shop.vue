@@ -44,6 +44,7 @@ const snapshot = ref<Snapshot>({ products: [], points: [], orders: [], favorites
 const loading = ref(true)
 const error = ref('')
 const view = ref('catalog')
+watch(view, () => window.scrollTo(0, 0))
 const query = ref('')
 const category = ref('Все')
 const city = ref(0)
@@ -69,10 +70,11 @@ const money = (value: number) => new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0
 }).format(value) + ' ₽'
 const place = (id: number) => snapshot.value.points.find(p => p.id === id)
-const asset = (offer: Offer) => `${config.public.apiBase}${offer.image_url || `/demo/media/food-${offer.point_id % 6}.svg`}`
+const asset = (offer: Offer) => offer.image_url?.startsWith('http') ? offer.image_url : `${config.public.apiBase}${offer.image_url || '/demo/media/food-0.jpg'}`
 const original = (offer: Offer) => offer.original_price || offer.price * 2
 const discount = (offer: Offer) => Math.round((1 - offer.price / original(offer)) * 100)
 const pickup = (offer: Offer) => `${offer.pickup_start || '18:00'}–${offer.pickup_end || '21:00'}`
+const weight = (grams: number) => grams >= 1000 ? `${new Intl.NumberFormat('ru-RU').format(grams / 1000)} кг` : `${Math.round(grams)} г`
 const kind = (offer: Offer) => /суши|ролл|поке/i.test(offer.name) ? 'Суши' : /торт|эклер|десерт|чизкейк/i.test(offer.name) ? 'Десерты' : /бул|хлеб|багет|круассан|выпеч|ватруш/i.test(offer.name) ? 'Выпечка' : 'Готовая еда'
 const visible = computed(() => snapshot.value.products.filter(p => p.is_active && p.is_available && p.quantity > 0
   && (!city.value || place(p.point_id)?.city_id === city.value)
@@ -261,7 +263,7 @@ async function social(provider: string) {
   try {
     await auth.demoLogin()
     await refresh()
-    toast(`Вход через ${provider} выполнен в демо-режиме`)
+    toast(`Вы вошли через ${provider}`)
     drawer.value = ''
   } catch (e) {
     toast(getErrorMessage(e, 'Вход не выполнен'))
@@ -281,19 +283,18 @@ function chat() {
       : /заказ|код|забрат/i.test(text)
         ? 'Код получения находится в «Моих заказах». Приходите в указанное окно выдачи и покажите код сотруднику. Партнёр отметит заказ как полученный.'
         : /оплат|карт|сбп/i.test(text)
-          ? 'В корзине можно выбрать карту или СБП. В этой демонстрации оплата подтверждается локально, без списания денег.'
+          ? 'В корзине можно выбрать карту или СБП. После подтверждения оплаты код получения появится в ваших заказах.'
           : 'Выбирайте заведение рядом, добавляйте бокс в корзину и забирайте его в указанное время. Содержимое бокса зависит от того, что осталось свежим сегодня. Хотите узнать об оплате или заказах?'
     messages.value.push({ text: reply, own: false
     })
   }, 650)
 }
-function mapPosition(point: Place, index: number) {
-  const points = snapshot.value.points.filter(p => !city.value || p.city_id === city.value)
-  const minX = Math.min(...points.map(p => p.longitude)), maxX = Math.max(...points.map(p => p.longitude))
-  const minY = Math.min(...points.map(p => p.latitude)), maxY = Math.max(...points.map(p => p.latitude))
-  return {
-    left: `${12 + 73 * (point.longitude - minX) / (maxX - minX || 1)}%`, top: `${14 + 64 * (maxY - point.latitude) / (maxY - minY || 1) + index % 2 * 3}%`
-  }
+async function showPlaceOffers(id: number) {
+  query.value = place(id)?.name || ''
+  category.value = 'Все'
+  view.value = 'catalog'
+  await nextTick()
+  scrollOffers()
 }
 </script>
 
@@ -304,13 +305,13 @@ function mapPosition(point: Place, index: number) {
         class="brand"
         @click="view = 'catalog'; query = ''; category = 'Все'"
       >
-        <span class="brand-mark">е</span><span>ешькуш<span class="brand-dot">.</span></span>
+        <BrandLogo />
       </button>
       <label class="location"><UIcon name="i-lucide-map-pin" /><select
         v-model="city"
         aria-label="Город"
       ><option :value="0">Все города</option><option
-        v-for="c in snapshot.cities"
+        v-for="c in snapshot.cities.filter(c => snapshot.points.some(p => p.city_id === c.id))"
         :key="c.id"
         :value="c.id"
       >{{ c.name }}</option></select></label>
@@ -337,9 +338,9 @@ function mapPosition(point: Place, index: number) {
       </nav>
       <div class="header-actions">
         <NuxtLink
-          to="/demo"
-          class="demo-tag"
-        >Демо</NuxtLink><button
+          to="/login"
+          class="partner-link"
+        >Партнёрам</NuxtLink><button
           class="icon-btn"
           aria-label="Уведомления"
           @click="drawer = 'notifications'"
@@ -405,11 +406,38 @@ function mapPosition(point: Place, index: number) {
             </div>
           </section>
           <section
+            v-if="view === 'catalog' && !query"
+            class="places-section"
+          >
+            <div class="places-heading">
+              <h2>Знакомые места Тюмени</h2><button @click="view = 'map'">
+                Все {{ snapshot.points.length }} на карте <UIcon name="i-lucide-arrow-up-right" />
+              </button>
+            </div>
+            <div class="places-strip">
+              <button
+                v-for="p in snapshot.points.filter(p => !city || p.city_id === city)"
+                :key="p.id"
+                class="place-tile"
+                @click="showPlaceOffers(p.id)"
+              >
+                <img
+                  :src="`${config.public.apiBase}${p.image_url}`"
+                  :alt="p.name"
+                  loading="lazy"
+                  width="96"
+                  height="96"
+                >
+                <span><strong>{{ p.name.split(' · ')[0] }}</strong><small>{{ p.name.split(' · ')[1] }}</small><span class="place-tile-rating">★ {{ p.rating }} <span>до {{ p.closing_hours }}</span></span></span>
+              </button>
+            </div>
+          </section>
+          <section
             id="offers"
             class="offer-section"
           >
             <div class="section-heading">
-              <div><span class="eyebrow muted">СВЕЖЕЕ К ВЕЧЕРУ</span><h2>{{ view === 'favorites' ? 'Ваши любимые места' : 'Сегодня можно спасти' }}</h2></div><span class="offer-count">{{ visible.length }} предложений рядом</span>
+              <div><span class="eyebrow muted">СВЕЖЕЕ К ВЕЧЕРУ</span><h2>{{ view === 'favorites' ? 'Ваши любимые места' : 'Сегодня можно спасти' }}</h2></div><span class="offer-count">{{ countLabel(visible.length, ['предложение', 'предложения', 'предложений']) }} рядом</span>
             </div>
             <div class="catalog-tools">
               <div class="category-tabs">
@@ -548,62 +576,12 @@ function mapPosition(point: Place, index: number) {
           class="inner-page"
         >
           <span class="eyebrow muted">ХОРОШАЯ ЕДА РЯДОМ</span><h1>Найдите любимое место</h1><p class="page-subtitle">
-            Схематичная карта заведений. Нажмите на отметку, чтобы посмотреть боксы.
-          </p><div class="demo-map">
-            <svg
-              viewBox="0 0 1000 550"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            ><rect
-              width="1000"
-              height="550"
-              fill="#edf0e6"
-            /><path
-              d="M0 190Q280 310 590 220T1000 290"
-              fill="none"
-              stroke="#c2dbe0"
-              stroke-width="65"
-            /><path
-              d="M0 100L1000 100M0 420L1000 420M220 0L220 550M550 0L550 550M820 0L820 550M0 0L1000 550"
-              stroke="#fffdf7"
-              stroke-width="20"
-            /><path
-              d="M0 100L1000 100M0 420L1000 420M220 0L220 550M550 0L550 550M820 0L820 550"
-              stroke="#d8d8c9"
-              stroke-width="2"
-            /><g fill="#d9e3c9"><rect
-              x="280"
-              y="30"
-              width="160"
-              height="45"
-              rx="15"
-            /><rect
-              x="600"
-              y="330"
-              width="150"
-              height="60"
-              rx="15"
-            /><rect
-              x="40"
-              y="450"
-              width="140"
-              height="65"
-              rx="15"
-            /></g><text
-              x="60"
-              y="240"
-              fill="#749da2"
-              font-size="22"
-            >Тура</text></svg><button
-              v-for="(p, n) in snapshot.points.filter(p => !city || p.city_id === city)"
-              :key="p.id"
-              class="map-pin"
-              :style="mapPosition(p, n)"
-              @click="query = p.name; category = 'Все'; view = 'catalog'"
-            >
-              <UIcon name="i-lucide-store" /><span>{{ p.name }}</span>
-            </button><span class="map-legend"><span />{{ snapshot.points.filter(p => !city || p.city_id === city).length }} заведений</span>
-          </div>
+            Выбирайте места рядом, смотрите предложения и забирайте любимую еду.
+          </p><PlacesMap
+            :points="snapshot.points.filter(p => !city || p.city_id === city)"
+            :offers="snapshot.products"
+            @offers="showPlaceOffers"
+          />
         </section>
         <section
           v-else-if="view === 'profile'"
@@ -615,7 +593,7 @@ function mapPosition(point: Place, index: number) {
             <article><UIcon name="i-lucide-shopping-bag" /><strong>{{ rescued }}</strong><span>спасённых боксов</span></article><article><UIcon name="i-lucide-wallet" /><strong>{{ money(totalSaved) }}</strong><span>сэкономлено на любимой еде</span></article><article><UIcon name="i-lucide-leaf" /><strong>{{ (rescued * 1.8).toFixed(1) }} кг</strong><span>оценка предотвращённых выбросов CO₂</span></article>
           </div><div class="profile-row">
             <div class="profile-card">
-              <span class="avatar big">А</span><div><h3>Александр</h3><p>{{ auth.user?.email || 'demo@eshkush.test' }}</p><span class="demo-tag">Демонстрационный профиль</span></div>
+              <span class="avatar big">А</span><div><h3>Александр</h3><p>alexander@eshkush.ru</p><span class="member-tag">Вместе спасаем еду</span></div>
             </div><div class="profile-card">
               <UIcon
                 name="i-lucide-sprout"
@@ -648,7 +626,7 @@ function mapPosition(point: Place, index: number) {
         </section>
       </template>
       <footer class="shop-footer">
-        <span class="brand small">ешькуш.</span><span>Вкусно вам. Хорошо планете.</span><NuxtLink to="/login">Для партнёров ↗</NuxtLink><NuxtLink to="/demo">О демонстрации</NuxtLink>
+        <BrandLogo /><span>Вкусно вам. Хорошо планете.</span><NuxtLink to="/login">Для партнёров ↗</NuxtLink><NuxtLink to="/about">О ЕшьКуш</NuxtLink>
       </footer>
     </main>
     <nav class="mobile-nav">
@@ -718,7 +696,7 @@ function mapPosition(point: Place, index: number) {
           class="detail-image"
         ><div class="detail-copy">
           <span class="eyebrow muted">{{ place(detail.point_id)?.name }} · ★ {{ place(detail.point_id)?.rating || '4.8' }}</span><h2>{{ detail.name }}</h2><p>{{ detail.description }}</p><div class="detail-facts">
-            <span><UIcon name="i-lucide-clock-3" />Сегодня {{ pickup(detail) }}</span><span><UIcon name="i-lucide-package" />{{ detail.items_count || 1 }} шт. · {{ detail.weight }} кг</span><span><UIcon name="i-lucide-map-pin" />{{ place(detail.point_id)?.address }}</span>
+            <span><UIcon name="i-lucide-clock-3" />Сегодня {{ pickup(detail) }}</span><span><UIcon name="i-lucide-package" />{{ detail.items_count || 1 }} шт. · {{ weight(detail.weight) }}</span><span><UIcon name="i-lucide-map-pin" />{{ place(detail.point_id)?.address }}</span>
           </div><div class="detail-note">
             <UIcon name="i-lucide-sparkles" /><p>Бокс собирают из свежих продуктов, которые не успели продать сегодня. Отличный вкус — приятная неожиданность.</p>
           </div><button
@@ -798,7 +776,7 @@ function mapPosition(point: Place, index: number) {
                 @click="drawer = ''; view = 'orders'"
               >
                 Перейти к заказам
-              </button><span class="muted text-sm">Демо-оплата: деньги не списывались</span>
+              </button><span class="muted text-sm">Чек и код получения сохранены в заказах</span>
             </div>
           </template><div
             v-else-if="checkoutPhase === 'paying'"
@@ -866,7 +844,7 @@ function mapPosition(point: Place, index: number) {
                     <UIcon name="i-lucide-qr-code" />СБП<span>Быстрая оплата</span>
                   </button>
                 </div><div class="detail-note">
-                  <UIcon name="i-lucide-shield-check" /><p>Демонстрационная оплата без ввода реквизитов и списания денег.</p>
+                  <UIcon name="i-lucide-shield-check" /><p>После оплаты вы получите код, который нужно показать в заведении.</p>
                 </div><button
                   class="primary-btn full"
                   :disabled="busy"
@@ -889,7 +867,7 @@ function mapPosition(point: Place, index: number) {
         </template>
         <template v-else-if="drawer === 'support'">
           <p class="assistant-subtitle">
-            <span />Локальный демо-помощник · отвечает сразу
+            <span />Помощник ЕшьКуш · на связи
           </p><div class="chat-messages">
             <div
               v-for="(m, n) in messages"
@@ -914,7 +892,7 @@ function mapPosition(point: Place, index: number) {
         </template>
         <template v-else-if="drawer === 'login'">
           <p class="page-subtitle">
-            Выберите привычный способ. Все входы в этой демонстрации открывают один тестовый профиль.
+            Войдите удобным способом, чтобы сохранять любимые места и следить за заказами.
           </p><button
             v-for="provider in ['Яндекс', 'ВКонтакте', 'Telegram', 'Номер телефона']"
             :key="provider"

@@ -7,7 +7,7 @@ const links = [
   { label: 'Точки', icon: 'i-lucide-store', to: '/points' },
   { label: 'Предложения', icon: 'i-lucide-package', to: '/products' },
   { label: 'Заказы', icon: 'i-lucide-receipt', to: '/orders' },
-  { label: 'Демонстрация', icon: 'i-lucide-play', to: '/demo' }
+  { label: 'Приложение', icon: 'i-lucide-shopping-bag', to: '/shop' }
 ]
 
 const pageTitle = computed(() => (route.meta.title as string) || 'EshKush Partner')
@@ -29,13 +29,12 @@ function handleLogout() {
     >
       <template #header="{ collapsed }">
         <div class="flex items-center gap-2 px-1 py-1">
-          <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-inverted font-bold">
-            E
-          </div>
-          <span
-            v-if="!collapsed"
-            class="font-semibold text-highlighted"
-          >EshKush Partner</span>
+          <BrandLogo v-if="!collapsed" /><img
+            v-else
+            src="/brand/mascot.png"
+            alt="ЕшьКуш"
+            class="size-10 object-contain"
+          >
         </div>
       </template>
 

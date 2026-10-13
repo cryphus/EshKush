@@ -57,12 +57,7 @@ async function onSubmit() {
     <UCard class="w-full max-w-sm">
       <template #header>
         <div class="flex flex-col items-center gap-2 py-2">
-          <div class="flex size-12 items-center justify-center rounded-xl bg-primary text-inverted text-xl font-bold">
-            E
-          </div>
-          <h1 class="text-lg font-semibold text-highlighted">
-            EshKush Partner
-          </h1>
+          <BrandLogo />
           <p class="text-sm text-muted">
             Панель управления для партнёров
           </p>
@@ -120,7 +115,7 @@ async function onSubmit() {
           :loading="loading"
           @click="openDemo"
         >
-          Открыть демо-кабинет
+          Открыть кабинет
         </UButton>
         <NuxtLink
           to="/shop"
