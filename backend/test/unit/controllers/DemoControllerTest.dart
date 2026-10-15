@@ -17,6 +17,9 @@ void main() {
       );
       for (final path in [
         'session',
+        'auth/challenge',
+        'auth/verify',
+        'support',
         'status',
         'state',
         'reset',

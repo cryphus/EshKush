@@ -20,6 +20,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       target: runtime
+    command: [sh, -c, '/app/migrate && exec /app/server']
     environment:
       DEMO_MODE: 'true'
       ENVIRONMENT: development

@@ -11,18 +11,25 @@ import '../services/AuthService.dart';
 import '../services/CacheService.dart';
 import '../utils/RequestBodyUtils.dart';
 import '../utils/RequestContextUtils.dart';
+import '../demo/LocalAuthChallenges.dart';
 
 /// Local presentation tools. Never available unless DEMO_MODE=true.
 class DemoController {
   final AuthService auth;
   final PostgreSQLConnection db;
   bool _resetting = false;
+  final _challenges = LocalAuthChallenges();
   DemoController(this.auth, this.db);
 
   Handler get router {
     final routes = Router();
     routes.get('/status', _status);
     routes.post('/session', _session);
+    routes.post('/auth/challenge', _issueChallenge);
+    routes.post('/auth/verify', _verifyChallenge);
+    routes.get('/support', _supportList);
+    routes.post('/support', _supportCreate);
+    routes.post('/support/<id>/reply', _supportReply);
     routes.get('/state', _state);
     routes.post('/favorite', _favorite);
     routes.post('/reset', _reset);
@@ -36,10 +43,10 @@ class DemoController {
   }
 
   Response _json(Object value, [int status = 200]) => Response(
-    status,
-    body: jsonEncode(value),
-    headers: {'content-type': 'application/json'},
-  );
+        status,
+        body: jsonEncode(value),
+        headers: {'content-type': 'application/json'},
+      );
 
   Future<List<dynamic>> _rows(
     String sql, [
@@ -115,6 +122,101 @@ class DemoController {
     );
   }
 
+  Future<Response> _issueChallenge(Request request) async {
+    final body = await RequestBodyUtils.readJsonObject(request);
+    try {
+      return _json(_challenges.issue(
+          body['phone']?.toString() ?? '', body['role']?.toString() ?? 'user'));
+    } on ArgumentError catch (e) {
+      return _json({'error': e.message.toString()}, 400);
+    } on StateError catch (e) {
+      return _json({'error': e.message}, 429);
+    }
+  }
+
+  Future<Response> _verifyChallenge(Request request) async {
+    final body = await RequestBodyUtils.readJsonObject(request);
+    try {
+      final role = _challenges.verify(body['challenge_id']?.toString() ?? '',
+          body['code']?.toString() ?? '');
+      final account = role == 'partner'
+          ? ['partner1', 'Partner@1234']
+          : ['demo', 'Demo@1234'];
+      return _json(await auth.login(account[0], account[1],
+          userAgent: 'EshKush local sign-in'));
+    } on ArgumentError catch (e) {
+      return _json({'error': e.message.toString()}, 400);
+    } on StateError catch (e) {
+      return _json({'error': e.message}, 429);
+    }
+  }
+
+  Future<Response> _supportList(Request request) async {
+    final user = RequestContextUtils.getUser(request)!;
+    final scope = user['role'] == 'admin'
+        ? ''
+        : user['role'] == 'partner'
+            ? 'WHERE t.order_id IN (SELECT o.id FROM orders o JOIN points p ON p.id=o.point_id JOIN partners a ON a.id=p.partner_id WHERE a.user_id=@user)'
+            : 'WHERE t.user_id=@user';
+    return _json(await _rows(
+        'SELECT row_to_json(t) FROM presentation_support_tickets t $scope ORDER BY t.created_at DESC LIMIT 100',
+        {'user': user['id']}));
+  }
+
+  Future<Response> _supportCreate(Request request) async {
+    final body = await RequestBodyUtils.readJsonObject(request);
+    final userId = RequestContextUtils.getUserId(request);
+    final message = body['message']?.toString().trim() ?? '';
+    final topic = body['topic']?.toString() ?? 'Вопрос';
+    if (message.length < 5 || message.length > 2000 || topic.length > 40)
+      return _json({'error': 'Опишите вопрос: от 5 до 2000 символов'}, 400);
+    final orderId = body['order_id'];
+    if (orderId != null) {
+      if (orderId is! int)
+        return _json({'error': 'Неверный номер заказа'}, 400);
+      final order = await db.query(
+          'SELECT id FROM orders WHERE id=@id AND user_id=@user',
+          substitutionValues: {'id': orderId, 'user': userId});
+      if (order.isEmpty) return _json({'error': 'Заказ не найден'}, 404);
+    }
+    final rows = await db.query('''
+      INSERT INTO presentation_support_tickets(user_id,order_id,topic,message)
+      VALUES(@user,@order,@topic,@message) RETURNING row_to_json(presentation_support_tickets)
+    ''', substitutionValues: {
+      'user': userId,
+      'order': orderId,
+      'topic': topic,
+      'message': message
+    });
+    return _json(rows.first.first, 201);
+  }
+
+  Future<Response> _supportReply(Request request, String id) async {
+    final user = RequestContextUtils.getUser(request)!;
+    if (!['partner', 'admin'].contains(user['role']))
+      return _json({'error': 'Недостаточно прав'}, 403);
+    final ticketId = int.tryParse(id);
+    if (ticketId == null) return _json({'error': 'Обращение не найдено'}, 404);
+    final body = await RequestBodyUtils.readJsonObject(request);
+    final response = body['response']?.toString().trim() ?? '';
+    if (response.length < 5 || response.length > 2000)
+      return _json(
+          {'error': 'Ответ должен содержать от 5 до 2000 символов'}, 400);
+    final scope = user['role'] == 'admin'
+        ? ''
+        : 'AND order_id IN (SELECT o.id FROM orders o JOIN points p ON p.id=o.point_id JOIN partners a ON a.id=p.partner_id WHERE a.user_id=@user)';
+    final rows = await db.query('''
+      UPDATE presentation_support_tickets SET response=@response,status='answered',updated_at=CURRENT_TIMESTAMP
+      WHERE id=@id $scope RETURNING row_to_json(presentation_support_tickets)
+    ''', substitutionValues: {
+      'id': ticketId,
+      'user': user['id'],
+      'response': response
+    });
+    if (rows.isEmpty) return _json({'error': 'Обращение не найдено'}, 404);
+    return _json(rows.first.first);
+  }
+
   Future<Response> _state(Request request) async {
     final user = RequestContextUtils.getUser(request)!;
     final userId = user['id'];
@@ -122,8 +224,8 @@ class DemoController {
     final scope = user['role'] == 'user'
         ? 'WHERE o.user_id = @user'
         : user['role'] == 'partner'
-        ? 'WHERE o.point_id IN (SELECT p.id FROM points p JOIN partners a ON a.id=p.partner_id WHERE a.user_id=@user)'
-        : '';
+            ? 'WHERE o.point_id IN (SELECT p.id FROM points p JOIN partners a ON a.id=p.partner_id WHERE a.user_id=@user)'
+            : '';
     final products = await _rows(
       'SELECT row_to_json(p) FROM products p ORDER BY p.id',
     );
