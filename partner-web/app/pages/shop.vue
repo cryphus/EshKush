@@ -56,13 +56,11 @@ const rating = ref(5)
 const busy = ref(false)
 const checkoutPhase = ref('cart')
 const paymentMethod = ref('card')
+const paymentProgress = ref(0)
 const cart = ref<Record<number, number>>({})
 const pendingOrders = ref<Record<number, number>>({})
 const receipt = ref<number[]>([])
 const notice = ref('')
-const chatInput = ref('')
-const messages = ref([{ text: 'Здравствуйте! Помогу выбрать бокс, найти заказ или оформить возврат. Что вас интересует?', own: false
-}])
 let poll: ReturnType<typeof setInterval> | undefined
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
 const categories = ['Все', 'Выпечка', 'Десерты', 'Готовая еда', 'Суши']
@@ -207,6 +205,7 @@ async function pay() {
   busy.value = true
   error.value = ''
   checkoutPhase.value = 'paying'
+  paymentProgress.value = 0
   try {
     const groups = new Map<number, Offer[]>()
     for (const p of items.value) groups.set(p.point_id, [...(groups.get(p.point_id) || []), p])
@@ -224,12 +223,14 @@ async function pay() {
         pendingOrders.value[pointId] = order.id
         localStorage.setItem('eshkush_demo_checkout', JSON.stringify(pendingOrders.value))
       }
+      paymentProgress.value = 1
       await request('/payments/create', {
         method: 'POST', body: {
           order_id: pendingOrders.value[pointId], payment_method: paymentMethod.value
         }
       })
     }
+    paymentProgress.value = 2
     receipt.value = Object.values(pendingOrders.value)
     await new Promise(resolve => setTimeout(resolve, 900))
     cart.value = {}
@@ -258,36 +259,10 @@ async function cancel(order: Order) {
     busy.value = false
   }
 }
-async function social(provider: string) {
-  busy.value = true
-  try {
-    await auth.demoLogin()
-    await refresh()
-    toast(`Вы вошли через ${provider}`)
-    drawer.value = ''
-  } catch (e) {
-    toast(getErrorMessage(e, 'Вход не выполнен'))
-  } finally {
-    busy.value = false
-  }
-}
-function chat() {
-  const text = chatInput.value.trim()
-  if (!text) return
-  messages.value.push({ text, own: true
-  })
-  chatInput.value = ''
-  setTimeout(() => {
-    const reply = /отмен|возврат/i.test(text)
-      ? 'Откройте «Мои заказы» и нажмите «Отменить и вернуть». Оплаченный бокс отменится, сумма вернётся, а остаток в заведении восстановится.'
-      : /заказ|код|забрат/i.test(text)
-        ? 'Код получения находится в «Моих заказах». Приходите в указанное окно выдачи и покажите код сотруднику. Партнёр отметит заказ как полученный.'
-        : /оплат|карт|сбп/i.test(text)
-          ? 'В корзине можно выбрать карту или СБП. После подтверждения оплаты код получения появится в ваших заказах.'
-          : 'Выбирайте заведение рядом, добавляйте бокс в корзину и забирайте его в указанное время. Содержимое бокса зависит от того, что осталось свежим сегодня. Хотите узнать об оплате или заказах?'
-    messages.value.push({ text: reply, own: false
-    })
-  }, 650)
+async function signedIn() {
+  await refresh()
+  drawer.value = ''
+  toast('Вы вошли в ЕшьКуш')
 }
 async function showPlaceOffers(id: number) {
   query.value = place(id)?.name || ''
@@ -778,11 +753,25 @@ async function showPlaceOffers(id: number) {
                 Перейти к заказам
               </button><span class="muted text-sm">Чек и код получения сохранены в заказах</span>
             </div>
-          </template><div
+          </template><PaymentConfirmation
+            v-else-if="checkoutPhase === 'confirm'"
+            :amount="total"
+            :method="paymentMethod"
+            @back="checkoutPhase = 'payment'"
+            @confirm="pay"
+          /><div
             v-else-if="checkoutPhase === 'paying'"
             class="checkout-success"
           >
-            <div class="payment-spinner" /><h2>Подтверждаем оплату</h2><p>Сохраняем ваши боксы и готовим код получения…</p>
+            <div class="payment-spinner" /><h2>Сохраняем ваши находки</h2><div class="payment-steps">
+              <div
+                v-for="(step, index) in ['Бронируем боксы', 'Подтверждаем оплату', 'Готовим код получения']"
+                :key="step"
+                :class="{ current: paymentProgress === index, done: paymentProgress > index }"
+              >
+                <UIcon :name="paymentProgress > index ? 'i-lucide-circle-check' : paymentProgress === index ? 'i-lucide-loader-circle' : 'i-lucide-circle'" />{{ step }}
+              </div>
+            </div><p>Пожалуйста, дождитесь подтверждения.</p>
           </div><template v-else>
             <div
               v-if="!items.length"
@@ -848,9 +837,9 @@ async function showPlaceOffers(id: number) {
                 </div><button
                   class="primary-btn full"
                   :disabled="busy"
-                  @click="pay"
+                  @click="checkoutPhase = 'confirm'"
                 >
-                  Оплатить {{ money(total) }} <UIcon name="i-lucide-arrow-right" />
+                  Продолжить · {{ money(total) }} <UIcon name="i-lucide-arrow-right" />
                 </button>
               </template><template v-else>
                 <button
@@ -866,42 +855,14 @@ async function showPlaceOffers(id: number) {
           </template>
         </template>
         <template v-else-if="drawer === 'support'">
-          <p class="assistant-subtitle">
-            <span />Помощник ЕшьКуш · на связи
-          </p><div class="chat-messages">
-            <div
-              v-for="(m, n) in messages"
-              :key="n"
-              class="chat-message"
-              :class="{ own: m.own }"
-            >
-              {{ m.text }}
-            </div>
-          </div><form
-            class="chat-form"
-            @submit.prevent="chat"
-          >
-            <input
-              v-model="chatInput"
-              placeholder="Напишите ваш вопрос"
-              aria-label="Сообщение помощнику"
-            ><button aria-label="Отправить">
-              <UIcon name="i-lucide-arrow-up" />
-            </button>
-          </form>
+          <SupportChat
+            :orders="snapshot.orders"
+            :points="snapshot.points"
+            @orders="drawer = ''; view = 'orders'"
+          />
         </template>
         <template v-else-if="drawer === 'login'">
-          <p class="page-subtitle">
-            Войдите удобным способом, чтобы сохранять любимые места и следить за заказами.
-          </p><button
-            v-for="provider in ['Яндекс', 'ВКонтакте', 'Telegram', 'Номер телефона']"
-            :key="provider"
-            class="social-login secondary-btn full"
-            :disabled="busy"
-            @click="social(provider)"
-          >
-            {{ provider }} <UIcon name="i-lucide-arrow-right" />
-          </button>
+          <LocalSignIn @success="signedIn" />
         </template>
         <template v-else>
           <div class="notification">

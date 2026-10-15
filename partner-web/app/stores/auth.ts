@@ -46,6 +46,25 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
+    acceptSession(res: LoginResponse) {
+      const user: User = {
+        id: res.user.id ?? 0, username: res.user.username ?? 'Александр',
+        email: res.user.email ?? null, number: res.user.phoneNumber ?? null,
+        role: res.user.role ?? 'user'
+      }
+      this.user = user
+      this.accessToken = res.access_token
+      this.refreshToken = res.refresh_token
+      this.hydrated = true
+      writeStorage({ user, accessToken: res.access_token, refreshToken: res.refresh_token })
+    },
+    async verifyCode(challengeId: string, code: string) {
+      const config = useRuntimeConfig()
+      const res = await $fetch<LoginResponse>('/demo/auth/verify', {
+        baseURL: config.public.apiBase, method: 'POST', body: { challenge_id: challengeId, code }
+      })
+      this.acceptSession(res)
+    },
     async demoLogin(role: 'user' | 'partner' | 'admin' = 'user') {
       const config = useRuntimeConfig()
       const res = await $fetch<LoginResponse>('/demo/session', {

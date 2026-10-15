@@ -37,19 +37,43 @@ function select(p: MapPlace) {
 function draw(fit = true) {
   if (!map || !L || !markers) return
   markers.clearLayers()
-  for (const p of places.value) {
-    const amount = price(p.id)
-    const compact = map.getZoom() < 13 && p.id !== selectedId.value
-    const icon = L.divIcon({
-      className: 'eshkush-marker',
-      html: `<span class="place-marker ${compact ? 'compact-marker' : ''} ${p.id === selectedId.value ? 'is-selected' : ''}"><img src="/brand/bag.svg" alt="">${compact ? '' : amount === null ? 'ЕшьКуш' : `${amount} ₽`}</span>`,
-      iconSize: compact ? [32, 32] : [78, 36], iconAnchor: compact ? [16, 35] : [39, 42]
-    })
-    const marker = L.marker([p.latitude, p.longitude], { icon, title: p.name, alt: p.name, keyboard: true, riseOnHover: true })
-      .on('click', () => select(p)).addTo(markers)
-    marker.getElement()?.setAttribute('aria-label', p.name)
+  const index = createPlaceClusters(places.value, selectedId.value)
+  const groups = index.getClusters([-180, -85, 180, 85], Math.floor(map.getZoom()))
+  for (const group of groups) {
+    if ('cluster' in group.properties) {
+      const count = Number(group.properties.point_count)
+      const clusterId = Number(group.properties.cluster_id)
+      const [lon, lat] = group.geometry.coordinates
+      if (lat === undefined || lon === undefined) continue
+      const label = `Открыть ${countLabel(count, ['заведение', 'заведения', 'заведений'])}`
+      const icon = L.divIcon({ className: 'eshkush-marker', html: `<span class="place-cluster">${count}<small>мест</small></span>`, iconSize: [48, 48], iconAnchor: [24, 24] })
+      const marker = L.marker([lat, lon], { icon, title: label, keyboard: true }).on('click', () => {
+        map?.setView([lat, lon], Math.min(index.getClusterExpansionZoom(clusterId), 19), { animate: true })
+      }).addTo(markers)
+      marker.getElement()?.setAttribute('aria-label', label)
+      marker.getElement()?.setAttribute('data-point-count', String(count))
+    } else {
+      const p = places.value.find(p => p.id === group.properties.id)
+      if (p) drawPlace(p)
+    }
   }
+  const active = selected.value
+  if (active) drawPlace(active)
+
   if (fit && places.value.length) map.fitBounds(L.latLngBounds(places.value.map(p => [p.latitude, p.longitude] as [number, number])), { paddingTopLeft: [35, 90], paddingBottomRight: [35, selectedId.value ? 210 : 70], maxZoom: 14 })
+}
+function drawPlace(p: MapPlace) {
+  if (!map || !L || !markers) return
+  const amount = price(p.id)
+  const compact = map.getZoom() < 13 && p.id !== selectedId.value
+  const icon = L.divIcon({
+    className: 'eshkush-marker',
+    html: `<span class="place-marker ${compact ? 'compact-marker' : ''} ${p.id === selectedId.value ? 'is-selected' : ''}"><img src="/brand/bag.svg" alt="">${compact ? '' : amount === null ? 'ЕшьКуш' : `${amount} ₽`}</span>`,
+    iconSize: compact ? [32, 32] : [78, 36], iconAnchor: compact ? [16, 35] : [39, 42]
+  })
+  const marker = L.marker([p.latitude, p.longitude], { icon, title: p.name, keyboard: true, riseOnHover: true, zIndexOffset: p.id === selectedId.value ? 1000 : 0 }).on('click', () => select(p)).addTo(markers)
+  marker.getElement()?.setAttribute('aria-label', p.name)
+  marker.getElement()?.setAttribute('data-point-count', '1')
 }
 function showAll() {
   selectedId.value = null
@@ -258,4 +282,8 @@ onBeforeUnmount(() => {
 
 <style>
 @media(max-width:760px){.map-controls{flex-direction:row;bottom:85px}.map-controls button:last-child{margin-top:0}.places-map-shell.has-selection .map-controls{bottom:195px}}
+</style>
+
+<style>
+.place-cluster{width:48px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#346447;color:white;border:4px solid #dcecc9;border-radius:50%;box-shadow:0 3px 15px #284d3433;font:600 16px Stolzl,sans-serif}.place-cluster small{font-size:7px;font-weight:400;line-height:1.1}.eshkush-marker:hover .place-cluster{background:#547f4a}
 </style>

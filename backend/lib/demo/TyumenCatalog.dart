@@ -91,7 +91,7 @@ Future<void> seedTyumenCatalog(PostgreSQLConnection connection) async {
         // Preserve photos uploaded by a partner; replace the old illustrations.
         final oldImage = row[2]?.toString() ?? '';
         if (oldImage.isEmpty ||
-            RegExp(r'/demo/media/food-\d+\.svg$').hasMatch(oldImage)) {
+            RegExp(r'/demo/media/food-\d+\.(svg|jpg)$').hasMatch(oldImage)) {
           await db.execute(
               'UPDATE products SET image_url=@image,partner_id=@partner WHERE id=@id',
               substitutionValues: {
@@ -150,6 +150,15 @@ Future<void> seedTyumenCatalog(PostgreSQLConnection connection) async {
 
 String foodPhoto(String name) {
   final text = name.toLowerCase();
+  final specific = <String, String>{
+    'наполеон': 'napoleon', 'пельмен': 'pelmeni', 'ватруш': 'vatrushka',
+    'блины': 'blini', 'поке': 'poke', 'пирожн': 'eclairs', 'эклер': 'eclairs',
+    'десерт-бокс': 'eclairs', 'обед': 'lunch', 'ужин': 'lunch',
+    'круассан': 'croissant-box', 'выпечка': 'croissant-box',
+  };
+  for (final entry in specific.entries) {
+    if (text.contains(entry.key)) return '/demo/media/${entry.value}.jpg';
+  }
   var image = 0;
   if (RegExp('поке|салат').hasMatch(text)) {
     image = 3;

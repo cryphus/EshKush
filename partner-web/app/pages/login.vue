@@ -11,6 +11,8 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const config = useRuntimeConfig()
 const demoEnabled = ref(false)
+const loginMode = ref('quick')
+useColorMode().preference = 'light'
 onMounted(async () => {
   try {
     await $fetch('/demo/status', {
@@ -21,18 +23,6 @@ onMounted(async () => {
     /* regular login */
   }
 })
-async function openDemo() {
-  loading.value = true
-  try {
-    await auth.demoLogin('partner')
-    await navigateTo('/')
-  } catch (e) {
-    error.value = getErrorMessage(e, 'Не удалось открыть кабинет')
-  } finally {
-    loading.value = false
-  }
-}
-
 if (route.query.error === 'forbidden') {
   error.value = 'Доступ разрешён только партнёрам и администраторам.'
 }
@@ -64,14 +54,20 @@ async function onSubmit() {
         </div>
       </template>
 
+      <LocalSignIn
+        v-if="demoEnabled && loginMode === 'quick'"
+        role="partner"
+        @success="navigateTo('/')"
+      />
       <form
+        v-else
         class="flex flex-col gap-4"
         @submit.prevent="onSubmit"
       >
         <UFormField label="Логин или телефон">
           <UInput
             v-model="username"
-            placeholder="partner1"
+            placeholder="Ваш логин"
             autocomplete="username"
             class="w-full"
             :disabled="loading"
@@ -113,9 +109,9 @@ async function onSubmit() {
           block
           variant="soft"
           :loading="loading"
-          @click="openDemo"
+          @click="loginMode = loginMode === 'quick' ? 'password' : 'quick'"
         >
-          Открыть кабинет
+          {{ loginMode === 'quick' ? 'Войти по логину и паролю' : 'Другой способ входа' }}
         </UButton>
         <NuxtLink
           to="/shop"

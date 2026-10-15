@@ -1,3 +1,15 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
+
+// Bundle every app icon locally, including names in lazy components and lists.
+const appDirectory = fileURLToPath(new URL('./app', import.meta.url))
+const localIcons = [...new Set(readdirSync(appDirectory, { recursive: true })
+  .filter(file => /\.(vue|ts)$/.test(String(file)))
+  .flatMap(file => [...readFileSync(resolve(appDirectory, String(file)), 'utf8')
+    .matchAll(/i-(lucide|simple-icons)-([a-z0-9-]+)/g)]
+    .map(match => `${match[1]}:${match[2]}`)))]
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   modules: [
@@ -14,7 +26,7 @@ export default defineNuxtConfig({
     enabled: true
   },
 
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/flows.css'],
   ui: { fonts: false },
 
   runtimeConfig: {
@@ -39,5 +51,6 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
-  }
+  },
+  icon: { clientBundle: { icons: localIcons, sizeLimitKb: 128 } }
 })

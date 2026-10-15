@@ -286,5 +286,78 @@
     "scope": "photograph of this branch: г. Тюмень, Московский тракт, 134А",
     "content_type": "image/jpeg",
     "bytes": 78905
+  },
+  {
+    "file": "pelmeni.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/d/df/Pelmeni_Russian.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Pelmeni_Russian.jpg",
+    "scope": "dish photography",
+    "bytes": 888636,
+    "content_type": "image/jpeg",
+    "author": "Eugene Kim; color processing by Off-shell",
+    "license": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  {
+    "file": "vatrushka.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/6/6b/Vatrushka_cropped.jpeg",
+    "source": "https://commons.wikimedia.org/wiki/File:Vatrushka_cropped.jpeg",
+    "scope": "dish photography",
+    "bytes": 3976115,
+    "content_type": "image/jpeg",
+    "author": "Kagor; cropping and color processing by Off-shell",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+  },
+  {
+    "file": "poke.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0089/6352/2607/files/Poke_480x480.jpg?v=1625071771",
+    "source": "https://www.globalgourmetmarket.com/blogs/noticias/poke-bowl-por-juliana",
+    "scope": "dish photography",
+    "bytes": 119349,
+    "content_type": "image/jpeg"
+  },
+  {
+    "file": "eclairs.jpg",
+    "url": "https://static.spotapps.co/spots/12/62d75df1be448fadac2416ec6cf272/full",
+    "source": "https://vitosbakery.net/clinton-township-vito-s-bakery-food-menu",
+    "scope": "dish photography",
+    "bytes": 141110,
+    "content_type": "image/jpeg"
+  },
+  {
+    "file": "blini.jpg",
+    "url": "https://pelmeni-club.com/upload/iblock/222/bvxlb1r7xorhkmwca112vndsv7rxxfcu.jpg",
+    "source": "https://pelmeni-club.com/menu/bliny/",
+    "scope": "dish photography",
+    "bytes": 115813,
+    "content_type": "image/jpeg"
+  },
+  {
+    "file": "lunch.jpg",
+    "url": "https://fommi-foods.com/images/stories/virtuemart/product/obid-standart-2.jpg",
+    "source": "https://fommi-foods.com/com-ua/obid-standart-2-detail",
+    "scope": "dish photography",
+    "bytes": 113477,
+    "content_type": "image/jpeg"
+  },
+  {
+    "file": "croissant-box.jpg",
+    "url": "https://shop.theorchardpenrith.com.au/cdn/shop/files/Mixed-Croissant-Pack-1.jpg?v=1701083332",
+    "source": "https://shop.theorchardpenrith.com.au/products/mixed-croissants",
+    "scope": "dish photography",
+    "bytes": 512758,
+    "content_type": "image/jpeg"
+  },
+  {
+    "file": "napoleon.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/e5/%D0%A2%D0%BE%D1%80%D1%82_%D0%9D%D0%B0%D0%BF%D0%BE%D0%BB%D0%B5%D0%BE%D0%BD_%28%D0%B4%D0%BE%D0%BC%D0%B0%D1%88%D0%BD%D0%B8%D0%B5_%D0%BA%D1%83%D1%81%D0%BE%D1%87%D0%BA%D0%B8%29.jpg?utm_source=commons.wikimedia.org&amp;utm_campaign=index&amp;utm_content=original",
+    "source": "https://commons.wikimedia.org/wiki/File:%D0%A2%D0%BE%D1%80%D1%82_%D0%9D%D0%B0%D0%BF%D0%BE%D0%BB%D0%B5%D0%BE%D0%BD_%28%D0%B4%D0%BE%D0%BC%D0%B0%D1%88%D0%BD%D0%B8%D0%B5_%D0%BA%D1%83%D1%81%D0%BE%D1%87%D0%BA%D0%B8%29.jpg",
+    "scope": "dish photography",
+    "author": "Otets",
+    "license": "CC BY-SA 3.0 LU",
+    "bytes": 313674,
+    "content_type": "image/jpeg",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/"
   }
 ]

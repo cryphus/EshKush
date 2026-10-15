@@ -7,6 +7,7 @@ const links = [
   { label: 'Точки', icon: 'i-lucide-store', to: '/points' },
   { label: 'Предложения', icon: 'i-lucide-package', to: '/products' },
   { label: 'Заказы', icon: 'i-lucide-receipt', to: '/orders' },
+  ...(useRuntimeConfig().public.demoMode ? [{ label: 'Обращения', icon: 'i-lucide-messages-square', to: '/support' }] : []),
   { label: 'Приложение', icon: 'i-lucide-shopping-bag', to: '/shop' }
 ]
 
