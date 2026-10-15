@@ -64,5 +64,5 @@ class AppRouterFactory {
   }
 
   static List<String> get openPaths =>
-      Routes.openPathSegments + ['payments/webhook', 'payments/mock-checkout', 'demo/session', 'demo/status', 'demo/media', 'demo/auth'];
+      Routes.openPathSegments + ['payments/webhook', 'payments/mock-checkout', 'demo/session', 'demo/status', 'demo/media', 'demo/auth', 'demo/catalog'];
 }

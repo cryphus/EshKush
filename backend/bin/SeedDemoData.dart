@@ -25,6 +25,15 @@ Future<void> main() async {
   await conn.open();
 
   try {
+    // Add missing presentation roles even when the existing catalog is preserved.
+    await _ensureUser(conn,
+        username: 'support1', password: 'Support@1234',
+        email: 'support@eshkush.test', number: '+79000000003',
+        role: 'support', firstName: 'Мария', lastName: 'Поддержка');
+    await _ensureUser(conn,
+        username: 'guestuser', password: 'Guest@1234',
+        email: 'guest@eshkush.test', number: '+79000000004',
+        role: 'guest', firstName: 'Гость', lastName: 'ЕшьКуш');
     // Startup must preserve changes made during a presentation.
     final count = await conn.query('SELECT COUNT(*) FROM points');
     final reset = Platform.environment['DEMO_MODE'] == 'true' && Platform.environment['DEMO_RESET'] == 'true';

@@ -98,9 +98,7 @@ async function reply(ticket: Ticket) {
       <template #header>
         <div class="flex justify-between gap-3">
           <div>
-            <span class="text-xs text-muted">ЕК-{{ String(ticket.id).padStart(5, "0") }} · заказ №{{
-              ticket.order_id
-            }}</span>
+            <span class="text-xs text-muted">ЕК-{{ String(ticket.id).padStart(5, "0") }} · {{ ticket.order_id ? `заказ №${ticket.order_id}` : 'общий вопрос' }}</span>
             <h2 class="font-medium mt-1">
               {{ ticket.topic }}
             </h2>

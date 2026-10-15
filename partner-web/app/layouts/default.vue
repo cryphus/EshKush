@@ -1,15 +1,21 @@
 <script setup lang="ts">
 const route = useRoute()
 const auth = useAuthStore()
+const config = useRuntimeConfig()
 
-const links = [
-  { label: 'Аналитика', icon: 'i-lucide-layout-dashboard', to: '/' },
-  { label: 'Точки', icon: 'i-lucide-store', to: '/points' },
-  { label: 'Предложения', icon: 'i-lucide-package', to: '/products' },
-  { label: 'Заказы', icon: 'i-lucide-receipt', to: '/orders' },
-  ...(useRuntimeConfig().public.demoMode ? [{ label: 'Обращения', icon: 'i-lucide-messages-square', to: '/support' }] : []),
-  { label: 'Приложение', icon: 'i-lucide-shopping-bag', to: '/shop' }
-]
+const links = computed(() => auth.user?.role === 'support'
+  ? [
+      { label: 'Обращения', icon: 'i-lucide-messages-square', to: '/support' }
+    ]
+  : [
+      { label: 'Аналитика', icon: 'i-lucide-layout-dashboard', to: '/' },
+      { label: 'Точки', icon: 'i-lucide-store', to: '/points' },
+      { label: 'Предложения', icon: 'i-lucide-package', to: '/products' },
+      { label: 'Заказы', icon: 'i-lucide-receipt', to: '/orders' },
+      ...(config.public.demoMode ? [{ label: 'Обращения', icon: 'i-lucide-messages-square', to: '/support' }] : []),
+      { label: 'Приложение', icon: 'i-lucide-shopping-bag', to: '/shop' }
+    ])
+const roleLabel = computed(() => ({ user: 'Покупатель', partner: 'Партнёр', admin: 'Администратор', support: 'Поддержка', guest: 'Гость' })[auth.user?.role || 'guest'])
 
 const pageTitle = computed(() => (route.meta.title as string) || 'EshKush Partner')
 
@@ -64,7 +70,7 @@ function handleLogout() {
               {{ auth.user?.username }}
             </p>
             <p class="truncate text-xs text-muted capitalize">
-              {{ auth.user?.role }}
+              {{ roleLabel }}
             </p>
           </div>
           <UButton

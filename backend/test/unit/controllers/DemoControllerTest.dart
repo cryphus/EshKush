@@ -20,15 +20,18 @@ void main() {
         'auth/challenge',
         'auth/verify',
         'support',
+        'catalog',
         'status',
         'state',
         'reset',
         'media/food-0.svg',
       ]) {
-        final response = await controller.router(
-          Request('GET', Uri.parse('http://localhost/$path')),
-        );
-        expect(response.statusCode, 404, reason: path);
+        for (final method in ['GET', 'POST']) {
+          final response = await controller.router(
+            Request(method, Uri.parse('http://localhost/$path')),
+          );
+          expect(response.statusCode, 404, reason: '$method $path');
+        }
       }
     },
   );

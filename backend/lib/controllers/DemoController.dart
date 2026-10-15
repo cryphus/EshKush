@@ -25,6 +25,7 @@ class DemoController {
     final routes = Router();
     routes.get('/status', _status);
     routes.post('/session', _session);
+    routes.get('/catalog', _catalog);
     routes.post('/auth/challenge', _issueChallenge);
     routes.post('/auth/verify', _verifyChallenge);
     routes.get('/support', _supportList);
@@ -113,6 +114,8 @@ class DemoController {
       'user': ['demo', 'Demo@1234'],
       'partner': ['partner1', 'Partner@1234'],
       'admin': ['adminuser', 'Admin@1234'],
+      'support': ['support1', 'Support@1234'],
+      'guest': ['guestuser', 'Guest@1234'],
     };
     final account = accounts[role];
     if (account == null)
@@ -153,7 +156,7 @@ class DemoController {
 
   Future<Response> _supportList(Request request) async {
     final user = RequestContextUtils.getUser(request)!;
-    final scope = user['role'] == 'admin'
+    final scope = ['admin', 'support'].contains(user['role'])
         ? ''
         : user['role'] == 'partner'
             ? 'WHERE t.order_id IN (SELECT o.id FROM orders o JOIN points p ON p.id=o.point_id JOIN partners a ON a.id=p.partner_id WHERE a.user_id=@user)'
@@ -193,7 +196,7 @@ class DemoController {
 
   Future<Response> _supportReply(Request request, String id) async {
     final user = RequestContextUtils.getUser(request)!;
-    if (!['partner', 'admin'].contains(user['role']))
+    if (!['partner', 'admin', 'support'].contains(user['role']))
       return _json({'error': 'Недостаточно прав'}, 403);
     final ticketId = int.tryParse(id);
     if (ticketId == null) return _json({'error': 'Обращение не найдено'}, 404);
@@ -202,7 +205,7 @@ class DemoController {
     if (response.length < 5 || response.length > 2000)
       return _json(
           {'error': 'Ответ должен содержать от 5 до 2000 символов'}, 400);
-    final scope = user['role'] == 'admin'
+    final scope = ['admin', 'support'].contains(user['role'])
         ? ''
         : 'AND order_id IN (SELECT o.id FROM orders o JOIN points p ON p.id=o.point_id JOIN partners a ON a.id=p.partner_id WHERE a.user_id=@user)';
     final rows = await db.query('''
@@ -215,6 +218,16 @@ class DemoController {
     });
     if (rows.isEmpty) return _json({'error': 'Обращение не найдено'}, 404);
     return _json(rows.first.first);
+  }
+
+  Future<Response> _catalog(Request request) async {
+    return _json({
+      'products': await _rows('SELECT row_to_json(p) FROM products p ORDER BY p.id'),
+      'points': await _rows('SELECT row_to_json(p) FROM points p ORDER BY p.id'),
+      'cities': await _rows('SELECT row_to_json(c) FROM cities c ORDER BY c.id'),
+      'orders': <dynamic>[],
+      'favorites': <int>[],
+    });
   }
 
   Future<Response> _state(Request request) async {

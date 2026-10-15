@@ -39,6 +39,8 @@ const {
   request
 } = useApi()
 const config = useRuntimeConfig()
+const isGuest = computed(() => auth.user?.role === 'guest')
+const displayName = computed(() => isGuest.value ? 'Гость' : 'Александр')
 const snapshot = ref<Snapshot>({ products: [], points: [], orders: [], favorites: [], cities: []
 })
 const loading = ref(true)
@@ -107,16 +109,17 @@ function scrollOffers() {
   })
 }
 async function refresh() {
-  snapshot.value = await request<Snapshot>('/demo/state')
+  snapshot.value = await request<Snapshot>(isGuest.value ? '/demo/catalog' : '/demo/state')
 }
 async function boot() {
   loading.value = true
   error.value = ''
   try {
     auth.hydrate()
-    if (!auth.isAuthenticated || auth.user?.role !== 'user') await auth.demoLogin()
+    if (!auth.isAuthenticated || !['user', 'guest'].includes(auth.user?.role || '')) await auth.demoLogin()
     await refresh()
     try {
+      if (isGuest.value) return
       cart.value = JSON.parse(localStorage.getItem('eshkush_demo_cart') || '{}')
       pendingOrders.value = JSON.parse(localStorage.getItem('eshkush_demo_checkout') || '{}')
     } catch {
@@ -143,6 +146,7 @@ watch(cart, value => localStorage.setItem('eshkush_demo_cart', JSON.stringify(va
   deep: true
 })
 function add(offer: Offer, delta = 1) {
+  if (!requireBuyer()) return
   if (Object.keys(pendingOrders.value).length) {
     toast('Сначала завершите начатую оплату')
     drawer.value = 'cart'
@@ -159,6 +163,7 @@ function add(offer: Offer, delta = 1) {
   if (delta > 0) toast('Бокс добавлен в корзину')
 }
 async function favorite(offer: Offer) {
+  if (!requireBuyer()) return
   const active = !snapshot.value.favorites.includes(offer.point_id)
   try {
     await request('/demo/favorite', {
@@ -176,6 +181,7 @@ async function openDetail(offer: Offer) {
   detail.value = offer
   reviews.value = []
   reviewText.value = ''
+  if (isGuest.value) return
   try {
     reviews.value = await request<Review[]>(`/reviews/point/${offer.point_id}`)
   } catch {
@@ -183,6 +189,7 @@ async function openDetail(offer: Offer) {
   }
 }
 async function review() {
+  if (!requireBuyer()) return
   if (!detail.value || !reviewText.value.trim()) return
   busy.value = true
   try {
@@ -201,6 +208,7 @@ async function review() {
   }
 }
 async function pay() {
+  if (!requireBuyer()) return
   if (!items.value.length || busy.value) return
   busy.value = true
   error.value = ''
@@ -260,9 +268,15 @@ async function cancel(order: Order) {
   }
 }
 async function signedIn() {
-  await refresh()
+  await boot()
   drawer.value = ''
   toast('Вы вошли в ЕшьКуш')
+}
+function requireBuyer() {
+  if (!isGuest.value) return true
+  drawer.value = 'login'
+  toast('Войдите, чтобы сохранять места и оформлять заказы')
+  return false
 }
 async function showPlaceOffers(id: number) {
   query.value = place(id)?.name || ''
@@ -318,7 +332,7 @@ async function showPlaceOffers(id: number) {
         >Партнёрам</NuxtLink><button
           class="icon-btn"
           aria-label="Уведомления"
-          @click="drawer = 'notifications'"
+          @click="drawer = isGuest ? 'login' : 'notifications'"
         >
           <UIcon name="i-lucide-bell" />
         </button><button
@@ -326,11 +340,11 @@ async function showPlaceOffers(id: number) {
           aria-label="Профиль"
           @click="view = 'profile'"
         >
-          А
+          {{ displayName[0] }}
         </button><button
           class="cart-btn"
           aria-label="Корзина"
-          @click="drawer = 'cart'; checkoutPhase = 'cart'"
+          @click="drawer = isGuest ? 'login' : 'cart'; checkoutPhase = 'cart'"
         >
           <UIcon name="i-lucide-shopping-bag" /><span class="cart-label">Корзина</span><b v-if="quantity">{{ quantity }}</b>
         </button>
@@ -562,13 +576,13 @@ async function showPlaceOffers(id: number) {
           v-else-if="view === 'profile'"
           class="inner-page"
         >
-          <span class="eyebrow muted">ВАШИ МАЛЕНЬКИЕ ПОБЕДЫ</span><h1>Привет, Александр!</h1><p class="page-subtitle">
-            Каждый спасённый бокс — вклад в более разумный мир.
+          <span class="eyebrow muted">{{ isGuest ? 'ЗНАКОМИМСЯ С ЕШЬКУШ' : 'ВАШИ МАЛЕНЬКИЕ ПОБЕДЫ' }}</span><h1>Привет, {{ displayName }}!</h1><p class="page-subtitle">
+            {{ isGuest ? 'Смотрите предложения и карту. Для покупок и избранного войдите в приложение.' : 'Каждый спасённый бокс — вклад в более разумный мир.' }}
           </p><div class="impact-grid">
             <article><UIcon name="i-lucide-shopping-bag" /><strong>{{ rescued }}</strong><span>спасённых боксов</span></article><article><UIcon name="i-lucide-wallet" /><strong>{{ money(totalSaved) }}</strong><span>сэкономлено на любимой еде</span></article><article><UIcon name="i-lucide-leaf" /><strong>{{ (rescued * 1.8).toFixed(1) }} кг</strong><span>оценка предотвращённых выбросов CO₂</span></article>
           </div><div class="profile-row">
             <div class="profile-card">
-              <span class="avatar big">А</span><div><h3>Александр</h3><p>alexander@eshkush.ru</p><span class="member-tag">Вместе спасаем еду</span></div>
+              <span class="avatar big">{{ displayName[0] }}</span><div><h3>{{ displayName }}</h3><p>{{ isGuest ? 'Гостевой просмотр' : 'alexander@eshkush.ru' }}</p><span class="member-tag">{{ isGuest ? 'Каталог и карта открыты' : 'Вместе спасаем еду' }}</span></div>
             </div><div class="profile-card">
               <UIcon
                 name="i-lucide-sprout"
@@ -854,14 +868,14 @@ async function showPlaceOffers(id: number) {
             </template>
           </template>
         </template>
-        <template v-else-if="drawer === 'support'">
+        <template v-else-if="drawer === 'support' && !isGuest">
           <SupportChat
             :orders="snapshot.orders"
             :points="snapshot.points"
             @orders="drawer = ''; view = 'orders'"
           />
         </template>
-        <template v-else-if="drawer === 'login'">
+        <template v-else-if="drawer === 'login' || isGuest">
           <LocalSignIn @success="signedIn" />
         </template>
         <template v-else>
